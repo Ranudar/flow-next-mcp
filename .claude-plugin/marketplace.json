@@ -18,7 +18,7 @@
         "email": "gordon@mickel.tech",
         "url": "https://mickel.tech"
       },
-      "homepage": "https://mickel.tech",
+      "homepage": "https://mickel.tech/apps/flow",
       "tags": ["claude-code", "plugin", "workflow", "planning", "execution"],
       "source": "./plugins/flow"
     }
