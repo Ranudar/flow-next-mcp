@@ -18,7 +18,7 @@ Install:
 ```
 
 Docs:
-- `plugins/flow/README.md` (start here)
+- [Flow README](plugins/flow/README.md) (start here)
 
 Quick use:
 ```bash
