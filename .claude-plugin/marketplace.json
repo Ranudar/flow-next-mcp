@@ -6,20 +6,26 @@
   },
   "metadata": {
     "description": "Claude Code plugin marketplace by Gordon Mickel",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "plugins": [
     {
       "name": "flow",
       "description": "Two-step planning + execution workflow. Includes 5 agents, 2 commands, 1 skill.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "Gordon Mickel",
         "email": "gordon@mickel.tech",
         "url": "https://mickel.tech"
       },
       "homepage": "https://mickel.tech/apps/flow",
-      "tags": ["claude-code", "plugin", "workflow", "planning", "execution"],
+      "tags": [
+        "claude-code",
+        "plugin",
+        "workflow",
+        "planning",
+        "execution"
+      ],
       "source": "./plugins/flow"
     }
   ]
