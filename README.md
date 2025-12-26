@@ -1,6 +1,6 @@
 # gmickel claude marketplace
 
-Claude Code plugin marketplace by Gordon Mickel. Built for focused, high‑signal workflows.
+Claude Code plugin marketplace by Gordon Mickel. Focused workflows, minimal bloat.
 
 ## Install marketplace
 
@@ -8,9 +8,8 @@ Claude Code plugin marketplace by Gordon Mickel. Built for focused, high‑signa
 /plugin marketplace add https://github.com/gmickel/gmickel-claude-marketplace
 ```
 
-## Available plugins
+## Featured plugin: Flow
 
-### flow
 Two‑step workflow: plan first, work second.
 
 Install:
@@ -19,7 +18,13 @@ Install:
 ```
 
 Docs:
-- `plugins/flow/README.md`
+- `plugins/flow/README.md` (start here)
+
+Quick use:
+```bash
+/flow:plan Add OAuth login for users
+/flow:work plans/add-oauth-login.md
+```
 
 ## Add a plugin
 
