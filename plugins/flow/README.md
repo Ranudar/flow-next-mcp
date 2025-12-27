@@ -84,6 +84,98 @@ Claude auto-triggers the matching skill based on intent.
 
 ---
 
+## Workflow in Action
+
+Real example: `/flow:plan gno-40i` → plan, review, iterate until approved.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ > /flow:plan gno-40i, then review via /flow:plan-review until approved     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 1: Parallel Research                                          ~45s   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                       │
+│  │ repo-scout   │  │practice-scout│  │ docs-scout   │                       │
+│  │ 12 tool uses │  │ 5 tool uses  │  │ 15 tool uses │                       │
+│  │ 46.7k tokens │  │ 21.2k tokens │  │ 29.5k tokens │                       │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘                       │
+│         └─────────────────┼─────────────────┘                               │
+│                           ▼                                                 │
+│              ┌────────────────────────┐                                     │
+│              │ Existing patterns,     │                                     │
+│              │ best practices,        │                                     │
+│              │ framework docs         │                                     │
+│              └────────────────────────┘                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 2: Gap Analysis                                               ~1m45s │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ flow-gap-analyst · 15 tool uses · 56.6k tokens                      │    │
+│  │                                                                     │    │
+│  │ → Missing edge cases identified                                     │    │
+│  │ → User flow gaps found                                              │    │
+│  │ → Requirements clarified                                            │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 3: Write Plan (Route A - Beads ID input)                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  bd update gno-40i --body "## Plan: Linear Scan Optimization..."            │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ gno-40i: Linear Scan Optimization                                   │    │
+│  │ ├── gno-40i.1: hybrid.ts: replace .find() with Map                  │    │
+│  │ ├── gno-40i.2: vsearch.ts: replace .find() with Map                 │    │
+│  │ ├── gno-40i.3: rerank.ts: replace .find() with Map                  │    │
+│  │ ├── gno-40i.4: search.ts: replace .find() with Map                  │    │
+│  │ └── gno-40i.5: Run tests and lint  ──blocks──▶ [.1, .2, .3, .4]     │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PHASE 4: Carmack-Level Review (via RepoPrompt)                      ~2-5m  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  rp-cli -e 'windows'                    → Find RepoPrompt window            │
+│  rp-cli -w 1 -e 'builder "..."'         → Build smart context               │
+│  rp-cli -w 1 -e 'chat "Review..."'      → Execute Carmack review            │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ Review Criteria:                                                    │    │
+│  │ □ Simplicity & YAGNI    □ Architecture     □ Performance            │    │
+│  │ □ DRY & code reuse      □ Edge cases       □ Security               │    │
+│  │ □ Idiomatic patterns    □ Testability      □ Maintainability        │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                             │
+│  Output: Ship ✓ | Needs Work ⚠ | Major Rethink ✗                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                          ┌─────────┴─────────┐
+                          ▼                   ▼
+                    ┌──────────┐        ┌──────────┐
+                    │  Ship ✓  │        │ Iterate  │
+                    │          │        │    ↺     │
+                    │ Ready for│        │ Fix and  │
+                    │ /flow:work        │ re-review│
+                    └──────────┘        └────┬─────┘
+                                             │
+                                             └──────▶ Back to Review
+```
+
+---
+
 ## Why Flow
 
 Most agent failures aren't about model capability—they're about process:
