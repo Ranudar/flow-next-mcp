@@ -1,5 +1,8 @@
 # Flow Plan Steps
 
+**IMPORTANT**: Steps 1-3 (research, gap analysis, depth) ALWAYS run regardless of input type.
+The Beads alternative in Step 4 is only about OUTPUT format, not skipping research.
+
 ## Success criteria
 
 - Plan references existing files/patterns with line refs
@@ -8,6 +11,8 @@
 - Open questions are listed
 
 ## Step 1: Fast research (parallel)
+
+**If input is a Beads ID**: First fetch it with `bd show <id>` to get the request context.
 
 Run these subagents in parallel using the Task tool:
 - Task flow:repo-scout(<request>)
