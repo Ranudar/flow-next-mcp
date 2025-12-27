@@ -60,35 +60,47 @@ Default to short unless complexity demands more.
 
 ## Step 4: Write the plan
 
-**Standard**: Create `plans/<slug>.md`
+**Route A - Input WAS a Beads ID**: Plan goes INTO that issue, no confirmation needed.
+
+1. Update the existing issue with plan summary: `bd update <id> --body "..." --json`
+2. Create child tasks under it based on complexity:
+   - Simple: 1-3 tasks as children (auto-numbered `.1`, `.2`, `.3`)
+   - Standard: tasks with clear acceptance criteria
+   - Complex: tasks with subtasks (up to 3 levels)
+3. Add dependencies between tasks: `bd dep add <child> <depends-on>`
+4. Output: `bd show <id> --json` - ready for `/flow:work <id>`
+
+**Route B - Input was text AND Beads detected** (.beads/ exists, CLAUDE.md mentions it):
+
+1. **Probe** (read-only): `bd --version` succeeds
+2. **Confirm**: "Create Beads epic instead of markdown plan? [Y/n]"
+3. If yes, create structure:
+   - `bd create "Title" -t epic -p <priority> --json`
+   - Add child tasks (auto-numbered `.1`, `.2`, `.3`)
+   - Add dependencies inline: `bd create "Title" --deps blocks:<other-id> --json`
+4. Output: `bd show <id> --json` - user can run `/flow:work <id>` directly
+
+**Route C - No Beads**: Create `plans/<slug>.md`
 - Slug = kebab-case title
 - Use clear headings, short bullets
 - Put file paths + links under References
 - Include code sketches only if needed, with fake filenames
 - If schema changes, include a Mermaid ERD
 
-**Beads alternative** (if Beads is in use - .beads/ exists, CLAUDE.md mentions it):
-
-1. **Probe** (read-only): `bd --version` succeeds
-2. **Confirm**: "Create Beads issues instead of markdown plan? [Y/n]"
-3. Create structure based on plan complexity:
-   - Simple: `bd create "Title" -t task -p <priority> --json`
-   - Standard: epic with child tasks (children auto-numbered .1, .2, .3)
-   - Complex: epic with tasks and subtasks (up to 3 levels)
-4. Add dependencies inline: `bd create "Title" --deps blocks:<other-id> --json`
-5. Output: `bd show <id> --json` - user can run `/flow:work <id>` directly
-
-**On failure after epic created**:
+**On Beads failure after epic/tasks created**:
 - Report what was created (epic ID, any tasks)
 - Offer options: (A) retry failed tasks, (B) close epic, (C) leave for manual handling
 - Do not silently fall back to markdown
 
 ## Step 5: Offer next step
 
-**If Beads was used**: Output is already in Beads. Ask:
+**If Route A (existing Beads issue updated)**:
+"Plan added to `<id>` with N child tasks. Start `/flow:work <id>`?"
+
+**If Route B (new Beads epic created)**:
 "Epic created: `<id>`. Start `/flow:work <id>`?"
 
-**If markdown plan**: Ask:
+**If Route C (markdown plan)**:
 "Plan ready at `plans/<slug>.md`. Next?"
 1) Open plan
 2) Start `/flow:work` with this plan
