@@ -49,6 +49,10 @@ if [[ "$TARGET" == "flow" || "$TARGET" == "all" ]]; then
   # Update marketplace.json plugins[0].version
   jq --arg v "$NEW" '.plugins[0].version = $v' "$MARKETPLACE" > tmp.json && mv tmp.json "$MARKETPLACE"
 
+  # Update version badges in READMEs
+  sed -i '' "s/Flow-v[0-9]*\.[0-9]*\.[0-9]*/Flow-v$NEW/" README.md
+  sed -i '' "s/Version-[0-9]*\.[0-9]*\.[0-9]*/Version-$NEW/" plugins/flow/README.md
+
   echo "flow: $OLD -> $NEW"
 fi
 
