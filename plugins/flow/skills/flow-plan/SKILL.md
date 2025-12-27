@@ -18,7 +18,7 @@ If empty, ask: "What should I plan? Give me the feature or bug in 1-5 sentences.
 
 ## Workflow
 
-Read [steps.md](steps.md) and follow each step in order. The steps include running research agents in parallel via the Task tool.
+Read [steps.md](steps.md) and follow each step in order. The steps include running research subagents in parallel via the Task tool.
 
 ## Examples
 

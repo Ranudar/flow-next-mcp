@@ -9,7 +9,7 @@
 
 ## Step 1: Fast research (parallel)
 
-Run these in parallel with Task tool:
+Run these subagents in parallel using the Task tool:
 - Task flow:repo-scout(<request>)
 - Task flow:practice-scout(<request>)
 - Task flow:docs-scout(<request>)
@@ -23,7 +23,7 @@ Must capture:
 
 ## Step 2: Flow gap check
 
-Run:
+Run the gap analyst subagent:
 - Task flow:flow-gap-analyst(<request>, research_findings)
 
 Fold gaps + questions into the plan.

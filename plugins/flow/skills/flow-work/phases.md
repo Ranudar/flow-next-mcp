@@ -47,7 +47,7 @@ After each completed task:
 
 - Run relevant tests
 - Run lint/format per repo
-- If change is large/risky, run:
+- If change is large/risky, run the quality auditor subagent:
   - Task flow:quality-auditor("Review recent changes")
 - Fix critical issues
 
