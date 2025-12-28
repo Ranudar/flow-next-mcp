@@ -70,7 +70,7 @@ If yes, review runs automatically after completion—no manual chaining needed.
 | Type | Count | Examples |
 |------|-------|----------|
 | Commands | 4 | `/flow:plan`, `/flow:work`, `/flow:plan-review`, `/flow:impl-review` |
-| Agents | 5 | repo-scout, practice-scout, docs-scout, gap-analyst, quality-auditor |
+| Agents | 6 | repo-scout, practice-scout, docs-scout, gap-analyst, quality-auditor, context-scout |
 | Skills | 5 | Progressive disclosure (~100 tokens at startup) |
 
 Uses **progressive disclosure**—only name + description loaded at startup, full logic loads on-demand when triggered.

@@ -439,6 +439,36 @@ Flow has optional [Beads](https://github.com/steveyegge/beads) (`bd`) integratio
 
 ---
 
+## RepoPrompt Integration
+
+Flow integrates with [RepoPrompt](https://repoprompt.com) for token-efficient codebase exploration and Carmack-level reviews.
+
+### context-scout Agent
+
+When you need deep codebase understanding without bloating context:
+
+```bash
+# Invoke directly
+> Use context-scout to understand how authentication works in this codebase
+```
+
+**Why context-scout over repo-scout?**
+
+| Aspect | repo-scout | context-scout |
+|--------|------------|---------------|
+| Tools | Grep, Glob, Read | RepoPrompt rp-cli |
+| Token usage | Full file reads | Codemaps (10x fewer tokens) |
+| File discovery | Pattern matching | AI-powered builder |
+| Best for | Quick pattern search | Deep architecture understanding |
+
+**Requires**: RepoPrompt desktop app with rp-cli installed.
+
+### Auto-Review Commands
+
+`/flow:plan-review` and `/flow:impl-review` use RepoPrompt's context builder and chat for thorough code review. See [Review Commands](#review-commands).
+
+---
+
 ## Issue Creation
 
 From `/flow:plan`, create issues in **GitHub**, **Linear**, or **Beads**.
