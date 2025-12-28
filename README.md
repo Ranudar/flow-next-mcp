@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-blueviolet)](https://claude.ai/code)
-[![Flow Version](https://img.shields.io/badge/Flow-v0.5.4-green)](plugins/flow/)
+[![Flow Version](https://img.shields.io/badge/Flow-v0.5.5-green)](plugins/flow/)
 [![Author](https://img.shields.io/badge/Author-Gordon_Mickel-orange)](https://mickel.tech)
 [![Twitter](https://img.shields.io/badge/@gmickel-black?logo=x)](https://twitter.com/gmickel)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤-ea4aaa)](https://github.com/sponsors/gmickel)
