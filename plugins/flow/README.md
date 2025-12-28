@@ -2,6 +2,8 @@
 
 # Flow
 
+[![Website](https://img.shields.io/badge/Website-mickel.tech%2Fapps%2Fflow-blue?style=for-the-badge)](https://mickel.tech/apps/flow)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
 [![Version](https://img.shields.io/badge/Version-0.4.8-green)](../../CHANGELOG.md)
