@@ -16,18 +16,18 @@
 
 ## Phase 2: Setup
 
-Ask: "Work on current branch, create new branch, or use isolated worktree?"
+**MUST ASK before any code changes:**
+"Work on current branch, create new branch, or use isolated worktree?"
 
-If worktree, use skill:
-- skill: worktree-kit
+Wait for user response. Then:
 
-If new branch:
-```bash
-git checkout main && git pull origin main
-git checkout -b <branch>
-```
-
-If current branch: confirm this is intentional.
+- **Worktree**: use `skill: worktree-kit`
+- **New branch**:
+  ```bash
+  git checkout main && git pull origin main
+  git checkout -b <branch>
+  ```
+- **Current branch**: confirm this is intentional (user explicitly chose it)
 
 ## Phase 3: Task list
 
