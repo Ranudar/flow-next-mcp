@@ -126,6 +126,12 @@ rp-cli -w W -e 'select add docs/architecture.md'
 
 Use chat in **chat mode** to conduct the review. The chat sees all selected files completely.
 
+⚠️ **WAIT FOR RESPONSE**: Chat commands can take 1-5+ minutes to complete.
+- Do NOT send follow-up messages asking if it's done
+- Do NOT re-send the chat command
+- Wait for rp-cli to return output before proceeding
+- Use `timeout: 5m` or longer in Bash tool if needed
+
 **Shell escaping note:** Complex prompts with `?`, `()`, etc. may fail with zsh glob errors. Use heredoc:
 ```bash
 rp-cli -w W -e "$(cat <<'PROMPT'
