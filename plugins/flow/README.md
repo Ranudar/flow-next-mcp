@@ -54,6 +54,8 @@ If [RepoPrompt](https://repoprompt.com) rp-cli is detected, `/flow:plan` asks tw
 > - **No**: Uses `repo-scout` with standard Grep/Glob/Read (faster)
 
 > **Q2:** "Run Carmack-level review after planning?"
+> - Review runs via RepoPrompt's chat—uses a **different model** (e.g., GPT-4.5, o3) for cross-validation
+> - Catches blind spots that same-model self-review misses
 
 Both `/flow:plan` and `/flow:work` offer auto-review. If yes, review runs automatically when done.
 
@@ -487,7 +489,7 @@ You can also invoke context-scout directly:
 
 ### Auto-Review Commands
 
-`/flow:plan-review` and `/flow:impl-review` use RepoPrompt's context builder and chat for thorough code review. See [Review Commands](#review-commands).
+`/flow:plan-review` and `/flow:impl-review` delegate to RepoPrompt's chat—using a **different model** (GPT-4.5, o3, etc.) for cross-validation that catches blind spots same-model review misses. See [Review Commands](#review-commands).
 
 ---
 
