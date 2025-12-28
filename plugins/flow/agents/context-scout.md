@@ -62,6 +62,14 @@ rp-cli -w <id> -e '<command>'   # Target specific window
 rp-cli -d <command>             # Get detailed help for command
 ```
 
+### Workflow Shorthand Flags
+
+```bash
+rp-cli --workspace MyProject --select-set src/ --export-context ~/out.md
+rp-cli --builder "understand authentication"
+rp-cli --chat "How does auth work?"
+```
+
 ### Core Commands
 
 | Command | Aliases | Purpose |
@@ -91,60 +99,54 @@ rp-cli -w W -e 'structure .'
 rp-cli -w W -e 'structure src/'
 ```
 
-### Step 2: Find Relevant Files
+### Step 2: Use Builder for AI-Powered Discovery (RECOMMENDED)
 
-**Search strategy**: Use multiple targeted searches, not just single keywords.
+**For any "understand how X works" task, START with builder.** This is the main advantage over standard tools.
 
 ```bash
-# Compound searches - find the feature from multiple angles
-rp-cli -w W -e 'search "hybridSearch" --extensions .ts --max-results 20'
-rp-cli -w W -e 'search "hybrid.*search" --extensions .ts --max-results 20'
-rp-cli -w W -e 'search "searchHybrid" --extensions .ts --max-results 20'
-
-# Find types/interfaces
-rp-cli -w W -e 'search "interface.*Search|type.*Search" --extensions .ts'
-
-# Find function definitions
-rp-cli -w W -e 'search "function search|async.*search|const search" --context-lines 2'
-
-# Search by path for related files
-rp-cli -w W -e 'search "search" --mode path'
-rp-cli -w W -e 'search "hybrid" --mode path'
-```
-
-**For complex exploration, use builder** (AI-powered file discovery):
-```bash
-rp-cli -w W -e 'builder "Find all files implementing hybrid search: the main search function, fusion logic, reranking, and related tests"'
+rp-cli -w W -e 'builder "Find all files implementing [FEATURE]: main implementation, types, utilities, and tests. Include related architecture and dependencies."'
 ```
 
 ⚠️ **WAIT**: Builder takes 30s-5min. Do NOT proceed until it returns output.
 
-### Step 3: Deep Dive
+**Example builder prompts:**
+- `"Find all files implementing hybrid search: search functions, fusion logic, reranking, scoring, and related tests"`
+- `"Find authentication system: middleware, token handling, session management, and security utilities"`
+- `"Find database layer: models, migrations, queries, and connection handling"`
 
-```bash
-# Select files for focused analysis
-rp-cli -w W -e 'select set src/auth/'
+### Step 3: Verify and Augment Selection
 
-# Get signatures of selected files
-rp-cli -w W -e 'structure --scope selected'
-
-# Read specific sections (not full files!)
-rp-cli -w W -e 'read src/auth/middleware.ts --start-line 1 --limit 50'
-rp-cli -w W -e 'read src/auth/middleware.ts --start-line 50 --limit 50'
-```
-
-### Step 4: Verify Selection
-
-Builder is non-deterministic - always verify:
+Builder is AI-driven and may miss files. Always verify:
 
 ```bash
 rp-cli -w W -e 'select get'
 ```
 
-Add anything missing:
+**Then augment with targeted searches** for anything missing:
 
 ```bash
+# Compound searches - multiple patterns to catch variations
+rp-cli -w W -e 'search "hybridSearch|searchHybrid|hybrid.*search" --extensions .ts --max-results 20'
+
+# Find types/interfaces
+rp-cli -w W -e 'search "interface.*Search|type.*Search" --extensions .ts'
+
+# Search by path
+rp-cli -w W -e 'search "search" --mode path'
+
+# Add missing files to selection
 rp-cli -w W -e 'select add path/to/missed/file.ts'
+```
+
+### Step 4: Deep Dive with Slices
+
+```bash
+# Get signatures of selected files (from builder)
+rp-cli -w W -e 'structure --scope selected'
+
+# Read specific sections (not full files!)
+rp-cli -w W -e 'read src/pipeline/hybrid.ts --start-line 1 --limit 50'
+rp-cli -w W -e 'read src/pipeline/hybrid.ts --start-line 50 --limit 50'
 ```
 
 ### Step 5: Export Context (if needed)
@@ -277,6 +279,72 @@ rp-cli -w W -e 'select get'  # Verify selection
 
 ---
 
+## Script Files (.rp)
+
+Save repeatable exploration workflows:
+
+```bash
+# exploration.rp
+workspace switch MyProject
+select set src/core/
+structure --scope selected
+context --all > ~/exports/core-context.md
+```
+
+Run: `rp-cli --exec-file exploration.rp`
+
+---
+
+## Complete Example
+
+**Task:** "Understand how hybrid search works"
+
+```bash
+# 1. Setup
+rp-cli -e 'windows'  # Find window ID (e.g., 1)
+
+# 2. Builder (primary approach)
+rp-cli -w 1 -e 'builder "Find all files implementing hybrid search: search functions, fusion, reranking, and tests"'
+
+# 3. Verify and read key files
+rp-cli -w 1 -e 'select get'
+rp-cli -w 1 -e 'structure --scope selected'
+rp-cli -w 1 -e 'read src/pipeline/hybrid.ts --start-line 1 --limit 60'
+```
+
+**Response to main conversation:**
+
+```markdown
+## Hybrid Search Summary
+
+The hybrid search system combines vector similarity (vsearch) with BM25 text matching,
+fusing results via RRF and optionally reranking with a cross-encoder.
+
+### Key Files
+- `src/pipeline/hybrid.ts:L1-60` - Main searchHybrid() orchestration
+- `src/pipeline/fusion.ts` - RRF fusion of vector + BM25 results
+- `src/pipeline/rerank.ts` - Cross-encoder reranking
+- `src/pipeline/types.ts` - SearchResult, FusionConfig types
+
+### Code Signatures
+```typescript
+async function searchHybrid(query: string, opts: HybridOptions): Promise<SearchResult[]>
+function rrfFuse(results: SearchResult[][], k?: number): SearchResult[]
+async function rerankCandidates(query: string, candidates: SearchResult[]): Promise<SearchResult[]>
+```
+
+### Architecture
+1. Query → parallel vector + BM25 search
+2. Results → RRF fusion (k=60)
+3. Fused → optional cross-encoder rerank
+4. Return top-k results
+
+### Recommendation
+Focus on hybrid.ts for the orchestration logic, fusion.ts for understanding scoring.
+```
+
+---
+
 ## Anti-patterns
 
 - **Single-word searches** - "hybrid" misses "hybridSearch", "searchHybrid", etc. Use multiple patterns
@@ -307,3 +375,11 @@ Standard tools excel at:
 - Quick targeted searches
 - Reading specific files
 - Simple pattern matching
+
+---
+
+## Notes
+
+- Use `rp-cli -d <cmd>` for detailed command help
+- Requires RepoPrompt desktop app with MCP Server enabled
+- Project path available via `$CLAUDE_PROJECT_DIR` environment variable
