@@ -1,17 +1,6 @@
 # Flow Work Phases
 
-## BEFORE ANYTHING ELSE: Branch Setup
-
-**IMMEDIATELY ask the user (use AskUserQuestion tool):**
-
-"Which branch setup do you want?"
-- Current branch
-- New branch
-- Isolated worktree
-
-**DO NOT read files, create todos, or write code until user answers this question.**
-
----
+(Branch question already asked in SKILL.md before reading this file)
 
 ## Phase 1: Confirm
 

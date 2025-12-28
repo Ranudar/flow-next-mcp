@@ -20,12 +20,24 @@ Accepts:
 
 If empty, ask for the plan path.
 
+## FIRST: Branch Setup (REQUIRED)
+
+**Before doing anything else**, use AskUserQuestion tool to ask:
+
+"Which branch setup?"
+- Current branch
+- New branch
+- Isolated worktree
+
+**Wait for answer. Do NOT read files or write code until user responds.**
+
 ## Workflow
 
-Read [phases.md](phases.md) and execute each phase in order. Phases include setup, task tracking (Beads children or TodoWrite), and quality checks.
+After branch question is answered, read [phases.md](phases.md) and execute each phase in order.
 
 ## Guardrails
 
+- Don't start without asking branch question
 - Don't start without plan
 - Don't skip tests
 - Don't leave tasks half-done
