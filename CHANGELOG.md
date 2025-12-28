@@ -4,8 +4,14 @@ All notable changes to the gmickel-claude-marketplace.
 
 ## [0.5.2] - 2025-12-28
 
+### Added
+- **New agent: `context-scout`** - Token-efficient codebase exploration using RepoPrompt's rp-cli
+  - Uses `structure` for code signatures (10x fewer tokens than full files)
+  - Uses `builder` for AI-powered file discovery
+  - Comprehensive workflow: window setup → explore → summarize
+
 ### Changed
-- **Improved all 5 agents** with proper configuration and detailed prompts:
+- **Improved all 6 agents** with proper configuration and detailed prompts:
   - Added `tools` field - each agent now has only the tools it needs
   - Added `model` field - scouts use `haiku` (fast), analysts use `sonnet` (reasoning)
   - Detailed search/analysis methodologies
@@ -13,7 +19,7 @@ All notable changes to the gmickel-claude-marketplace.
   - Clear rules on what to focus on and what to skip
 
 ### Technical
-- All agents use opus model with full research toolkit: Read/Grep/Glob/Bash/WebSearch/WebFetch
+- All 6 agents use opus model with full research toolkit: Read/Grep/Glob/Bash/WebSearch/WebFetch
 - Explicitly excludes Edit/Write (read-only), Task (no sub-agents), TodoWrite/AskUserQuestion (parent manages)
 
 ## [0.5.0] - 2025-12-28

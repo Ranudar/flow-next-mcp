@@ -11,7 +11,7 @@
   "plugins": [
     {
       "name": "flow",
-      "description": "Two-step planning + execution workflow with optional Beads integration. Includes 5 subagents, 4 commands, 5 skills.",
+      "description": "Two-step planning + execution workflow with optional Beads integration. Includes 6 subagents, 4 commands, 5 skills.",
       "version": "0.5.2",
       "author": {
         "name": "Gordon Mickel",

@@ -8,7 +8,7 @@
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
 [![Version](https://img.shields.io/badge/Version-0.5.2-green)](../../CHANGELOG.md)
 [![Commands](https://img.shields.io/badge/Commands-4-green)](commands/)
-[![Agents](https://img.shields.io/badge/Agents-5-yellow)](agents/)
+[![Agents](https://img.shields.io/badge/Agents-6-yellow)](agents/)
 [![Skills](https://img.shields.io/badge/Skills-5-blue)](skills/)
 
 **Structured Claude Code workflow: plan, work, review.**
@@ -401,6 +401,7 @@ Review implementation changes on current branch vs main/master.
 | `docs-scout` | Fetch relevant framework/library docs | `/flow:plan` |
 | `flow-gap-analyst` | Identify missing flows, edge cases, requirements | `/flow:plan` |
 | `quality-auditor` | Review changes for correctness, security, tests | `/flow:work` |
+| `context-scout` | Token-efficient codebase exploration via RepoPrompt | On-demand |
 
 ---
 
