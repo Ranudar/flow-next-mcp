@@ -1,5 +1,18 @@
 # Flow Work Phases
 
+## BEFORE ANYTHING ELSE: Branch Setup
+
+**IMMEDIATELY ask the user (use AskUserQuestion tool):**
+
+"Which branch setup do you want?"
+- Current branch
+- New branch
+- Isolated worktree
+
+**DO NOT read files, create todos, or write code until user answers this question.**
+
+---
+
 ## Phase 1: Confirm
 
 **Resolve input first:**
@@ -14,17 +27,9 @@
 - Ask only blocking questions
 - Get user go-ahead
 
-## Phase 2: Setup
+## Phase 2: Apply Branch Choice
 
-**STOP. DO NOT SKIP THIS PHASE.**
-
-Use AskUserQuestion tool to ask:
-"Work on current branch, create new branch, or use isolated worktree?"
-
-**You MUST wait for user response before writing any code.**
-Do NOT assume current branch. Do NOT proceed without asking.
-
-After user responds:
+Based on user's answer from "BEFORE ANYTHING ELSE":
 
 - **Worktree**: use `skill: worktree-kit`
 - **New branch**:
@@ -32,7 +37,7 @@ After user responds:
   git checkout main && git pull origin main
   git checkout -b <branch>
   ```
-- **Current branch**: only if user explicitly chose it
+- **Current branch**: proceed (user already confirmed)
 
 ## Phase 3: Task list
 
