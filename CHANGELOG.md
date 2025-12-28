@@ -2,6 +2,24 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.5.4] - 2025-12-28
+
+### Added
+- **New skill: `rp-explorer`** - Token-efficient codebase exploration via rp-cli
+  - Deliberate activation: triggers on "use rp", "use repoprompt", explicit requests
+  - Includes full rp-cli command reference (progressive disclosure)
+
+### Changed
+- `/flow:plan` now asks two setup questions when rp-cli detected:
+  - Q1: Research approach (context-scout vs repo-scout)
+  - Q2: Auto-review preference
+- Updated README with comparison table and SETUP phase diagram
+
+## [0.5.3] - 2025-12-28
+
+### Changed
+- Documented cross-model review benefit (GPT-5.2 High, o3 for validation)
+
 ## [0.5.2] - 2025-12-28
 
 ### Added

@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-blueviolet)](https://claude.ai/code)
-[![Flow Version](https://img.shields.io/badge/Flow-v0.5.3-green)](plugins/flow/)
+[![Flow Version](https://img.shields.io/badge/Flow-v0.5.4-green)](plugins/flow/)
 [![Author](https://img.shields.io/badge/Author-Gordon_Mickel-orange)](https://mickel.tech)
 [![Twitter](https://img.shields.io/badge/@gmickel-black?logo=x)](https://twitter.com/gmickel)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤-ea4aaa)](https://github.com/sponsors/gmickel)
@@ -71,7 +71,7 @@ If yes, review runs automatically after completion—no manual chaining needed.
 |------|-------|----------|
 | Commands | 4 | `/flow:plan`, `/flow:work`, `/flow:plan-review`, `/flow:impl-review` |
 | Agents | 6 | repo-scout, practice-scout, docs-scout, gap-analyst, quality-auditor, context-scout |
-| Skills | 5 | Progressive disclosure (~100 tokens at startup) |
+| Skills | 6 | Progressive disclosure (~100 tokens at startup) |
 
 Uses **progressive disclosure**—only name + description loaded at startup, full logic loads on-demand when triggered.
 

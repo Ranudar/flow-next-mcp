@@ -433,6 +433,7 @@ Review implementation changes on current branch vs main/master.
 | `flow-plan-review` | Plan review via rp-cli + chat |
 | `flow-impl-review` | Impl review via rp-cli + chat |
 | `worktree-kit` | Manage git worktrees for parallel work |
+| `rp-explorer` | Token-efficient codebase exploration via rp-cli |
 
 Skills use **progressive disclosure**: only name + description (~100 tokens) loaded at startup. Full logic loads on-demand when triggered.
 
