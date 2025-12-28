@@ -138,7 +138,7 @@ Claude auto-triggers the matching skill based on intent.
                                    │
                                    ▼
 ┌───────────────────────────────────────────────────────────────────────┐
-│ PHASE 4: Plan Review (via RepoPrompt)                                 │
+│ PHASE 4: Plan Review (if opted in)                                    │
 ├───────────────────────────────────────────────────────────────────────┤
 │  rp-cli builder → context    rp-cli chat → Carmack review             │
 │                                                                       │
@@ -223,7 +223,7 @@ Claude auto-triggers the matching skill based on intent.
                                    │
                                    ▼
 ┌───────────────────────────────────────────────────────────────────────┐
-│ /flow:impl-review                                                     │
+│ PHASE 7: Impl Review (if opted in)                                    │
 ├───────────────────────────────────────────────────────────────────────┤
 │  rp-cli builder → context around changed files                        │
 │  rp-cli chat → Carmack review of implementation                       │
