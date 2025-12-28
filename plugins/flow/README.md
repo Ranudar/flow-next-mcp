@@ -45,12 +45,17 @@ Commands work standalone or chained. Claude understands intent and flows between
 /flow:plan-review bd-a3f8e9       # Review Beads epic
 ```
 
-### Auto-review (if rp-cli installed)
+### RepoPrompt Integration (if rp-cli installed)
 
-If [RepoPrompt](https://repoprompt.com) rp-cli is detected, both `/flow:plan` and `/flow:work` ask upfront:
-> "Run Carmack-level review after completion?"
+If [RepoPrompt](https://repoprompt.com) rp-cli is detected, `/flow:plan` asks two questions upfront:
 
-If yes, review runs automatically when done—no manual chaining needed. The workflow handles fix-and-re-review loops until it passes.
+> **Q1:** "Use RepoPrompt for deeper codebase context? (slower but 30% fewer tokens)"
+> - **Yes**: Uses `context-scout` with RepoPrompt's AI-powered builder + codemaps
+> - **No**: Uses `repo-scout` with standard Grep/Glob/Read (faster)
+
+> **Q2:** "Run Carmack-level review after planning?"
+
+Both `/flow:plan` and `/flow:work` offer auto-review. If yes, review runs automatically when done.
 
 ### Full Workflow (Plan → Review → Work → Review)
 
@@ -92,21 +97,32 @@ Claude auto-triggers the matching skill based on intent.
 
 ```
 ┌───────────────────────────────────────────────────────────────────────┐
-│ > /flow:plan gno-40i                    (review: auto if rp-cli)      │
+│ > /flow:plan gno-40i                                                  │
+└───────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌───────────────────────────────────────────────────────────────────────┐
+│ SETUP (if rp-cli detected)                                            │
+├───────────────────────────────────────────────────────────────────────┤
+│  Q1: Use RepoPrompt for deeper context?   ○ Yes (context-scout)       │
+│      (slower but 30% fewer tokens)        ○ No (repo-scout) [faster]  │
+│                                                                       │
+│  Q2: Run Carmack-level review?            ○ Yes  ○ No                 │
 └───────────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
 ┌───────────────────────────────────────────────────────────────────────┐
 │ PHASE 1: Parallel Research                                            │
 ├───────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌───────────────┐  ┌─────────────┐                  │
-│  │ repo-scout  │  │ practice-scout│  │ docs-scout  │                  │
-│  └──────┬──────┘  └───────┬───────┘  └──────┬──────┘                  │
-│         └─────────────────┼─────────────────┘                         │
-│                           ▼                                           │
-│            ┌────────────────────────────┐                             │
-│            │ Patterns, practices, docs  │                             │
-│            └────────────────────────────┘                             │
+│  ┌─────────────────────┐  ┌───────────────┐  ┌─────────────┐          │
+│  │ context-scout (rp)  │  │ practice-scout│  │ docs-scout  │          │
+│  │ OR repo-scout       │  └───────┬───────┘  └──────┬──────┘          │
+│  └──────────┬──────────┘          │                 │                 │
+│             └─────────────────────┼─────────────────┘                 │
+│                                   ▼                                   │
+│              ┌────────────────────────────┐                           │
+│              │ Patterns, practices, docs  │                           │
+│              └────────────────────────────┘                           │
 └───────────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
@@ -273,14 +289,15 @@ Flow enforces the discipline that makes agents reliable:
 Turn a rough idea into a practical plan file without writing code.
 
 **Phases:**
-1. **Research** — Run three agents in parallel:
-   - `repo-scout`: Find existing patterns, conventions, related code paths
+1. **Setup** (if rp-cli detected) — Ask research approach + review preference
+2. **Research** — Run three agents in parallel:
+   - `context-scout` OR `repo-scout`: Find existing patterns, conventions, architecture
    - `practice-scout`: Gather best practices and pitfalls
    - `docs-scout`: Fetch relevant framework/library docs
-2. **Gap Analysis** — Run `flow-gap-analyst` to identify missing flows and edge cases
-3. **Write Plan** — Create `plans/<slug>.md` with references + acceptance checks
-4. **Review** — If rp-cli detected and user opted in, run `/flow:plan-review` automatically
-5. **Offer Next Step** — Start work, or create issue (GitHub/Linear/Beads)
+3. **Gap Analysis** — Run `flow-gap-analyst` to identify missing flows and edge cases
+4. **Write Plan** — Create `plans/<slug>.md` with references + acceptance checks
+5. **Review** — If user opted in, run `/flow:plan-review` automatically
+6. **Offer Next Step** — Start work, or create issue (GitHub/Linear/Beads)
 
 **Plan Depths:**
 - **SHORT**: Bugs, small changes — just problem, acceptance checks, key context
@@ -443,23 +460,28 @@ Flow has optional [Beads](https://github.com/steveyegge/beads) (`bd`) integratio
 
 Flow integrates with [RepoPrompt](https://repoprompt.com) for token-efficient codebase exploration and Carmack-level reviews.
 
-### context-scout Agent
+### Research Choice in /flow:plan
 
-When you need deep codebase understanding without bloating context:
+When rp-cli is detected, `/flow:plan` asks which research approach to use:
+
+| Aspect | repo-scout (faster) | context-scout (deeper) |
+|--------|---------------------|------------------------|
+| Tools | Grep, Glob, Read | RepoPrompt rp-cli |
+| Speed | Fast (~45s) | Slower (builder takes time) |
+| Token usage | ~65k tokens | ~45k tokens (30% less) |
+| File discovery | Pattern matching | AI-powered builder |
+| Output style | Line refs, conventions | Architecture, function signatures |
+| Best for | Quick pattern search | Deep architecture understanding |
+
+**Recommendation**: Use `context-scout` for complex features where architecture understanding matters. Use `repo-scout` for quick bug fixes or simple changes.
+
+### Direct Invocation
+
+You can also invoke context-scout directly:
 
 ```bash
-# Invoke directly
 > Use context-scout to understand how authentication works in this codebase
 ```
-
-**Why context-scout over repo-scout?**
-
-| Aspect | repo-scout | context-scout |
-|--------|------------|---------------|
-| Tools | Grep, Glob, Read | RepoPrompt rp-cli |
-| Token usage | Full file reads | Codemaps (10x fewer tokens) |
-| File discovery | Pattern matching | AI-powered builder |
-| Best for | Quick pattern search | Deep architecture understanding |
 
 **Requires**: RepoPrompt desktop app with rp-cli installed.
 

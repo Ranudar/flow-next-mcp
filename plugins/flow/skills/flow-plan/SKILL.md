@@ -26,13 +26,23 @@ Examples:
 
 If empty, ask: "What should I plan? Give me the feature or bug in 1-5 sentences."
 
-## FIRST: Review Question (if rp-cli available)
+## FIRST: Setup Questions (if rp-cli available)
 
 Check: `which rp-cli >/dev/null 2>&1`
-If available, use AskUserQuestion to ask:
+
+If available, use AskUserQuestion to ask BOTH questions:
+
+**Question 1 - Research approach:**
+"Use RepoPrompt for deeper codebase context? (slower but 30% fewer tokens)"
+- Yes, use context-scout (RepoPrompt builder + codemaps)
+- No, use repo-scout (standard tools, faster)
+
+**Question 2 - Review:**
 "Run Carmack-level review after planning?"
 - Yes, review and fix issues
 - No, skip review
+
+If rp-cli NOT available: skip questions, use repo-scout by default, no review.
 
 ## Workflow
 

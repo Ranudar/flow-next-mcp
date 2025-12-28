@@ -14,8 +14,17 @@ The Beads alternative in Step 4 is only about OUTPUT format, not skipping resear
 
 **If input is a Beads ID**: First fetch it with `bd show <id>` to get the request context.
 
+**Based on user's choice in SKILL.md setup:**
+
+**If user chose context-scout (RepoPrompt)**:
 Run these subagents in parallel using the Task tool:
-- Task flow:repo-scout(<request>)
+- Task flow:context-scout(<request>) - uses RepoPrompt builder for AI-powered file discovery
+- Task flow:practice-scout(<request>)
+- Task flow:docs-scout(<request>)
+
+**If user chose repo-scout (default/faster)** OR rp-cli unavailable:
+Run these subagents in parallel using the Task tool:
+- Task flow:repo-scout(<request>) - uses standard Grep/Glob/Read
 - Task flow:practice-scout(<request>)
 - Task flow:docs-scout(<request>)
 
@@ -25,6 +34,7 @@ Must capture:
 - Similar patterns / prior work
 - External docs links
 - Project conventions (CLAUDE.md, CONTRIBUTING, etc)
+- Architecture patterns and data flow (especially with context-scout)
 
 ## Step 2: Flow gap check
 
