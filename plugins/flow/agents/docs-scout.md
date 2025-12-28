@@ -1,7 +1,7 @@
 ---
 name: docs-scout
 description: Find the most relevant framework/library docs for the requested change.
-tools: WebSearch, WebFetch, Read, Grep, Glob
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 ---
 

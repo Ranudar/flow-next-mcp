@@ -1,7 +1,7 @@
 ---
 name: quality-auditor
 description: Review recent changes for correctness, simplicity, security, and test coverage.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 ---
 

@@ -13,11 +13,8 @@ All notable changes to the gmickel-claude-marketplace.
   - Clear rules on what to focus on and what to skip
 
 ### Technical
-- `repo-scout`: opus + Read/Grep/Glob/Bash - codebase pattern discovery
-- `practice-scout`: opus + WebSearch/WebFetch/Read/Grep - best practices research
-- `docs-scout`: opus + WebSearch/WebFetch/Read/Grep/Glob - documentation fetching
-- `flow-gap-analyst`: opus + Read/Grep/Glob - deeper reasoning for gap analysis
-- `quality-auditor`: opus + Read/Grep/Glob/Bash - security/quality review
+- All agents use opus model with full research toolkit: Read/Grep/Glob/Bash/WebSearch/WebFetch
+- Explicitly excludes Edit/Write (read-only), Task (no sub-agents), TodoWrite/AskUserQuestion (parent manages)
 
 ## [0.5.0] - 2025-12-28
 

@@ -1,7 +1,7 @@
 ---
 name: practice-scout
 description: Gather modern best practices and pitfalls for the requested change.
-tools: WebSearch, WebFetch, Read, Grep
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 ---
 

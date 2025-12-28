@@ -1,7 +1,7 @@
 ---
 name: repo-scout
 description: Scan repo to find existing patterns, conventions, and related code paths for a requested change.
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: opus
 ---
 
