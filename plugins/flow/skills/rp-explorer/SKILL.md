@@ -1,17 +1,19 @@
 ---
 name: rp-explorer
-description: Token-efficient codebase exploration using RepoPrompt CLI. Triggers on "use rp", "use repoprompt", "rp-cli", or explicit RepoPrompt requests.
+description: Token-efficient codebase exploration using RepoPrompt CLI. Use when user says "use rp to..." or "use repoprompt to..." followed by explore, find, understand, search, or similar actions.
 ---
 
 # RP-Explorer
 
 Token-efficient codebase exploration using RepoPrompt CLI.
 
-## When to Use
+## Trigger Phrases
 
-- User explicitly asks to use RepoPrompt/rp-cli
-- User says "use rp to...", "use repoprompt to..."
-- Debugging with token-efficient context gathering
+Activates when user combines "use rp" or "use repoprompt" with an action:
+- "use rp to explore how auth works"
+- "use repoprompt to find similar patterns"
+- "use rp to understand the data flow"
+- "use repoprompt to search for API endpoints"
 
 ## CLI Reference
 

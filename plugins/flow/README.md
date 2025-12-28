@@ -480,17 +480,25 @@ When rp-cli is detected, `/flow:plan` asks which research approach to use:
 
 ### Direct Invocation
 
-You can also invoke context-scout directly:
-
+**context-scout agent** (for delegation):
 ```bash
-> Use context-scout to understand how authentication works in this codebase
+> Use context-scout to understand how authentication works
 ```
+
+**rp-explorer skill** (in current conversation):
+```bash
+> use rp to explore how auth works
+> use repoprompt to find similar patterns
+> use rp to understand the data flow
+```
+
+The skill triggers on "use rp to..." or "use repoprompt to..." + action verb.
 
 **Requires**: RepoPrompt desktop app with rp-cli installed.
 
 ### Auto-Review Commands
 
-`/flow:plan-review` and `/flow:impl-review` delegate to RepoPrompt's chat—using a **different model** (GPT-4.5, o3, etc.) for cross-validation that catches blind spots same-model review misses. See [Review Commands](#review-commands).
+`/flow:plan-review` and `/flow:impl-review` delegate to RepoPrompt's chat—using a **different model** (GPT-5.2 High, o3, etc.) for cross-validation that catches blind spots same-model review misses. See [Review Commands](#review-commands).
 
 ---
 
