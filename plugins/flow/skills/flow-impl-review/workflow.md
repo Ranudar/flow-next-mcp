@@ -147,9 +147,14 @@ PROMPT
 )"
 ```
 
-Example prompt structure:
+**Command template (flags are REQUIRED):**
 ```bash
-rp-cli -w W -e 'chat "Conduct a John Carmack-level code review of these implementation changes.
+rp-cli -w W -e 'chat "<MESSAGE>" --mode chat --new-chat --name "Impl Review: [BRANCH_NAME]"'
+```
+
+**Example message content** (put this in `<MESSAGE>`):
+```
+Conduct a John Carmack-level code review of these implementation changes.
 
 ## The Changes
 Branch: [BRANCH_NAME]
@@ -238,7 +243,7 @@ End with:
 - Overall assessment (Ship / Needs Work / Major Rethink)
 - Top 3 changes that would most improve the implementation
 - Any patterns from the codebase the code should adopt
-- Anything the implementation does particularly well" --mode chat --new-chat --name "Impl Review: [BRANCH_NAME]"'
+- Anything the implementation does particularly well
 ```
 
 ---

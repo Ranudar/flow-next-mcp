@@ -2,18 +2,20 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.5.11] - 2025-12-29
+
+### Fixed
+- Restructured chat command examples so `--new-chat` flags aren't buried
+  - Command template with flags shown FIRST: `rp-cli ... --new-chat --name "..."`
+  - Message content shown separately below
+  - Model was missing flags at end of 70-line prompt
+
 ## [0.5.10] - 2025-12-29
 
 ### Added
 - Chat session targeting for re-reviews
   - `chats list` → get chat IDs and names
   - `--chat-id <id>` → continue specific chat
-  - Documented in workflow and CLI reference
-
-### Changed
-- Clearer chat session management instructions
-  - Initial review: `--new-chat --name "..."`
-  - Re-review: omit `--new-chat` (most recent) or use `--chat-id`
 
 ## [0.5.9] - 2025-12-29
 
