@@ -64,7 +64,6 @@ Re-read plan or Beads state before each task. This ensures coherence across cont
 - If you discover new work: `bd create "Found issue" -t bug -p 2 --deps discovered-from:<current-id> --description="<what was found and why>" --json`
 - Leave clean state: commit with descriptive message
 - Mark complete: `bd close <child-id> --json` (or TodoWrite done for markdown)
-- If wrapping up session: ask before closing final tasks (user may want to review first)
 
 **Between tasks (if epic with multiple children):**
 - Re-read Beads state to confirm next task
@@ -98,8 +97,13 @@ Then push + open PR if user wants.
 
 If user chose "Yes" to review in setup questions:
 1. Invoke `/flow:impl-review` to review the changes
-2. If issues found: fix them and re-run review
-3. Repeat until review passes
+2. If review returns "Needs Work" or "Major Rethink":
+   - **Immediately fix the issues** (do NOT ask for confirmation — user already consented)
+   - Commit fixes
+   - Re-run `/flow:impl-review`
+3. Repeat until review returns "Ship"
+
+**No human gates here** — the review-fix-review loop is fully automated.
 
 ## Definition of Done
 

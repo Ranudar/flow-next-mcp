@@ -2,6 +2,15 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.5.15] - 2025-12-29
+
+### Fixed
+- Made review-fix-review loop fully automated (no human gates)
+  - flow-work Phase 7: explicit "do NOT ask for confirmation"
+  - flow-plan Step 5: same fix
+  - Removed "ask before closing final tasks" ambiguity
+  - Reviews now auto-fix and re-run until "Ship"
+
 ## [0.5.14] - 2025-12-29
 
 ### Fixed

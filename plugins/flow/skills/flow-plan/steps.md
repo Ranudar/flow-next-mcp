@@ -107,8 +107,12 @@ Default to short unless complexity demands more.
 
 If user chose "Yes" to review in SKILL.md setup question:
 1. Invoke `/flow:plan-review` with the plan/Beads ID
-2. If issues found: fix them and re-run review
-3. Repeat until review passes
+2. If review returns "Needs Work" or "Major Rethink":
+   - **Immediately fix the issues** (do NOT ask for confirmation — user already consented)
+   - Re-run `/flow:plan-review`
+3. Repeat until review returns "Ship"
+
+**No human gates here** — the review-fix-review loop is fully automated.
 
 ## Step 6: Offer next step
 
