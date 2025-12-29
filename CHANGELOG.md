@@ -2,6 +2,13 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.5.14] - 2025-12-29
+
+### Fixed
+- Removed redundant "Go ahead to start?" confirmation in flow-work
+  - User already consented via setup questions
+  - Only ask if something is actually unclear or blocking
+
 ## [0.5.13] - 2025-12-29
 
 ### Changed
