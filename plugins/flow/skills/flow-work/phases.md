@@ -13,8 +13,7 @@
 **Then:**
 - Read the plan/issue fully
 - Open referenced files/links
-- Ask only blocking questions
-- Get user go-ahead
+- If anything is unclear or blocking, ask (otherwise proceed — user already consented via setup questions)
 
 ## Phase 2: Apply Branch Choice
 
