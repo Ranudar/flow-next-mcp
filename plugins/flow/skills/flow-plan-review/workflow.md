@@ -118,10 +118,8 @@ Confirm the selection includes:
 Use chat in **chat mode** to conduct the review. The chat sees all selected files completely.
 
 **Chat session management:**
-- **Initial review**: `--new-chat --name "Plan Review: [PLAN_NAME]"` — starts fresh
-- **Re-review after fixes**: continue same chat so reviewer sees prior issues
-  - Simple: omit `--new-chat` (continues most recent chat)
-  - Explicit: `rp-cli -w W -e 'chats list'` → find ID → `--chat-id <id>`
+- **Initial review**: MUST use raw `call chat_send` with `"new_chat": true` (shorthand `--new-chat` is broken)
+- **Re-review after fixes**: use shorthand `chat "..." --mode chat` (continues most recent)
 
 ⚠️ **WAIT FOR RESPONSE**: Chat commands can take 1-5+ minutes to complete.
 - Do NOT send follow-up messages asking if it's done
@@ -129,17 +127,17 @@ Use chat in **chat mode** to conduct the review. The chat sees all selected file
 - Wait for rp-cli to return output before proceeding
 - Use `timeout: 5m` or longer in Bash tool if needed
 
-**Shell escaping note:** Complex prompts with `?`, `()`, etc. may fail with zsh glob errors. Use heredoc:
+**Initial review command (use heredoc for long messages):**
 ```bash
 rp-cli -w W -e "$(cat <<'PROMPT'
-chat "..."
+call chat_send {"message": "<MESSAGE>", "mode": "chat", "new_chat": true, "chat_name": "Plan Review: [PLAN_NAME]"}
 PROMPT
 )"
 ```
 
-**Command template (flags are REQUIRED):**
+**Re-review command (shorthand works):**
 ```bash
-rp-cli -w W -e 'chat "<MESSAGE>" --mode chat --new-chat --name "Plan Review: [PLAN_NAME]"'
+rp-cli -w W -e 'chat "<FOLLOW_UP_MESSAGE>" --mode chat'
 ```
 
 **Example message content** (put this in `<MESSAGE>`):

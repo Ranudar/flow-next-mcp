@@ -61,10 +61,10 @@ rp-cli -w 1 -e 'builder "Build context for [TASK]. Focus on [AREAS]."'
 
 ### Chat
 ```bash
-# Start new chat
-rp-cli -w 1 -e 'chat "Your prompt here" --mode chat --new-chat --name "Chat Name"'
+# Start new chat (MUST use raw call - shorthand --new-chat is broken)
+rp-cli -w 1 -e 'call chat_send {"message": "Your prompt", "mode": "chat", "new_chat": true, "chat_name": "Chat Name"}'
 
-# Continue most recent chat
+# Continue most recent chat (shorthand works for this)
 rp-cli -w 1 -e 'chat "Follow-up question" --mode chat'
 
 # List chats (get IDs and names)

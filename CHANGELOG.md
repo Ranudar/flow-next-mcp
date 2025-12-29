@@ -2,6 +2,14 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.5.16] - 2025-12-29
+
+### Fixed
+- Fixed new chat creation in reviews (shorthand `--new-chat` is broken in rp-cli)
+  - Initial review now uses `call chat_send {"new_chat": true, ...}` (works)
+  - Re-review uses shorthand `chat "..." --mode chat` (continues existing)
+  - Updated both workflow.md and rp-cli-reference.md files
+
 ## [0.5.15] - 2025-12-29
 
 ### Fixed
