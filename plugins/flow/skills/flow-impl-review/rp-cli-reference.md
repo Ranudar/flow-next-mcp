@@ -17,6 +17,7 @@ rp-cli -w <window_id> -e '<command>'
 | `manage_selection` | `rp-cli -w <id> -e 'select add path/'` |
 | `context_builder` | `rp-cli -w <id> -e 'builder "instructions"'` |
 | `chat_send` | `rp-cli -w <id> -e 'chat "message" --mode chat'` |
+| `chats` | `rp-cli -w <id> -e 'chats list'` |
 | `list_tabs` | `rp-cli -w <id> -e 'call manage_workspaces {"action":"list_tabs"}'` |
 | `select_tab` | `rp-cli -w <id> -e 'call manage_workspaces {"action":"select_tab","tab":"<name_or_uuid>"}'` |
 
@@ -63,8 +64,14 @@ rp-cli -w 1 -e 'builder "Build context for [TASK]. Focus on [AREAS]."'
 # Start new chat
 rp-cli -w 1 -e 'chat "Your prompt here" --mode chat --new-chat --name "Chat Name"'
 
-# Continue existing chat
+# Continue most recent chat
 rp-cli -w 1 -e 'chat "Follow-up question" --mode chat'
+
+# List chats (get IDs and names)
+rp-cli -w 1 -e 'chats list'
+
+# Continue specific chat by ID
+rp-cli -w 1 -e 'chat "Follow-up" --mode chat --chat-id <id>'
 ```
 
 ### Tab Management

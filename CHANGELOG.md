@@ -2,13 +2,23 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.5.10] - 2025-12-29
+
+### Added
+- Chat session targeting for re-reviews
+  - `chats list` → get chat IDs and names
+  - `--chat-id <id>` → continue specific chat
+  - Documented in workflow and CLI reference
+
+### Changed
+- Clearer chat session management instructions
+  - Initial review: `--new-chat --name "..."`
+  - Re-review: omit `--new-chat` (most recent) or use `--chat-id`
+
 ## [0.5.9] - 2025-12-29
 
 ### Fixed
 - Clarified new-chat behavior in review workflows
-  - Initial review: use `--new-chat --name` for fresh context
-  - Re-reviews after fixes: continue in same chat so reviewer sees prior issues
-  - Prevents both stale chat reuse AND loss of review history
 
 ## [0.5.8] - 2025-12-29
 

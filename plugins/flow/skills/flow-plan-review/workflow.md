@@ -117,7 +117,11 @@ Confirm the selection includes:
 
 Use chat in **chat mode** to conduct the review. The chat sees all selected files completely.
 
-**CRITICAL: Start a fresh chat for each new plan.** Use `--new-chat --name "Plan Review: [PLAN_NAME]"` for the initial review. Re-reviews after fixes should continue in the same chat (omit `--new-chat`) so the reviewer has context of prior issues.
+**Chat session management:**
+- **Initial review**: `--new-chat --name "Plan Review: [PLAN_NAME]"` — starts fresh
+- **Re-review after fixes**: continue same chat so reviewer sees prior issues
+  - Simple: omit `--new-chat` (continues most recent chat)
+  - Explicit: `rp-cli -w W -e 'chats list'` → find ID → `--chat-id <id>`
 
 ⚠️ **WAIT FOR RESPONSE**: Chat commands can take 1-5+ minutes to complete.
 - Do NOT send follow-up messages asking if it's done
