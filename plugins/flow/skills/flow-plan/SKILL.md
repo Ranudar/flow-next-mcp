@@ -1,6 +1,6 @@
 ---
 name: flow-plan
-description: Create structured build plans from feature requests or bug reports. Use when planning features, designing implementation, or preparing work breakdown. Triggers on mentions of planning, architecture, design docs, or implementation strategy.
+description: Create structured build plans from feature requests, bug reports, or Beads issue IDs. Use when planning features, designing implementation, preparing work breakdown, or when given a bead/issue ID to plan. Triggers on /flow:plan with text descriptions or issue IDs (e.g., bd-123, gno-45, app-12).
 ---
 
 # Flow plan

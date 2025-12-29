@@ -2,6 +2,13 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.5.6] - 2025-12-29
+
+### Changed
+- Improved skill descriptions to explicitly mention Beads issue ID support
+  - `flow-plan`: now triggers on issue IDs (e.g., bd-123, gno-45)
+  - `flow-work`: now triggers on epic/issue IDs for execution
+
 ## [0.5.4] - 2025-12-28
 
 ### Added
