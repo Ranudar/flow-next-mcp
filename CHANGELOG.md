@@ -2,6 +2,16 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.5.17] - 2025-12-30
+
+### Added
+- Tab isolation docs for parallel agents using rp-cli (#3)
+  - `builder` auto-creates isolated compose tabs
+  - Chain commands to maintain tab context: `builder "..." && select add && chat`
+  - Rebind by tab name for separate invocations
+  - Updated: flow-plan-review, flow-impl-review workflows
+  - Updated: context-scout agent, rp-explorer skill
+
 ## [0.5.16] - 2025-12-29
 
 ### Fixed

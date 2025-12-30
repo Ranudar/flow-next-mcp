@@ -17,13 +17,18 @@ For all subsequent commands, use `-w <id>` to target that window:
 rp-cli -w 1 -e 'tree --folders'
 ```
 
-**Optional: Bind to a specific tab** if the workspace has multiple compose tabs:
-```bash
-# List tabs in the window
-rp-cli -w 1 -e 'call manage_workspaces {"action":"list_tabs"}'
+**Tab Isolation (for parallel agents):**
 
-# Bind to a tab (use name or UUID)
-rp-cli -w 1 -e 'call manage_workspaces {"action":"select_tab","tab":"MyReviewTab"}'
+`builder` automatically creates an isolated compose tab with an AI-generated name. Subsequent commands in the same rp-cli invocation stay in that tab. For separate invocations, rebind by name or UUID:
+```bash
+# Builder output includes: Tab: <UUID> • <Name>
+# Rebind in later commands:
+rp-cli -w 1 -e 'workspace tab "<Name>" && select add file.md'
+```
+
+When possible, chain commands in single invocations to maintain tab context:
+```bash
+rp-cli -w W -e 'builder "..." && select add changed.ts && select get'
 ```
 
 ---

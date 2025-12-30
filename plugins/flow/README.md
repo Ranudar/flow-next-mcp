@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/Version-0.5.16-green)](../../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.5.17-green)](../../CHANGELOG.md)
 [![Commands](https://img.shields.io/badge/Commands-4-green)](commands/)
 [![Agents](https://img.shields.io/badge/Agents-6-yellow)](agents/)
 [![Skills](https://img.shields.io/badge/Skills-5-blue)](skills/)
@@ -531,9 +531,14 @@ The skill triggers on "use rp to..." or "use repoprompt to..." + action verb.
 
 **Requires**: RepoPrompt desktop app with rp-cli installed.
 
-### Known Limitation: Parallel Agents
+### Parallel Agent Isolation
 
-Multiple agents running simultaneously in the same project share the same RepoPrompt tab context, causing mixed file selections. Use [worktrees](skills/worktree-kit/SKILL.md) for isolated parallel work. See [#3](https://github.com/gmickel/gmickel-claude-marketplace/issues/3).
+`builder` automatically creates isolated compose tabs, enabling parallel agents to work without context collision. Chain commands to maintain tab context:
+```bash
+rp-cli -w W -e 'builder "find X" && select add plan.md && chat "review"'
+```
+
+For separate invocations, rebind to the builder's tab by name (shown in builder output). See [#3](https://github.com/gmickel/gmickel-claude-marketplace/issues/3).
 
 ### Auto-Review Commands
 

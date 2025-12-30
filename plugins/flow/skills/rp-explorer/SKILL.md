@@ -51,6 +51,13 @@ rp-cli -e 'context --all > codebase-map.md'
 - Use `builder` for AI-powered file discovery
 - Select only relevant files before exporting context
 
+## Tab Isolation
+
+`builder` creates an isolated compose tab automatically. Chain commands to stay in that tab:
+```bash
+rp-cli -w W -e 'builder "find auth" && select add extra.ts && context'
+```
+
 ## Requirements
 
 RepoPrompt app with rp-cli installed.

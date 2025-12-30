@@ -115,6 +115,13 @@ context --all > output.md
 
 Run with: `rp-cli --exec-file ~/scripts/export.rp`
 
+## Tab Isolation
+
+`builder` creates an isolated compose tab automatically. Chain commands to maintain context:
+```bash
+rp-cli -w W -e 'builder "..." && select add file.ts && chat "review"'
+```
+
 ## Notes
 
 - Requires RepoPrompt app with MCP Server enabled

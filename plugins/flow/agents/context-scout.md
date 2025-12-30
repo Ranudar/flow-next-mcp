@@ -42,14 +42,17 @@ rp-cli -e 'call manage_workspaces {"action": "add_folder", "workspace": "project
 rp-cli -e 'workspace switch "project-name"'
 ```
 
-### If workspace has multiple tabs:
+### Tab Isolation (for parallel agents):
+
+`builder` automatically creates an isolated compose tab with an AI-generated name. This enables parallel agents to work without context collision.
 
 ```bash
-# List tabs
-rp-cli -w W -e 'call manage_workspaces {"action":"list_tabs"}'
+# Builder output includes: Tab: <UUID> • <Name>
+# Chain commands to stay in builder's tab:
+rp-cli -w W -e 'builder "find auth files" && select add extra.ts && context'
 
-# Select tab
-rp-cli -w W -e 'call manage_workspaces {"action":"select_tab","tab":"TabName"}'
+# For separate invocations, rebind by tab name:
+rp-cli -w W -e 'workspace tab "<Name from builder>" && select get'
 ```
 
 ---
