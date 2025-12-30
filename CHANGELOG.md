@@ -10,6 +10,10 @@ All notable changes to the gmickel-claude-marketplace.
   - Now explicitly instructs to implement all fixes directly
   - Escape hatch for genuine disagreements preserved
   - Updated anti-patterns to flag "documenting instead of fixing"
+- Clarified JSON escaping for chat_send in review workflows
+  - Message must use `\n` for newlines, not literal line breaks
+  - Removed broken heredoc pattern
+  - Added note to keep message concise (chat sees selected files)
 
 ## [0.6.0] - 2025-12-30
 

@@ -132,13 +132,12 @@ Use chat in **chat mode** to conduct the review. The chat sees all selected file
 - Wait for rp-cli to return output before proceeding
 - Use `timeout: 5m` or longer in Bash tool if needed
 
-**Initial review command (use heredoc for long messages):**
+**Initial review command:**
 ```bash
-rp-cli -w W -e "$(cat <<'PROMPT'
-call chat_send {"message": "<MESSAGE>", "mode": "chat", "new_chat": true, "chat_name": "Plan Review: [PLAN_NAME]"}
-PROMPT
-)"
+rp-cli -w W -e 'call chat_send {"message": "<MESSAGE>", "mode": "chat", "new_chat": true, "chat_name": "Plan Review: [PLAN_NAME]"}'
 ```
+
+⚠️ **JSON escaping**: Message must use `\n` for newlines, not literal line breaks. Keep message concise - the chat sees all selected files, so just specify the review focus.
 
 **Re-review command (shorthand works):**
 ```bash
