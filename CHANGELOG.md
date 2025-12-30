@@ -2,7 +2,7 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
-## [0.5.17] - 2025-12-30
+## [0.6.0] - 2025-12-30
 
 ### Added
 - Tab isolation docs for parallel agents using rp-cli (#3)
