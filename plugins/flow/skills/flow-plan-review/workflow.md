@@ -239,6 +239,26 @@ rp-cli -w W -e 'chat "Elaborate on the [SPECIFIC CONCERN]. What exactly would yo
 
 ---
 
+## Fix and Re-Review Loop
+
+**CRITICAL**: After receiving review feedback, **implement all fixes and improvements directly**—edit the plan file or Beads issue, don't just document issues.
+
+1. **Parse the review**: Extract all issues (Critical, Major, Minor, Nitpick)
+2. **Fix each issue**: Edit the plan to address it
+   - For markdown plans: use Edit tool to update the file
+   - For Beads issues: use `bd update <id> --body "..."` or `bd update <id>.<task> --body "..."`
+3. **Re-review**: After fixes, send a follow-up to verify
+   ```bash
+   rp-cli -w W -e 'chat "I have updated the plan to address your feedback. Key changes: [LIST]. Please re-review and identify any remaining issues." --mode chat'
+   ```
+4. **Repeat**: Continue until review passes (Ship) or only acceptable tradeoffs remain
+
+**When to skip a fix**: If you genuinely disagree with a specific suggestion (e.g., reviewer misunderstood constraints, suggestion conflicts with requirements), explain your reasoning and move on. The default is to fix, not to document.
+
+**Anti-pattern**: Acknowledging issues without editing the plan. "Noted, will address" is not fixing—actually change the plan text.
+
+---
+
 ## Key Guidelines
 
 **Always use -w flag:** Every rp-cli command (except `windows`) needs `-w <id>` to target the correct window. W = your window ID from Phase 0.
@@ -256,4 +276,4 @@ rp-cli -w W -e 'chat "Elaborate on the [SPECIFIC CONCERN]. What exactly would yo
 - Reviewing without PRD/beads context – you won't know the "why"
 - Shallow review – thorough analysis takes time; don't rush
 - Not selecting supporting docs – chat can't see what's not selected
-- Asking chat to implement – review only; implementation is separate
+- Documenting issues instead of fixing – after review feedback, edit the plan directly

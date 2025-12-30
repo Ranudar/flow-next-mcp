@@ -266,6 +266,26 @@ rp-cli -w W -e 'chat "Elaborate on the [SPECIFIC CONCERN]. Show me exactly what 
 
 ---
 
+## Fix and Re-Review Loop
+
+**CRITICAL**: After receiving review feedback, **implement all fixes directly**—edit the code, don't just acknowledge issues.
+
+1. **Parse the review**: Extract all issues (Critical, Major, Minor, Nitpick)
+2. **Fix each issue**: Edit the code files to address it
+   - Use Edit tool for targeted changes
+   - Run tests/lints after fixes to verify
+3. **Re-review**: After fixes, send a follow-up to verify
+   ```bash
+   rp-cli -w W -e 'chat "I have fixed the issues you identified. Key changes: [LIST]. Please re-review and identify any remaining issues." --mode chat'
+   ```
+4. **Repeat**: Continue until review passes (Ship) or only acceptable tradeoffs remain
+
+**When to skip a fix**: If you genuinely disagree with a specific suggestion (e.g., reviewer misunderstood the requirement, fix would break something else, suggestion conflicts with established patterns), explain your reasoning and move on. The default is to fix, not to document.
+
+**Anti-pattern**: Acknowledging issues without editing code. "Good point, will fix" is not fixing—actually change the code.
+
+---
+
 ## Key Guidelines
 
 **Always use -w flag:** Every rp-cli command (except `windows`) needs `-w <id>` to target the correct window. W = your window ID from Phase 0.
@@ -286,4 +306,4 @@ rp-cli -w W -e 'chat "Elaborate on the [SPECIFIC CONCERN]. Show me exactly what 
 - Shallow review – thorough analysis takes time; don't rush
 - Missing changed files in selection – chat can't see what's not selected
 - Ignoring test changes – tests are code too
-- Asking chat to fix things – review only; fixes are separate
+- Documenting issues instead of fixing – after review feedback, edit the code directly
