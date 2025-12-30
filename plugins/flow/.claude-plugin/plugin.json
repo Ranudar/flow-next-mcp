@@ -1,6 +1,6 @@
 {
   "name": "flow",
-  "version": "0.5.17",
+  "version": "0.6.0",
   "description": "Two-step planning + execution workflow with optional Beads integration. Includes 6 subagents, 4 commands, 6 skills.",
   "author": {
     "name": "Gordon Mickel",
