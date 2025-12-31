@@ -11,29 +11,20 @@
 [![Twitter](https://img.shields.io/badge/@gmickel-black?logo=x)](https://twitter.com/gmickel)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤-ea4aaa)](https://github.com/sponsors/gmickel)
 
-**Workflows that actually ship.**
-
-[Install](#install) · [Flow](#flow) · [Contributing](#contributing)
-
 </div>
 
 ---
 
-> **📢 New Project: [GNO](https://gno.sh)** — Local hybrid search for your notes, docs, and code. Give Claude Code long-term memory over your files via MCP. Works great alongside Flow for context-rich planning.
->
-> ```bash
-> bun install -g @gmickel/gno && gno mcp install --target claude-code
-> ```
->
-> [gno.sh](https://gno.sh) · [GitHub](https://github.com/gmickel/gno)
+## The Problem
 
----
+Most AI agent failures aren't about model capability—they're about process:
 
-## Why This Exists
+- ✗ Starting to code before understanding the codebase
+- ✗ Reinventing patterns that already exist in the repo
+- ✗ Forgetting the original plan mid-implementation
+- ✗ Missing edge cases that were obvious in hindsight
 
-Most AI agent failures aren't about model capability—they're about process. Agents start coding before understanding the codebase, reinvent patterns that already exist, and forget the original plan mid-implementation.
-
-This marketplace contains plugins that fix those problems.
+This marketplace ships plugins that fix these problems.
 
 ## Install
 
@@ -45,15 +36,16 @@ This marketplace contains plugins that fix those problems.
 
 ## Flow
 
-**Two‑step workflow: plan first, work second.**
+**Plan first, work second.**
 
-| Problem | Solution |
-|---------|----------|
-| Weak research | Parallel agents gather context upfront |
-| Ignoring existing code | Explicit reuse of repo patterns |
-| Drifting from plan | Plan re‑read between every task |
-| No review discipline | Built-in Carmack-level code reviews |
-| Lost task state | Optional [Beads](https://github.com/steveyegge/beads) integration for dependency-aware tracking |
+Most failures come from weak planning or drifting from the plan. Flow fixes both:
+
+| Failure Mode | How Flow Fixes It |
+|--------------|-------------------|
+| Weak research | Parallel agents gather context *before* coding starts |
+| Ignoring existing code | Explicit pattern reuse from your repo |
+| Drifting from plan | Plan re-read between every task |
+| Shallow self-review | Cross-model review via [RepoPrompt](https://repoprompt.com) (we recommend GPT-5.2 High) |
 
 ```bash
 /plugin install flow
@@ -62,30 +54,49 @@ This marketplace contains plugins that fix those problems.
 ### Quick Start
 
 ```bash
-/flow:plan Add OAuth login for users
-/flow:work plans/add-oauth-login.md
+/flow:plan Add OAuth login for users    # Research → plan → optional review
+/flow:work plans/add-oauth-login.md     # Execute → test → ship → optional review
 ```
 
-**Auto-review** (if [RepoPrompt](https://repoprompt.com) rp-cli installed):
-Both commands detect rp-cli and ask upfront: "Run Carmack-level review?"
-If yes, review runs automatically via a different model—we recommend GPT-5.2 High for cross-validation that catches blind spots same-model review misses.
+That's it. Two commands, one disciplined workflow.
 
-**With Beads** (if `.beads/` configured):
-```bash
-/flow:work bd-a3f8e9   # Work on Beads epic with dependency tracking
-```
+### What Happens
 
-### What's Included
+**`/flow:plan`** runs 3 research agents in parallel, identifies gaps, writes a plan with acceptance checks, and optionally reviews via a different model.
 
-| Type | Count | Examples |
-|------|-------|----------|
-| Commands | 4 | `/flow:plan`, `/flow:work`, `/flow:plan-review`, `/flow:impl-review` |
-| Agents | 6 | repo-scout, practice-scout, docs-scout, gap-analyst, quality-auditor, context-scout |
-| Skills | 6 | Progressive disclosure (~100 tokens at startup) |
+**`/flow:work`** re-reads the plan before each task, implements following existing patterns, runs tests, and ships with a clear Definition of Done.
 
-Uses **progressive disclosure**—only name + description loaded at startup, full logic loads on-demand when triggered.
+### Auto-Review
+
+When [RepoPrompt](https://repoprompt.com) rp-cli is detected, both commands ask upfront: "Run Carmack-level review?"
+
+If yes, review runs automatically via a **different model**—we recommend GPT-5.2 High. Cross-model review catches blind spots that same-model self-review misses.
+
+### Commands
+
+| Command | What It Does |
+|---------|--------------|
+| `/flow:plan` | Research + produce `plans/<slug>.md` |
+| `/flow:work` | Execute plan end-to-end with task tracking |
+| `/flow:plan-review` | Carmack-level plan review via rp-cli |
+| `/flow:impl-review` | Carmack-level implementation review (current branch) |
+
+### Integrations
+
+- **[RepoPrompt](https://repoprompt.com)** — Token-efficient codebase exploration + cross-model reviews
+- **[Beads](https://github.com/steveyegge/beads)** — Dependency-aware issue tracking (auto-detected from `.beads/`)
 
 📖 **[Full documentation →](plugins/flow/README.md)** · **[Changelog →](CHANGELOG.md)**
+
+---
+
+## Also Check Out
+
+> **[GNO](https://gno.sh)** — Local hybrid search for your notes, docs, and code. Give Claude Code long-term memory over your files via MCP.
+>
+> ```bash
+> bun install -g @gmickel/gno && gno mcp install --target claude-code
+> ```
 
 ---
 

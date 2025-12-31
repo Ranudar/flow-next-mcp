@@ -11,11 +11,32 @@
 [![Agents](https://img.shields.io/badge/Agents-6-yellow)](agents/)
 [![Skills](https://img.shields.io/badge/Skills-5-blue)](skills/)
 
-**Structured Claude Code workflow: plan, work, review.**
-
-[Install](#install) · [Why Flow](#why-flow) · [Commands](#commands) · [How It Works](#how-it-works) · [Review Commands](#review-commands)
+**Plan first, work second.**
 
 </div>
+
+---
+
+## The Problem
+
+Most agent failures aren't about model capability—they're about process:
+
+- ✗ Starting to code before understanding the codebase
+- ✗ Reinventing patterns that already exist in the repo
+- ✗ Forgetting the original plan mid-implementation
+- ✗ Missing edge cases that were obvious in hindsight
+
+## How Flow Fixes It
+
+| Failure Mode | Solution |
+|--------------|----------|
+| Weak research | 3 agents gather context in parallel *before* any code is written |
+| Ignoring existing code | Explicit pattern reuse—agents find what already exists |
+| Drifting from plan | Plan re-read before every task in the execute loop |
+| Missing edge cases | Gap analyst identifies missing flows before implementation |
+| Shallow self-review | Cross-model review via [RepoPrompt](https://repoprompt.com) catches what same-model review misses |
+
+Flow doesn't make Claude smarter. It makes the workflow disciplined enough that capability translates to results.
 
 ---
 
@@ -28,9 +49,70 @@
 
 ---
 
-## Usage
+## Quick Start
 
-Commands work standalone or chained. Claude understands intent and flows between them.
+```bash
+/flow:plan Add OAuth login for users
+/flow:work plans/add-oauth-login.md
+```
+
+That's it. Two commands, one disciplined workflow.
+
+### What Happens
+
+**`/flow:plan`**:
+1. Runs 3 research agents in parallel (patterns, best practices, docs)
+2. Runs gap analyst to find edge cases and missing flows
+3. Writes `plans/<slug>.md` with references and acceptance checks
+4. Optionally runs Carmack-level review via different model
+
+**`/flow:work`**:
+1. Reads plan fully, clarifies blockers
+2. Sets up branch or worktree
+3. Executes task loop—re-reads plan before each task
+4. Runs tests + lint
+5. Ships with clear Definition of Done
+6. Optionally runs Carmack-level implementation review
+
+---
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/flow:plan` | Research + produce `plans/<slug>.md` |
+| `/flow:work` | Execute a plan end-to-end |
+| `/flow:plan-review` | Carmack-level plan review via rp-cli |
+| `/flow:impl-review` | Carmack-level impl review (current branch) |
+
+---
+
+## Cross-Model Review
+
+When [RepoPrompt](https://repoprompt.com) rp-cli is detected, both `/flow:plan` and `/flow:work` ask upfront:
+
+> "Run Carmack-level review after completion?"
+
+If yes, review runs automatically via RepoPrompt's chat with a **different model**. We recommend GPT-5.2 High for all review tasks.
+
+**Why cross-model?** Same-model self-review has blind spots. A different model catches things Claude missed—architectural issues, edge cases, security gaps.
+
+**Review criteria:**
+- Simplicity & minimalism (YAGNI)
+- DRY & code reuse
+- Idiomatic patterns
+- Architecture & data flow
+- Edge cases & error handling
+- Testability
+- Performance
+- Security
+- Maintainability
+
+**Output:** Issues with severity (Critical/Major/Minor/Nitpick), location, problem, suggestion, rationale. Overall: Ship ✓ / Needs Work ⚠ / Major Rethink ✗
+
+---
+
+## Usage Patterns
 
 ### Standalone
 
@@ -39,46 +121,23 @@ Commands work standalone or chained. Claude understands intent and flows between
 /flow:work plans/add-oauth-login.md
 /flow:plan-review plans/add-oauth-login.md
 /flow:impl-review
+```
 
-# With Beads (if configured)
+### With Beads
+
+```bash
 /flow:work bd-a3f8e9              # Work on Beads epic
 /flow:plan-review bd-a3f8e9       # Review Beads epic
 ```
 
-### RepoPrompt Integration (if rp-cli installed)
+### Chaining
 
-If [RepoPrompt](https://repoprompt.com) rp-cli is detected, `/flow:plan` asks two questions upfront:
-
-> **Q1:** "Use RepoPrompt for deeper codebase context? (slower, better for complex features)"
-> - **Yes**: Uses `context-scout` with RepoPrompt's AI-powered builder + codemaps
-> - **No**: Uses `repo-scout` with standard Grep/Glob/Read (faster)
-
-> **Q2:** "Run Carmack-level review after planning?"
-> - Review runs via RepoPrompt's chat—we recommend using RepoPrompt's wizard with **GPT-5.2 High** for reviews
-> - Catches blind spots that same-model self-review misses
-
-Both `/flow:plan` and `/flow:work` offer auto-review. If yes, review runs automatically when done.
-
-### Full Workflow (Plan → Review → Work → Review)
-
-With auto-review enabled, just two commands:
-
-```bash
-/flow:plan Add OAuth login for users
-# (asks about review upfront, runs automatically)
-
-/flow:work plans/add-oauth-login.md
-# (asks about review upfront, runs automatically)
-```
-
-### Chaining (manual alternative)
-
-You can still chain commands explicitly:
 ```bash
 /flow:plan Add rate limiting to API, then implement it with /flow:work
 ```
 
-### Natural language
+### Natural Language
+
 ```
 Help me plan out adding OAuth login for users
 ```
@@ -93,7 +152,32 @@ Claude auto-triggers the matching skill based on intent.
 
 ---
 
-## Workflow in Action
+## RepoPrompt Integration
+
+When rp-cli is detected, `/flow:plan` asks which research approach to use:
+
+| Aspect | repo-scout (fast) | context-scout (deep) |
+|--------|-------------------|----------------------|
+| Tools | Grep, Glob, Read | RepoPrompt rp-cli |
+| Speed | ~45 seconds | Slower (builder takes time) |
+| Tokens | ~65k | ~45k (30% less) |
+| Best for | Bug fixes, simple changes | Complex features, architecture |
+
+**Recommendation:** Use `context-scout` when architecture understanding matters. Use `repo-scout` for quick fixes.
+
+### Direct Invocation
+
+```bash
+# Agent (isolated subprocess)
+> Use context-scout to understand how authentication works
+
+# Skill (current conversation)
+> use rp to explore how auth works
+```
+
+---
+
+## Workflow Detail
 
 ### `/flow:plan` — Research → Plan → Review
 
@@ -252,200 +336,6 @@ Claude auto-triggers the matching skill based on intent.
 
 ---
 
-## Why Flow
-
-Most agent failures aren't about model capability—they're about process:
-
-- ✗ Starting to code before understanding the codebase
-- ✗ Reinventing patterns that already exist in the repo
-- ✗ Forgetting the original plan mid-implementation
-- ✗ Missing edge cases that were obvious in hindsight
-
-Flow enforces the discipline that makes agents reliable:
-
-| Problem | Solution |
-|---------|----------|
-| Weak research | Parallel agents gather context upfront |
-| Ignoring existing code | Explicit reuse of existing patterns |
-| Drifting from plan | Plan re‑read between tasks |
-| Unclear completion | Clear Definition of Done before shipping |
-| Shallow reviews | Carmack-level reviews via RepoPrompt |
-
----
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `/flow:plan` | Research + produce `plans/<slug>.md` |
-| `/flow:work` | Execute a plan end‑to‑end |
-| `/flow:plan-review` | Carmack-level plan review via rp-cli |
-| `/flow:impl-review` | Carmack-level impl review (current branch) |
-
----
-
-## Direct Invocation
-
-Beyond `/flow:plan` → `/flow:work`, invoke components directly.
-
-### Skills (Natural Language)
-
-Skills auto-trigger on phrase patterns in your current conversation:
-
-| Skill | Trigger Pattern | Example |
-|-------|-----------------|---------|
-| `rp-explorer` | "use rp to..." / "use repoprompt to..." | "use rp to explore how auth works" |
-| `flow-plan` | "plan...", "help me plan..." | "help me plan adding OAuth" |
-| `flow-work` | "implement the plan...", "work on..." | "work on plans/oauth.md" |
-| `worktree-kit` | "worktree...", "parallel work..." | "create worktree for feature X" |
-
-### Agents (Delegated Research)
-
-Agents run in isolated context for deep dives:
-
-```bash
-> Use context-scout to understand how payments work
-> Use repo-scout to find all API endpoints
-> Use practice-scout to find React Server Component best practices
-> Use docs-scout to get Next.js 15 migration docs
-> Use quality-auditor to review my recent changes
-```
-
-### Skill vs Agent
-
-| Aspect | Skill | Agent |
-|--------|-------|-------|
-| Context | Current conversation | Isolated subprocess |
-| Trigger | Natural phrases | "Use X to..." |
-| Best for | Inline help | Parallel/delegated research |
-
----
-
-## How It Works
-
-### `/flow:plan`
-
-Turn a rough idea into a practical plan file without writing code.
-
-**Phases:**
-1. **Setup** (if rp-cli detected) — Ask research approach + review preference
-2. **Research** — Run three agents in parallel:
-   - `context-scout` OR `repo-scout`: Find existing patterns, conventions, architecture
-   - `practice-scout`: Gather best practices and pitfalls
-   - `docs-scout`: Fetch relevant framework/library docs
-3. **Gap Analysis** — Run `flow-gap-analyst` to identify missing flows and edge cases
-4. **Write Plan** — Create `plans/<slug>.md` with references + acceptance checks
-5. **Review** — If user opted in, run `/flow:plan-review` automatically
-6. **Offer Next Step** — Start work, or create issue (GitHub/Linear/Beads)
-
-**Plan Depths:**
-- **SHORT**: Bugs, small changes — just problem, acceptance checks, key context
-- **STANDARD**: Most features — overview, approach, risks, acceptance, test notes, refs
-- **DEEP**: Large/critical — detailed phases, alternatives, rollout/rollback, metrics
-
-**Example:**
-```bash
-/flow:plan Add OAuth login for users
-# Creates plans/add-oauth-login.md
-```
-
----
-
-### `/flow:work`
-
-Execute a plan systematically with git setup, task tracking, and quality checks.
-
-**Phases:**
-1. **Branch Setup** — Choose: current branch, new branch, or isolated worktree
-2. **Confirm** — Read plan fully, open referenced files, ask blocking questions
-3. **Task List** — Use Beads children (if epic) or TodoWrite (if markdown plan)
-4. **Execute Loop** — For each task:
-   - Re-read plan before starting
-   - Mark task in_progress
-   - Implement following existing patterns
-   - Test, then mark done
-5. **Quality** — Run tests, lint/format, optional `quality-auditor` for risky changes
-6. **Ship** — Commit with summary, push + PR if wanted
-7. **Review** — If rp-cli detected and user opted in, run `/flow:impl-review` automatically
-
-**Definition of Done:**
-- All plan steps completed or explicitly deferred
-- All tasks done (Beads children closed or TodoWrite complete)
-- Tests pass
-- Lint/format pass
-- Docs updated if needed
-
-**Example:**
-```bash
-/flow:work plans/add-oauth-login.md
-```
-
----
-
-## Review Commands
-
-Carmack-level code reviews via [RepoPrompt](https://repoprompt.com)'s context builder and chat. Claude acts as coordinator, delegating the actual review to RepoPrompt's chat with full file context.
-
-**Requires:** [RepoPrompt](https://repoprompt.com) desktop app running with rp-cli installed.
-
-### `/flow:plan-review`
-
-Review implementation plans before coding starts.
-
-**Phases:**
-1. **Window Selection** — Find correct RepoPrompt window via `rp-cli -e 'windows'`
-2. **Parse & Read** — Read plan file, search for PRD/beads issues/architecture docs
-3. **Build Context & Verify** — Run `builder`, then add plan + supporting docs from Phase 2
-4. **Carmack-Level Review** — Execute chat-based review covering:
-   - Simplicity & minimalism (YAGNI)
-   - DRY & code reuse
-   - Idiomatic patterns
-   - Architecture & data flow
-   - Edge cases & error handling
-   - Testability
-   - Performance
-   - Security
-   - Maintainability
-
-**Output:** Issues with severity (Critical/Major/Minor/Nitpick), location, problem, suggestion, rationale. Overall assessment: Ship / Needs Work / Major Rethink.
-
-**Example:**
-```bash
-/flow:plan-review plans/add-oauth-login.md focus on security
-```
-
----
-
-### `/flow:impl-review`
-
-Review implementation changes on current branch vs main/master.
-
-**Phases:**
-1. **Window Selection** — Find correct RepoPrompt window
-2. **Identify Changes** — Get branch, commits, changed files, diff
-3. **Gather Docs** — Search for plan, PRD, beads issue that drove the work
-4. **Build Context & Verify** — Run `builder`, then add changed files + docs from Phase 3
-5. **Carmack-Level Review** — Execute chat-based review covering:
-   - Correctness (matches plan/spec?)
-   - Simplicity & minimalism
-   - DRY & code reuse
-   - Idiomatic code & type safety
-   - Architecture & coupling
-   - Edge cases & error handling
-   - Testability & test coverage
-   - Performance (O(n²), N+1 queries)
-   - Security (injection, auth gaps)
-   - Maintainability
-
-**Output:** Issues with severity, file:line location, problem, suggestion (with code), rationale. Overall assessment + top 3 improvements.
-
-**Example:**
-```bash
-/flow:impl-review focus on the auth changes
-```
-
----
-
 ## Agents
 
 | Agent | Purpose | Used By |
@@ -474,7 +364,7 @@ Skills use **progressive disclosure**: only name + description (~100 tokens) loa
 
 **Two ways to trigger**:
 1. **Explicit**: `/flow:plan add OAuth` or `/flow:work plans/oauth.md`
-2. **Natural language**: "help me plan out adding OAuth" or "implement the plan in plans/oauth.md" — Claude auto-triggers the matching skill
+2. **Natural language**: "help me plan out adding OAuth" — Claude auto-triggers the matching skill
 
 ---
 
@@ -494,63 +384,27 @@ Flow has optional [Beads](https://github.com/steveyegge/beads) (`bd`) integratio
 
 ---
 
-## RepoPrompt Integration
+## Plan Depths
 
-Flow integrates with [RepoPrompt](https://repoprompt.com) for token-efficient codebase exploration and Carmack-level reviews.
-
-### Research Choice in /flow:plan
-
-When rp-cli is detected, `/flow:plan` asks which research approach to use:
-
-| Aspect | repo-scout (faster) | context-scout (deeper) |
-|--------|---------------------|------------------------|
-| Tools | Grep, Glob, Read | RepoPrompt rp-cli |
-| Speed | Fast (~45s) | Slower (builder takes time) |
-| Token usage | ~65k tokens | ~45k tokens (30% less) |
-| File discovery | Pattern matching | AI-powered builder |
-| Output style | Line refs, conventions | Architecture, function signatures |
-| Best for | Quick pattern search | Deep architecture understanding |
-
-**Recommendation**: Use `context-scout` for complex features where architecture understanding matters. Use `repo-scout` for quick bug fixes or simple changes.
-
-### Direct Invocation
-
-**context-scout agent** (for delegation):
-```bash
-> Use context-scout to understand how authentication works
-```
-
-**rp-explorer skill** (in current conversation):
-```bash
-> use rp to explore how auth works
-> use repoprompt to find similar patterns
-> use rp to understand the data flow
-```
-
-The skill triggers on "use rp to..." or "use repoprompt to..." + action verb.
-
-**Requires**: RepoPrompt desktop app with rp-cli installed.
-
-### Parallel Agent Isolation
-
-`builder` automatically creates isolated compose tabs, enabling parallel agents to work without context collision. Chain commands to maintain tab context:
-```bash
-rp-cli -w W -e 'builder "find X" && select add plan.md && chat "review"'
-```
-
-For separate invocations, rebind to the builder's tab by name (shown in builder output). See [#3](https://github.com/gmickel/gmickel-claude-marketplace/issues/3).
-
-### Auto-Review Commands
-
-`/flow:plan-review` and `/flow:impl-review` delegate to RepoPrompt's chat—using a **different model** for cross-validation that catches blind spots same-model review misses. See [Review Commands](#review-commands).
+- **SHORT**: Bugs, small changes — just problem, acceptance checks, key context
+- **STANDARD**: Most features — overview, approach, risks, acceptance, test notes, refs
+- **DEEP**: Large/critical — detailed phases, alternatives, rollout/rollback, metrics
 
 ---
 
-## Issue Creation
+## Definition of Done
 
-From `/flow:plan`, create issues in **GitHub**, **Linear**, or **Beads**.
+- All plan steps completed or explicitly deferred
+- All tasks done (Beads children closed or TodoWrite complete)
+- Tests pass
+- Lint/format pass
+- Docs updated if needed
 
-Auto‑detects from CLAUDE.md, repo docs, MCP servers, or plugins. Asks if unclear.
+---
+
+## Who It's For
+
+Developers who want Claude Code to ship reliably, not just generate code. If you've ever had an agent "finish" a task only to realize it forgot half the requirements—this is for you.
 
 ---
 
@@ -565,14 +419,6 @@ claude --plugin-dir ./plugins/flow
 - Plan files live in `plans/`
 - Prefer reuse of centralized code
 - Tests and linting are part of the plan
-
----
-
-## Who It's For
-
-Developers who want Claude Code to ship reliably, not just generate code. If you've ever had an agent "finish" a task only to realize it forgot half the requirements—this is for you.
-
-Flow doesn't make Claude smarter. It makes the workflow disciplined enough that capability translates to results.
 
 ---
 
@@ -594,8 +440,6 @@ cp plugins/flow/commands/*.md ~/.codex/prompts/
 # Copy skills
 cp -r plugins/flow/skills/* ~/.codex/skills/
 ```
-
-A dedicated installer may come later.
 
 ---
 
