@@ -2,6 +2,16 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.6.4] - 2025-12-31
+
+### Fixed
+- Clarified valid reasons to skip a fix in reviews:
+  - Reviewer lacked context (missed constraint/related code)
+  - Reviewer misunderstood requirement/intent
+  - Fix would break something else
+  - Conflicts with established patterns
+  - Must explain reasoning in re-review message
+
 ## [0.6.3] - 2025-12-30
 
 ### Fixed

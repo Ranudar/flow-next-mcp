@@ -287,7 +287,13 @@ rp-cli -w W -e 'chat "Elaborate on the [SPECIFIC CONCERN]. Show me exactly what 
    ```
 4. **Repeat**: Continue until review passes (Ship)
 
-**When to skip a fix**: Only if you genuinely disagree AND can articulate why (e.g., reviewer misunderstood, fix would break something, conflicts with requirements). Explain reasoning clearly. This is rare—the default is to fix.
+**When to skip a fix** (rare—default is to fix):
+- Reviewer lacked context (didn't see related code, missed a constraint)
+- Reviewer misunderstood the requirement or intent
+- Suggested fix would break something else
+- Conflicts with established codebase patterns or requirements
+
+If skipping, explain WHY clearly in the re-review message so the reviewer can reconsider with full context.
 
 **Anti-pattern**: Skipping Minor issues. "Minor" means "real issue, lower priority"—not "optional". Fix them.
 
