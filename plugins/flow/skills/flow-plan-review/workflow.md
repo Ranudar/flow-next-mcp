@@ -223,8 +223,9 @@ For each issue found:
 
 End with:
 - Overall assessment (Ship / Needs Work / Major Rethink)
-- Top 3 changes that would most improve the plan
 - Any patterns from the codebase the plan should adopt
+
+**IMPORTANT**: List ALL issues found. The agent will fix ALL Critical, Major, and Minor issues before re-review. Do not summarize or prioritize—completeness is required.
 ```
 
 ---

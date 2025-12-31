@@ -2,6 +2,14 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.6.5] - 2025-12-31
+
+### Fixed
+- Remove "Top 3 changes" from review output format
+  - Agents were only fixing top 3 instead of ALL Critical/Major/Minor issues
+  - Added explicit instruction: list ALL issues, agent will fix all of them
+  - Applies to both plan-review and impl-review workflows
+
 ## [0.6.4] - 2025-12-31
 
 ### Fixed
