@@ -19,6 +19,16 @@
 
 ---
 
+> **📢 New Project: [GNO](https://gno.sh)** — Local hybrid search for your notes, docs, and code. Give Claude Code long-term memory over your files via MCP. Works great alongside Flow for context-rich planning.
+>
+> ```bash
+> bun install -g @gmickel/gno && gno mcp install --target claude-code
+> ```
+>
+> [gno.sh](https://gno.sh) · [GitHub](https://github.com/gmickel/gno)
+
+---
+
 ## Why This Exists
 
 Most AI agent failures aren't about model capability—they're about process. Agents start coding before understanding the codebase, reinvent patterns that already exist, and forget the original plan mid-implementation.
