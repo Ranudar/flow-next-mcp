@@ -2,6 +2,13 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.7.3] - 2026-01-02
+
+### Added
+- Codex CLI install script (`scripts/install-codex.sh`)
+  - Copies skills and prompts to `~/.codex/`
+  - Note: subagents won't run (Codex limitation), core flow still works
+
 ## [0.7.2] - 2026-01-02
 
 ### Changed

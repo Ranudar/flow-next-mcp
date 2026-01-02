@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-blueviolet)](https://claude.ai/code)
-[![Flow Version](https://img.shields.io/badge/Flow-v0.7.2-green)](plugins/flow/)
+[![Flow Version](https://img.shields.io/badge/Flow-v0.7.3-green)](plugins/flow/)
 [![Author](https://img.shields.io/badge/Author-Gordon_Mickel-orange)](https://mickel.tech)
 [![Twitter](https://img.shields.io/badge/@gmickel-black?logo=x)](https://twitter.com/gmickel)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤-ea4aaa)](https://github.com/sponsors/gmickel)
@@ -96,6 +96,18 @@ Cross-model review catches blind spots that same-model self-review misses.
 
 - **[RepoPrompt](https://repoprompt.com)** — Token-efficient codebase exploration + cross-model reviews
 - **[Beads](https://github.com/steveyegge/beads)** — Dependency-aware issue tracking (auto-detected from `.beads/`)
+
+### Codex CLI
+
+Flow also works with [Codex CLI](https://github.com/openai/codex). Run from repo root:
+
+```bash
+./scripts/install-codex.sh
+```
+
+Installs skills and prompts to `~/.codex/`. Commands work the same (`/flow:plan`, `/flow:work`).
+
+**Caveat:** Codex doesn't support subagents, so the parallel research phase won't run. The core plan→work flow still works well without it.
 
 📖 **[Full documentation →](plugins/flow/README.md)** · **[Changelog →](CHANGELOG.md)**
 
