@@ -87,6 +87,7 @@ Cross-model review catches blind spots that same-model self-review misses.
 
 | Command | What It Does |
 |---------|--------------|
+| `/flow:interview` | Deep interview to flesh out spec/bead (optional) |
 | `/flow:plan` | Research + produce `plans/<slug>.md` |
 | `/flow:work` | Execute plan end-to-end with task tracking |
 | `/flow:plan-review` | Carmack-level plan review via rp-cli |
