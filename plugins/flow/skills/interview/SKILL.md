@@ -38,7 +38,21 @@ If empty, ask: "What should I interview you about? Give me a bead ID (e.g., gno-
 
 ## Interview Process
 
-**IMPORTANT**: Use the `AskUserQuestion` tool for ALL questions. Do NOT output questions as text - the tool provides a better UX with clickable options. Group 2-4 related questions per tool call. This is NOT a quick 5-question session - expect 40+ questions for complex specs.
+**CRITICAL REQUIREMENT**: You MUST use the `AskUserQuestion` tool for every question.
+
+- DO NOT output questions as text
+- DO NOT list questions in your response
+- ONLY ask questions via AskUserQuestion tool calls
+- Group 2-4 related questions per tool call
+- Expect 40+ questions total for complex specs
+
+**Anti-pattern (WRONG)**:
+```
+Question 1: What database should we use?
+Options: a) PostgreSQL b) SQLite c) MongoDB
+```
+
+**Correct pattern**: Call AskUserQuestion tool with question and options.
 
 ### Question Categories
 
