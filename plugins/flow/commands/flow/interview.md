@@ -7,7 +7,7 @@ argument-hint: "[bead ID or file path]"
 # Flow interview
 
 Use skill to conduct deep spec interview:
-- skill: interview
+- skill: flow-interview
 
 Input: #$ARGUMENTS
 

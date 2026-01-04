@@ -2,6 +2,18 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.7.7] - 2026-01-04
+
+### Changed
+- Renamed `interview` skill to `flow-interview` (pattern consistency)
+- Extracted question categories to `questions.md` (like `flow-work` has `phases.md`)
+- SKILL.md now references `questions.md` for interview guidelines
+
+## [0.7.6] - 2026-01-03
+
+### Fixed
+- Stronger AskUserQuestion requirement with anti-pattern example
+
 ## [0.7.5] - 2026-01-03
 
 ### Fixed
