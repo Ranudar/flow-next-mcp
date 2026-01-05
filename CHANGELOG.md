@@ -2,6 +2,15 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.8.1] - 2026-01-05
+
+### Changed
+- **Re-review loop clarified**: Skip builder on re-reviews—discovery is done
+  - Chat already has full context from initial review
+  - Just augment selection with any files touched during fixes
+  - Continue existing chat, don't start fresh
+- Added "Why skip builder on re-reviews?" explanation to both workflows
+
 ## [0.8.0] - 2026-01-05
 
 ### Changed

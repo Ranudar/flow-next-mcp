@@ -324,15 +324,23 @@ rp-cli -w W -e 'chat "Elaborate on the [SPECIFIC CONCERN]. What exactly would yo
 ### What MAY be skipped:
 - **Nitpick**: Optional style/preference items—fix if easy, skip if not
 
+### The Loop
+
 1. **Parse the review**: Extract all issues by severity
 2. **Fix Critical → Major → Minor**: Edit the plan to address each
    - For markdown plans: use Edit tool to update the file
    - For Beads issues: use `bd update <id> --body "..."`
-3. **Re-review**: After ALL Critical/Major/Minor are fixed, verify
+3. **Augment selection** (if needed): Add any files touched during fixes that aren't already selected
    ```bash
-   rp-cli -w W -e 'chat "Fixed all Critical, Major, and Minor issues: [LIST]. Please re-review." --mode chat'
+   rp-cli -w W -e 'select add path/to/newly-relevant-file.ts'
    ```
-4. **Repeat**: Continue until review passes (Ship)
+4. **Re-review**: Continue the existing chat (do NOT run builder again—discovery is done)
+   ```bash
+   rp-cli -w W -e 'chat "Fixed: [LIST ISSUES FIXED]. Please re-review." --mode chat'
+   ```
+5. **Repeat**: Continue until review passes (Ship)
+
+**Why skip builder on re-reviews?** The chat already has full context from the initial review. Builder's job was discovery—that's done. Re-reviews verify fixes, not discover new context.
 
 **When to skip a fix** (rare—default is to fix):
 - Reviewer lacked context (didn't see related docs, missed a constraint)
