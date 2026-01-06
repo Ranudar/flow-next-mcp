@@ -38,7 +38,7 @@ Everything lives in a `.flow/` directory in your repo. No external services. No 
 
 ## Why We Built This
 
-AI agents fail in predictable ways: they forget the plan mid-task, skip steps, lose context in long sessions, and produce work that drifts from the original intent.
+AI agents fail for predictable reasons: they forget the plan mid-task, skip steps, lose context in long sessions, produce work that drifts from the original intent. These aren't capability problems. They're process problems.
 
 Flow-Next is an orchestration layer that fixes these failure modes:
 
@@ -47,7 +47,7 @@ Flow-Next is an orchestration layer that fixes these failure modes:
 - **Evidence capture.** Every completed task records what changed and how it was verified.
 - **Cross-model reviews.** Carmack-level reviews via [RepoPrompt](https://repoprompt.com) catch blind spots. Highly recommended.
 
-We wanted all this without external tools or config file edits:
+Instead of relying on external CLIs and config file edits, Flow-Next bundles a fully-featured task system in a single Python script:
 
 - **Works in 30 seconds.** Install the plugin, run a command. No setup.
 - **Non-invasive.** No CLAUDE.md edits. No hooks. No daemons.

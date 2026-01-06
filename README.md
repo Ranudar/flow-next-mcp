@@ -64,11 +64,11 @@ This marketplace ships plugins that fix these problems.
 
 ### Why We Built This
 
-AI agents fail in predictable ways: they forget the plan mid-task, skip steps, lose context in long sessions, and produce work that drifts from the original intent. Flow-Next is an orchestration layer that fixes these failure modes.
+AI agents fail for predictable reasons: they forget the plan mid-task, skip steps, lose context in long sessions, produce work that drifts from the original intent. These aren't capability problems. They're process problems.
 
-It gives agents structured task graphs with explicit dependencies, forces re-anchoring before every task, records evidence of completion, and optionally runs cross-model reviews. The result: agents that actually finish what they start.
+Flow-Next is an orchestration layer that fixes these failure modes. It gives agents structured task graphs with explicit dependencies, forces re-anchoring before every task, records evidence of completion, and runs cross-model reviews.
 
-We wanted all this without requiring external tools, config file edits, or background services. Flow-Next uses a bundled `flowctl.py` CLI and stores everything in `.flow/`. Try it in 30 seconds, remove it by deleting a folder.
+Instead of relying on external CLIs and config file edits, Flow-Next bundles a fully-featured task system in a single Python script. No npm packages. No daemons. No CLAUDE.md modifications. Try it in 30 seconds. Delete `.flow/` to uninstall completely.
 
 ### Features
 
