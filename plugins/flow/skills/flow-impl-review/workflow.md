@@ -280,10 +280,12 @@ rp-cli -w W -e 'call chat_send {"message": "<COMBINED_PROMPT>", "mode": "chat", 
 
 ⚠️ **WAIT FOR RESPONSE**: Chat takes 1-5+ minutes. Do NOT re-send or follow up until it returns.
 
-**Re-review command (shorthand works):**
+**Follow-up/re-review command** - MUST use `call chat_send` with `selected_paths` to ensure files remain visible:
 ```bash
-rp-cli -w W -e 'chat "<FOLLOW_UP_MESSAGE>" --mode chat'
+rp-cli -w W -e 'call chat_send {"message": "<FOLLOW_UP_MESSAGE>", "mode": "chat", "selected_paths": ["<FILE1>", "<FILE2>"]}'
 ```
+
+⚠️ **CRITICAL**: Chat follow-ups do NOT automatically see the selection. You MUST pass `selected_paths` with the same files from your initial selection, or the reviewer loses file context.
 
 ---
 
@@ -341,9 +343,9 @@ After receiving feedback, return here to implement fixes.
 
 ## Iteration
 
-Continue the chat to drill deeper if needed:
+Continue the chat to drill deeper if needed (remember to include `selected_paths`):
 ```bash
-rp-cli -w W -e 'chat "Elaborate on the [SPECIFIC CONCERN]. Show me exactly what you would change in [FILE]." --mode chat'
+rp-cli -w W -e 'call chat_send {"message": "Elaborate on the [SPECIFIC CONCERN]. Show me exactly what you would change in [FILE].", "mode": "chat", "selected_paths": ["<FILE1>", "<FILE2>"]}'
 ```
 
 ---
@@ -400,12 +402,14 @@ rp-cli -w W -e 'chat "Elaborate on the [SPECIFIC CONCERN]. Show me exactly what 
 Please re-review.
 ```
 
-**Use raw JSON for multi-line messages** (bash single quotes don't interpret `\n`):
+**Use raw JSON for multi-line messages** - include `selected_paths` to maintain file context:
 ```bash
-rp-cli -w W -e 'call chat_send {"message": "<RE_REVIEW_MESSAGE>", "mode": "chat"}'
+rp-cli -w W -e 'call chat_send {"message": "<RE_REVIEW_MESSAGE>", "mode": "chat", "selected_paths": ["<FILE1>", "<FILE2>"]}'
 ```
 
 ⚠️ **JSON escaping**: Use `\n` for newlines, `\"` for quotes inside the message string.
+
+⚠️ **CRITICAL**: Always include `selected_paths` with the files from your initial selection. Without this, the reviewer cannot see file contents in follow-up messages.
 
 5. **Repeat**: Continue until review passes (Ship)
 

@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/Version-0.8.2-green)](../../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.8.3-green)](../../CHANGELOG.md)
 [![Commands](https://img.shields.io/badge/Commands-5-green)](commands/)
 [![Agents](https://img.shields.io/badge/Agents-6-yellow)](agents/)
 [![Skills](https://img.shields.io/badge/Skills-7-blue)](skills/)
