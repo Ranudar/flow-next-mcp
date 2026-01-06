@@ -47,6 +47,9 @@ Flow doesn't make Claude smarter. It makes the workflow disciplined enough that 
 /plugin install flow
 ```
 
+> **RepoPrompt v1.5.62+ Required** — Flow v0.8.1+ requires RepoPrompt 1.5.62 or later for review features (`-t` flag, progress notifications).
+> If using an older RepoPrompt, downgrade Flow: `/plugin install flow@0.8.0`
+
 ---
 
 ## Quick Start

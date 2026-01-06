@@ -48,11 +48,12 @@ rp-cli -e 'workspace switch "project-name"'
 
 ```bash
 # Builder output includes: Tab: <UUID> • <Name>
-# Chain commands to stay in builder's tab:
-rp-cli -w W -e 'builder "find auth files" && select add extra.ts && context'
+# Use -t flag to target the tab directly (v1.5.62+):
+rp-cli -w W -t "<UUID or Name>" -e 'select get'
+rp-cli -w W -t "<UUID or Name>" -e 'chat "follow-up" --mode chat'
 
-# For separate invocations, rebind by tab name:
-rp-cli -w W -e 'workspace tab "<Name from builder>" && select get'
+# Or chain commands to stay in builder's tab:
+rp-cli -w W -e 'builder "find auth files" && select add extra.ts && context'
 ```
 
 ---
@@ -60,9 +61,10 @@ rp-cli -w W -e 'workspace tab "<Name from builder>" && select get'
 ## CLI Quick Reference
 
 ```bash
-rp-cli -e '<command>'           # Run command (lists windows if no -w)
-rp-cli -w <id> -e '<command>'   # Target specific window
-rp-cli -d <command>             # Get detailed help for command
+rp-cli -e '<command>'                  # Run command (lists windows if no -w)
+rp-cli -w <id> -e '<command>'          # Target specific window
+rp-cli -w <id> -t <tab> -e '<cmd>'     # Target window + tab (v1.5.62+)
+rp-cli -d <command>                    # Get detailed help for command
 ```
 
 ### Workflow Shorthand Flags
@@ -110,7 +112,7 @@ rp-cli -w W -e 'structure src/'
 rp-cli -w W -e 'builder "Find all files implementing [FEATURE]: main implementation, types, utilities, and tests. Include related architecture and dependencies."'
 ```
 
-⚠️ **WAIT**: Builder takes 30s-5min. Do NOT proceed until it returns output.
+**Note**: Builder takes 30s-5min. Progress notifications show status during execution (v1.5.62+). Wait for completion before proceeding.
 
 **Example builder prompts:**
 - `"Find all files implementing hybrid search: search functions, fusion logic, reranking, scoring, and related tests"`
@@ -354,7 +356,7 @@ Focus on hybrid.ts for the orchestration logic, fusion.ts for understanding scor
 - **Forgetting `-w <id>`** - commands fail with "Multiple windows" error
 - **Skipping window setup** - wrong project context
 - **Dumping full files** - wastes tokens, use structure/slices
-- **Not waiting for builder** - it takes 30s-5min
+- **Not waiting for builder** - watch progress notifications, wait for completion
 - **Not verifying selection** - builder may miss relevant files
 - **Returning raw output** - summarize for main conversation
 - **Not using builder** - for complex exploration, builder finds files you'd miss with manual search
@@ -384,5 +386,5 @@ Standard tools excel at:
 ## Notes
 
 - Use `rp-cli -d <cmd>` for detailed command help
-- Requires RepoPrompt desktop app with MCP Server enabled
+- Requires RepoPrompt v1.5.62+ with MCP Server enabled
 - Project path available via `$CLAUDE_PROJECT_DIR` environment variable

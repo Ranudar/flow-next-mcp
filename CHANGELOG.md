@@ -2,14 +2,19 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
-## [0.8.1] - 2026-01-05
+## [0.8.1] - 2026-01-06
 
 ### Changed
+- **RepoPrompt v1.5.62+ now required** for review features
+  - New `-t` flag for direct tab targeting (cleaner than `workspace tab` chaining)
+  - Progress notifications during builder/chat execution
+  - Updated all rp-cli references and examples
 - **Re-review loop clarified**: Skip builder on re-reviews—discovery is done
   - Chat already has full context from initial review
   - Just augment selection with any files touched during fixes
   - Continue existing chat, don't start fresh
 - Added "Why skip builder on re-reviews?" explanation to both workflows
+- Downgrade path: `flow@0.8.0` for users on older RepoPrompt versions
 
 ## [0.8.0] - 2026-01-05
 

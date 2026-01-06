@@ -1,9 +1,12 @@
 # rp-cli Reference
 
+> Requires RepoPrompt v1.5.62+
+
 ## Command Syntax
 
 ```bash
 rp-cli -w <window_id> -e '<command>'
+rp-cli -w <window_id> -t <tab> -e '<command>'   # Target specific tab (v1.5.62+)
 ```
 
 ## Quick Reference
@@ -19,8 +22,9 @@ rp-cli -w <window_id> -e '<command>'
 | `chat_send` | `rp-cli -w <id> -e 'chat "message" --mode chat'` |
 | `chats` | `rp-cli -w <id> -e 'chats list'` |
 | `list_tabs` | `rp-cli -w <id> -e 'workspace tabs'` |
-| `select_tab` | `rp-cli -w <id> -e 'workspace tab "name"'` |
+| `select_tab` | `rp-cli -w <id> -t "name" -e '...'` |
 | `prompt export` | `rp-cli -w <id> -e 'prompt export /path/file.md'` |
+| `prompt presets` | `rp-cli -w <id> -e 'prompt presets'` |
 
 ## Common Commands
 
@@ -80,7 +84,11 @@ rp-cli -w 1 -e 'chat "Follow-up" --mode chat --chat-id <id>'
 # List tabs (chats are bound to tabs)
 rp-cli -w 1 -e 'workspace tabs'
 
-# Select/bind to tab
+# Target tab directly (v1.5.62+ - preferred)
+rp-cli -w 1 -t "TabName" -e 'select get'
+rp-cli -w 1 -t "<UUID>" -e 'chat "follow-up" --mode chat'
+
+# Or bind via command (legacy)
 rp-cli -w 1 -e 'workspace tab "TabName"'
 ```
 

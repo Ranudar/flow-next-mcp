@@ -1,11 +1,14 @@
 # rp-cli Command Reference
 
+> Requires RepoPrompt v1.5.62+
+
 ## Basic Usage
 
 ```bash
-rp-cli -e '<command>'              # Run single command
-rp-cli -e '<cmd1> && <cmd2>'       # Chain commands
-rp-cli -w <id> -e '<command>'      # Target specific window
+rp-cli -e '<command>'                  # Run single command
+rp-cli -e '<cmd1> && <cmd2>'           # Chain commands
+rp-cli -w <id> -e '<command>'          # Target specific window
+rp-cli -w <id> -t <tab> -e '<cmd>'     # Target window + tab (v1.5.62+)
 ```
 
 ## Core Commands
@@ -129,13 +132,20 @@ Run with: `rp-cli --exec-file ~/scripts/export.rp`
 
 ## Tab Isolation
 
-`builder` creates an isolated compose tab automatically. Chain commands to maintain context:
+`builder` creates an isolated compose tab automatically. Use `-t` to target it directly:
 ```bash
+# Builder returns: Tab: <UUID> • <Name>
+# Target that tab for follow-up commands:
+rp-cli -w W -t "<UUID or Name>" -e 'select get'
+rp-cli -w W -t "<UUID or Name>" -e 'chat "review" --mode chat'
+
+# Or chain commands to stay in same tab:
 rp-cli -w W -e 'builder "..." && select add file.ts && chat "review"'
 ```
 
 ## Notes
 
-- Requires RepoPrompt app with MCP Server enabled
+- Requires RepoPrompt v1.5.62+ with MCP Server enabled
 - Use `rp-cli -d <cmd>` for detailed help on any command
 - Token-efficient: `structure` gives signatures without full content
+- Progress notifications show during builder/chat execution

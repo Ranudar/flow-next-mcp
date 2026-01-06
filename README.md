@@ -51,6 +51,9 @@ Most failures come from weak planning or drifting from the plan. Flow fixes both
 /plugin install flow
 ```
 
+> **RepoPrompt v1.5.62+ Required** — Flow v0.8.1+ requires RepoPrompt 1.5.62 or later for review features.
+> If using an older RepoPrompt, downgrade Flow: `/plugin install flow@0.8.0`
+
 ### Quick Start
 
 ```bash
@@ -62,6 +65,7 @@ That's it. Two commands, one disciplined workflow.
 
 ### What's New
 
+- **v0.8.1**: RepoPrompt 1.5.62+ required — adds `-t` flag for direct tab targeting, progress notifications during builder/chat
 - **v0.8.0**: Review workflows now use "Context Over Convenience"—Builder discovers related patterns/context, we augment with must-haves
 - **v0.7.4**: `/flow:interview` for 40+ question deep-dive before planning
 - **v0.7.0**: Export mode to paste review context into ChatGPT Pro, Claude web, any LLM

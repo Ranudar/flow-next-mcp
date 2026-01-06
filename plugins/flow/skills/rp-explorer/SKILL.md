@@ -53,11 +53,15 @@ rp-cli -e 'context --all > codebase-map.md'
 
 ## Tab Isolation
 
-`builder` creates an isolated compose tab automatically. Chain commands to stay in that tab:
+`builder` creates an isolated compose tab automatically. Use `-t` to target it:
 ```bash
+# Builder returns: Tab: <UUID> • <Name>
+rp-cli -w W -t "<Name>" -e 'select add extra.ts && context'
+
+# Or chain commands:
 rp-cli -w W -e 'builder "find auth" && select add extra.ts && context'
 ```
 
 ## Requirements
 
-RepoPrompt app with rp-cli installed.
+RepoPrompt v1.5.62+ with rp-cli installed.
