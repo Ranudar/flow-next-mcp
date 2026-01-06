@@ -13,6 +13,10 @@
 
 </div>
 
+> [!IMPORTANT]
+> **RepoPrompt v1.5.62+ Required** for review features (`/flow:plan-review`, `/flow:impl-review`).
+> Using older RepoPrompt? Downgrade: `/plugin install flow@0.8.0`
+
 ---
 
 ## The Problem
@@ -50,10 +54,6 @@ Most failures come from weak planning or drifting from the plan. Flow fixes both
 ```bash
 /plugin install flow
 ```
-
-> [!IMPORTANT]
-> **RepoPrompt v1.5.62+ Required** for review features (`/flow:plan-review`, `/flow:impl-review`).
-> Using older RepoPrompt? Downgrade: `/plugin install flow@0.8.0`
 
 ### Quick Start
 
