@@ -7,6 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-blueviolet)](https://claude.ai/code)
 [![Flow Version](https://img.shields.io/badge/Flow-v0.8.3-green)](plugins/flow/)
+[![Flow-next Version](https://img.shields.io/badge/Flow--next-v0.1.0-green)](plugins/flow-next/)
 [![Author](https://img.shields.io/badge/Author-Gordon_Mickel-orange)](https://mickel.tech)
 [![Twitter](https://img.shields.io/badge/@gmickel-black?logo=x)](https://twitter.com/gmickel)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤-ea4aaa)](https://github.com/sponsors/gmickel)
@@ -29,6 +30,13 @@ Most AI agent failures aren't about model capability—they're about process:
 - ✗ Missing edge cases that were obvious in hindsight
 
 This marketplace ships plugins that fix these problems.
+
+## Plugins
+
+| Plugin | Description |
+|--------|-------------|
+| **flow** | Full-featured plan+work with optional Beads, subagents, cross-model review |
+| **flow-next** | Simpler alternative: `.flow/` dir (md specs + json), no Beads, no plan files |
 
 ## Install
 
@@ -121,6 +129,23 @@ Installs skills and prompts to `~/.codex/`. Commands work the same (`/flow:plan`
 **Caveat:** Codex doesn't support subagents, so the parallel research phase won't run. The core plan→work flow still works well without it.
 
 📖 **[Full documentation →](plugins/flow/README.md)** · **[Changelog →](CHANGELOG.md)**
+
+---
+
+## Flow-next
+
+**Simpler alternative** using `.flow/` directory instead of Beads.
+
+```bash
+/plugin install flow-next
+```
+
+- Markdown specs + JSON metadata in `.flow/`
+- No external dependencies (Beads, plan files)
+- Non-invasive: no hooks, daemons, or `CLAUDE.md` edits
+- Same commands: `/flow-next:plan`, `/flow-next:work`, `/flow-next:interview`
+
+📖 **[Flow-next documentation →](plugins/flow-next/README.md)**
 
 ---
 
