@@ -2,6 +2,19 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [0.8.2] - 2026-01-06
+
+### Changed
+- **Re-review messages now require detailed fix explanations**
+  - Template includes: what was wrong → what changed → why that approach
+  - Plan reviews: section changes summary, trade-offs acknowledged
+  - Impl reviews: file-by-file changes summary, architectural decisions
+  - Helps reviewer understand HOW fixes were made, not just "trust me"
+- **Fixed linebreak escaping in re-review messages**
+  - Use raw `call chat_send` with JSON for multi-line messages
+  - Bash single quotes don't interpret `\n` - now documented
+- Added "Why detailed re-review messages?" explanation to both workflows
+
 ## [0.8.1] - 2026-01-06
 
 ### Changed

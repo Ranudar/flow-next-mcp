@@ -370,13 +370,51 @@ rp-cli -w W -e 'chat "Elaborate on the [SPECIFIC CONCERN]. Show me exactly what 
    ```bash
    rp-cli -w W -e 'select add path/to/newly-edited-file.ts'
    ```
-4. **Re-review**: Continue the existing chat (do NOT run builder again—discovery is done)
-   ```bash
-   rp-cli -w W -e 'chat "Fixed: [LIST ISSUES FIXED]. Please re-review." --mode chat'
-   ```
+4. **Re-review**: Continue the existing chat with detailed fix explanations
+
+**Re-review message template:**
+```
+## Fixes Applied
+
+### Critical fixes:
+[If any - list with explanations]
+
+### Major fixes:
+1. [Issue name]: [What was wrong] → [What you changed] — [Why this approach]
+   - File: [path/to/file.ts]
+   - Change: [brief description of code change]
+2. ...
+
+### Minor fixes:
+1. [Issue name]: [Brief explanation of fix]
+2. ...
+
+## Code Changes Summary
+- [File X]: [What changed and why]
+- [File Y]: [What changed and why]
+- Added/removed [what] because [why]
+
+## Trade-offs / Decisions
+- [Any architectural decisions or trade-offs made]
+
+Please re-review.
+```
+
+**Use raw JSON for multi-line messages** (bash single quotes don't interpret `\n`):
+```bash
+rp-cli -w W -e 'call chat_send {"message": "<RE_REVIEW_MESSAGE>", "mode": "chat"}'
+```
+
+⚠️ **JSON escaping**: Use `\n` for newlines, `\"` for quotes inside the message string.
+
 5. **Repeat**: Continue until review passes (Ship)
 
 **Why skip builder on re-reviews?** The chat already has full context from the initial review. Builder's job was discovery—that's done. Re-reviews verify fixes, not discover new context.
+
+**Why detailed re-review messages?** The reviewer needs to understand:
+- What concrete code changes were made
+- Why you chose that approach (patterns, trade-offs)
+- How the implementation evolved (not just "trust me, I fixed it")
 
 **When to skip a fix** (rare—default is to fix):
 - Reviewer lacked context (didn't see related code, missed a constraint)
