@@ -22,6 +22,15 @@ echo -e "${YELLOW}=== ralph smoke tests ===${NC}"
 mkdir -p "$TEST_DIR/repo"
 cd "$TEST_DIR/repo"
 git init -q
+git config user.email "ralph-smoke@example.com"
+git config user.name "Ralph Smoke"
+git checkout -b main >/dev/null 2>&1 || true
+
+cat > README.md <<'EOF'
+# ralph-smoke
+EOF
+git add README.md
+git commit -m "chore: init" >/dev/null
 
 scaffold() {
   mkdir -p scripts/ralph
@@ -59,7 +68,7 @@ scaffold
 
 echo -e "${YELLOW}--- ralph-init scaffold ---${NC}"
 missing=0
-for f in ralph.sh ralph_once.sh prompt_plan.md prompt_work.md config.env runs/.gitkeep flowctl flowctl.py; do
+for f in ralph.sh ralph_once.sh prompt_plan.md prompt_work.md config.env runs/.gitkeep flowctl flowctl.py .gitignore; do
   if [[ ! -f "scripts/ralph/$f" ]]; then
     echo -e "${RED}✗${NC} missing scripts/ralph/$f"
     missing=1
@@ -143,6 +152,15 @@ for tid in ["fn-2.1", "fn-2.2"]:
 PY
 echo -e "${GREEN}✓${NC} ralph completes tasks"
 PASS=$((PASS + 1))
+
+run_dir="$(ls -1 scripts/ralph/runs | grep -v '^\\.gitkeep$' | head -n 1)"
+if [[ -f "scripts/ralph/runs/$run_dir/branches.json" ]]; then
+  echo -e "${GREEN}✓${NC} branches.json created"
+  PASS=$((PASS + 1))
+else
+  echo -e "${RED}✗${NC} branches.json created"
+  FAIL=$((FAIL + 1))
+fi
 
 echo -e "${YELLOW}--- ralph.sh backstop ---${NC}"
 scripts/ralph/flowctl epic create --title "Ralph Epic 3" --json >/dev/null

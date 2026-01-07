@@ -310,11 +310,13 @@ Override via flags or `scripts/ralph/config.env`.
 ## Ralph Mode (Autonomous, Opt-In)
 
 Ralph is repo-local and opt-in. Files are created only by `/flow-next:ralph-init`. Remove with `rm -rf scripts/ralph/`.
+`/flow-next:ralph-init` also writes `scripts/ralph/.gitignore` so run logs stay out of git.
 
 What it automates (one unit per iteration, fresh context each time):
 - Selector chooses plan vs work unit (`flowctl next`)
 - Plan gate = plan review loop until Ship (if enabled)
 - Work gate = one task until pass (tests + validate + optional impl review)
+ - Branch-per-epic: one branch per epic per run (no auto-merge)
 
 Enable:
 ```bash
@@ -322,6 +324,7 @@ Enable:
 ./scripts/ralph/ralph_once.sh   # one iteration (interactive)
 ./scripts/ralph/ralph.sh        # full loop (AFK)
 ```
+`ralph_once.sh` runs a single unit in interactive Claude so you can follow along step-by-step.
 
 ### Ralph defaults vs recommended (plan review gate)
 
@@ -355,7 +358,7 @@ flowchart TD
   F -->|fail| A
 
   F -->|WORK_REVIEW!=none| R[/flow-next:impl-review/]
-  R -->|verdict=SHIP| G[git commit + flowctl done]
+  R -->|verdict=SHIP| G[flowctl done + git commit]
   R -->|verdict!=SHIP| A
 
   F -->|WORK_REVIEW=none| G
@@ -374,7 +377,7 @@ flowchart TD
 .flow/
 ├── meta.json              # Schema version
 ├── epics/
-│   └── fn-1.json          # Epic metadata (id, title, status)
+│   └── fn-1.json          # Epic metadata (id, title, status, deps)
 ├── specs/
 │   └── fn-1.md            # Epic spec (plan, scope, acceptance)
 ├── tasks/
@@ -387,7 +390,7 @@ flowchart TD
 Flowctl accepts schema v1 and v2; new fields are optional and defaulted.
 
 New fields:
-- Epic JSON: `plan_review_status`, `plan_reviewed_at`
+- Epic JSON: `plan_review_status`, `plan_reviewed_at`, `depends_on_epics`
 - Task JSON: `priority`
 
 ### ID Format

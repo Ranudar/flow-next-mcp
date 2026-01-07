@@ -133,6 +133,30 @@ scripts/flowctl validate --all --json >/dev/null
 echo -e "${GREEN}✓${NC} schema v1 validate"
 PASS=$((PASS + 1))
 
+echo -e "${YELLOW}--- depends_on_epics gate ---${NC}"
+scripts/flowctl epic create --title "Dep base" --json >/dev/null
+scripts/flowctl task create --epic fn-3 --title "Base task" --json >/dev/null
+scripts/flowctl epic create --title "Dep child" --json >/dev/null
+python3 - <<'PY'
+import json
+from pathlib import Path
+path = Path(".flow/epics/fn-4.json")
+data = json.loads(path.read_text())
+data["depends_on_epics"] = ["fn-3"]
+path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+PY
+printf '{\"epics\":[\"fn-4\"]}\n' > "$TEST_DIR/epics.json"
+blocked_json="$(scripts/flowctl next --epics-file "$TEST_DIR/epics.json" --json)"
+python3 - <<'PY' "$blocked_json"
+import json, sys
+data = json.loads(sys.argv[1])
+assert data["status"] == "none"
+assert data["reason"] == "blocked_by_epic_deps"
+assert "fn-4" in data.get("blocked_epics", {})
+PY
+echo -e "${GREEN}✓${NC} depends_on_epics blocks"
+PASS=$((PASS + 1))
+
 echo ""
 echo -e "${YELLOW}=== Results ===${NC}"
 echo -e "Passed: ${GREEN}$PASS${NC}"

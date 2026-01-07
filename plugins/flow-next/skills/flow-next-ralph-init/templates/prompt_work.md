@@ -2,15 +2,15 @@ You are running one Ralph work iteration.
 
 Inputs:
 - TASK_ID={{TASK_ID}}
-- BRANCH_MODE={{BRANCH_MODE}}
+- BRANCH_MODE={{BRANCH_MODE_EFFECTIVE}}
 - WORK_REVIEW={{WORK_REVIEW}}
 
 Steps:
 1) Execute exactly one task:
    - If WORK_REVIEW=none:
-     `/flow-next:work {{TASK_ID}} --branch={{BRANCH_MODE}} --no-review`
+     `/flow-next:work {{TASK_ID}} --branch={{BRANCH_MODE_EFFECTIVE}} --no-review`
    - Else:
-     `/flow-next:work {{TASK_ID}} --branch={{BRANCH_MODE}} --review={{WORK_REVIEW}}`
+     `/flow-next:work {{TASK_ID}} --branch={{BRANCH_MODE_EFFECTIVE}} --review={{WORK_REVIEW}}`
 
 2) Hard pass gate:
    - If tests or validation fail, do NOT commit or `flowctl done`.

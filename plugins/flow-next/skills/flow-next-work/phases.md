@@ -111,13 +111,7 @@ After step 5, run the smoke command from epic spec's "Quick commands" section.
      ```
    - Re-run `$FLOWCTL ready --epic <epic-id> --json` to see updated order
 
-4. **Commit changes**:
-   ```bash
-   git add .
-   git commit -m "<short summary of what was done>"
-   ```
-
-5. **Complete task**:
+4. **Complete task**:
    Write done summary to temp file (required format):
    ```
    - What changed (1-3 bullets)
@@ -126,14 +120,20 @@ After step 5, run the smoke command from epic spec's "Quick commands" section.
    - Follow-ups (optional, max 2 bullets)
    ```
 
-   Write evidence to temp JSON file:
+   Write evidence to temp JSON file (commits may be empty):
    ```json
-   {"commits":["<sha>"],"tests":["<test command>"],"prs":[]}
+   {"commits":[],"tests":["<test command>"],"prs":[]}
    ```
 
    Then:
    ```bash
    $FLOWCTL done <task-id> --summary-file <summary.md> --evidence-json <evidence.json> --json
+   ```
+
+5. **Commit changes**:
+   ```bash
+   git add -A
+   git commit -m "<short summary of what was done>"
    ```
 
 6. **Verify task completion**:
@@ -165,7 +165,7 @@ $FLOWCTL validate --epic <epic-id> --json
 
 **Final commit** (if any uncommitted changes):
 ```bash
-git add .
+   git add -A
 git status
 git diff --staged
 git commit -m "<final summary>"
@@ -203,5 +203,5 @@ Confirm before ship:
 ## Example loop
 
 ```
-Prime → Task A → test → commit → done → Prime → Task B → ...
+Prime → Task A → test → done → commit → Prime → Task B → ...
 ```
