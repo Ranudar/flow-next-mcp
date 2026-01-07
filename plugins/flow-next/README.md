@@ -432,6 +432,8 @@ claude --plugin-dir ./plugins/flow-next
 
 Flow-Next partially works in OpenAI Codex with some limitations:
 
+I have fully ported Flow-Next to OpenCode and will release and link here soon
+
 **Caveats:**
 - No subagent support (research scouts run inline or are skipped)
 
