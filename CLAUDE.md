@@ -1,80 +1,83 @@
 # Claude Code Project Guide
 
 ## Purpose
-This repo is a Claude Code plugin marketplace. It currently ships one plugin: **flow**.
+This repo is a Claude Code plugin marketplace. It ships two plugins: **flow** and **flow-next**.
 
 ## Structure
 - Marketplace manifest: `.claude-plugin/marketplace.json`
 - Plugins live in `plugins/`
-- Flow plugin root: `plugins/flow/`
-  - Manifest: `plugins/flow/.claude-plugin/plugin.json`
-  - Commands: `plugins/flow/commands/`
-  - Agents: `plugins/flow/agents/`
-  - Skills: `plugins/flow/skills/`
+- Each plugin has: `.claude-plugin/plugin.json`, `commands/`, `skills/`, optionally `agents/`
 
-## File tree (current)
-```
-.
-├─ .claude-plugin/
-│  └─ marketplace.json
-├─ plugins/
-│  └─ flow/
-│     ├─ .claude-plugin/
-│     │  └─ plugin.json
-│     ├─ agents/
-│     ├─ commands/
-│     ├─ skills/
-│     └─ README.md
-├─ CHANGELOG.md
-├─ CLAUDE.md
-├─ LICENSE
-└─ README.md
-```
+## Plugins
 
-## Commands (flow)
-- `/flow:plan` -> writes `plans/<slug>.md`
-- `/flow:work` -> executes a plan
-- `/flow:interview` -> deep interview about spec/bead, writes refined details back
-- `/flow:plan-review` -> Carmack-level plan review via rp-cli
-- `/flow:impl-review` -> Carmack-level impl review (current branch)
+### flow-next (recommended)
+Zero-dependency workflow with bundled `flowctl.py`. All state in `.flow/` directory.
 
-## Current components
-- Commands: 5
-- Agents: 6
-- Skills: 7
+Commands:
+- `/flow-next:plan` → creates epic + tasks in `.flow/`
+- `/flow-next:work` → executes tasks with re-anchoring
+- `/flow-next:interview` → deep spec refinement
+- `/flow-next:plan-review` → Carmack-level plan review via rp-cli
+- `/flow-next:impl-review` → Carmack-level impl review (current branch)
+
+### flow
+Original plugin with optional Beads integration. Plan files in `plans/`.
+
+Commands:
+- `/flow:plan` → writes `plans/<slug>.md`
+- `/flow:work` → executes a plan
+- `/flow:interview` → deep interview about spec/bead
+- `/flow:plan-review` → Carmack-level plan review via rp-cli
+- `/flow:impl-review` → Carmack-level impl review (current branch)
 
 ## Marketplace rules
-- Keep `marketplace.json` and `plugins/flow/.claude-plugin/plugin.json` in sync (name, version, description, author, homepage).
+- Keep `marketplace.json` and each plugin's `plugin.json` in sync (name, version, description, author, homepage).
 - Only include fields supported by Claude Code specs.
 - `source` in marketplace must point at plugin root.
 
 ## Versioning
 - Use semver.
-- **Bump version** when skill/phase/agent files change (affects plugin behavior):
-  - `plugins/flow/skills/**/*.md`
-  - `plugins/flow/agents/**/*.md`
-  - `plugins/flow/commands/**/*.md`
+- **Bump version** when skill/phase/agent/command files change (affects plugin behavior):
+  - `plugins/<plugin>/skills/**/*.md`
+  - `plugins/<plugin>/agents/**/*.md`
+  - `plugins/<plugin>/commands/**/*.md`
 - **Don't bump** for pure README/doc changes (users don't need update)
-- When bumping, update both:
-  - `.claude-plugin/marketplace.json` -> plugin version
-  - `plugins/flow/.claude-plugin/plugin.json` -> version
+- When bumping, update:
+  - `.claude-plugin/marketplace.json` → plugin version in plugins array
+  - `plugins/<plugin>/.claude-plugin/plugin.json` → version
 
 ## Editing rules
 - Keep prompts concise and direct.
-- Avoid feature flags or backwards-compatibility scaffolding (plugin is pre-release).
+- Avoid feature flags or backwards-compatibility scaffolding (plugins are pre-release).
 - Do not add extra commands/agents/skills unless explicitly requested.
 
-## Release checklist
-1) Run `./scripts/bump.sh <patch|minor|major> flow` (updates versions + README badges)
-2) Update `CHANGELOG.md` with new version entry.
-3) Validate JSON:
-   - `jq . .claude-plugin/marketplace.json`
-   - `jq . plugins/flow/.claude-plugin/plugin.json`
-4) Confirm install flow:
-   - `/plugin marketplace add https://github.com/gmickel/gmickel-claude-marketplace`
-   - `/plugin install flow`
+## Release checklist (flow-next)
 
-**Note:** If not using bump script, manually update version badges in:
+1. Update versions manually (no bump script yet):
+   - `plugins/flow-next/.claude-plugin/plugin.json` → version
+   - `.claude-plugin/marketplace.json` → flow-next version in plugins array
+   - `plugins/flow-next/README.md` → Version badge
+   - `README.md` → Flow-next badge
+2. Update `CHANGELOG.md` with `[flow-next X.Y.Z]` entry
+3. Validate JSON:
+   ```bash
+   jq . .claude-plugin/marketplace.json
+   jq . plugins/flow-next/.claude-plugin/plugin.json
+   ```
+4. Commit, push, verify
+
+## Release checklist (flow)
+
+1. Run `./scripts/bump.sh <patch|minor|major> flow` (updates versions + README badges)
+2. Update `CHANGELOG.md` with new version entry
+3. Validate JSON:
+   ```bash
+   jq . .claude-plugin/marketplace.json
+   jq . plugins/flow/.claude-plugin/plugin.json
+   ```
+4. Commit, push, verify
+
+**Manual badge locations (if not using bump script):**
 - `README.md` (Flow-vX.X.X badge)
 - `plugins/flow/README.md` (Version-X.X.X badge)
 

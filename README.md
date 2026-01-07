@@ -98,6 +98,11 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 All commands accept flags to bypass interactive questions—the first step toward fully autonomous operation:
 
 ```bash
+# Interactive (asks questions)
+/flow-next:plan Add caching
+/flow-next:work fn-1
+
+# Autonomous (skips questions)
 /flow-next:plan Add caching --research=grep --no-review
 /flow-next:work fn-1 --branch=current --no-review
 ```

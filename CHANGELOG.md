@@ -6,6 +6,15 @@ All notable changes to the gmickel-claude-marketplace.
 
 ### Added
 - **Autonomous mode flags**: All commands now accept flags to bypass interactive questions
+  ```bash
+  # Interactive (asks questions)
+  /flow-next:plan Add caching
+  /flow-next:work fn-1
+
+  # Autonomous (skips questions)
+  /flow-next:plan Add caching --research=grep --no-review
+  /flow-next:work fn-1 --branch=current --no-review
+  ```
   - `/flow-next:plan`: `--research=rp|grep`, `--review=rp|export|none`, `--no-review`
   - `/flow-next:work`: `--branch=current|new|worktree`, `--review=rp|export|none`, `--no-review`
   - `/flow-next:plan-review`: `--mode=rp|export`
