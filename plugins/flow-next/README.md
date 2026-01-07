@@ -21,7 +21,7 @@
 
 Flow-Next is a Claude Code plugin for plan-first orchestration. Bundled task tracking, dependency graphs, re-anchoring, and cross-model reviews.
 
-Everything lives in a `.flow/` directory in your repo. No external services. No global config. Delete the folder to uninstall.
+Everything lives in your repo. No external services. No global config. Uninstall: delete `.flow/` (and `scripts/ralph/` if enabled).
 
 **Agents that finish what they start.**
 
@@ -69,7 +69,7 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 
 - **Works in 30 seconds.** Install the plugin, run a command. No setup.
 - **Non-invasive.** No CLAUDE.md edits. No hooks. No daemons.
-- **Clean uninstall.** Delete `.flow/` and it's gone. No traces.
+- **Clean uninstall.** Delete `.flow/` (and `scripts/ralph/` if enabled).
 - **Multi-user safe.** Teams work parallel branches without coordination servers.
 
 ---
@@ -81,7 +81,19 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 /plugin install flow-next
 ```
 
-Try it in ~30 seconds. Uninstall with `rm -rf .flow/`.
+Try it in ~30 seconds. Uninstall with `rm -rf .flow/` (and `rm -rf scripts/ralph/` if enabled).
+
+## Uninstall
+
+Standard Flow-Next:
+```bash
+rm -rf .flow/
+```
+
+If you enabled Ralph:
+```bash
+rm -rf scripts/ralph/
+```
 
 ---
 
@@ -105,7 +117,7 @@ That's it. Flow-Next handles research, task ordering, reviews, and audit trails.
 
 ## Human-in-the-Loop Workflow (Detailed)
 
-Full autonomous "Ralph" coming soon. For now, this is the human-in-the-loop flow:
+Default flow when you drive manually:
 
 ```mermaid
 flowchart TD
@@ -181,7 +193,7 @@ flowctl start fn-1.1 --force  # Override if needed
 
 Everything is bundled:
 - `flowctl.py` ships with the plugin
-- No Beads CLI to install
+- No external tracker CLI to install
 - No external services
 - Just Python 3
 
@@ -190,7 +202,7 @@ Everything is bundled:
 - No hooks
 - No daemons
 - No CLAUDE.md edits
-- Delete `.flow/` to uninstall completely
+- Delete `.flow/` to uninstall; if you enabled Ralph, also delete `scripts/ralph/`
 
 ### CI-ready
 
@@ -225,6 +237,7 @@ Five commands, complete workflow:
 | `/flow-next:interview <id>` | Deep interview to flesh out a spec before planning |
 | `/flow-next:plan-review <id>` | Carmack-level plan review via rp-cli |
 | `/flow-next:impl-review` | Carmack-level impl review of current branch |
+| `/flow-next:ralph-init` | Scaffold repo-local Ralph harness (`scripts/ralph/`) |
 
 Work accepts an epic (fn-N) or a task (fn-N.M). Tasks always belong to an epic.
 
@@ -264,6 +277,16 @@ Natural language also works:
 
 ## The Workflow
 
+### Defaults (manual and Ralph)
+
+Flow-Next uses the same defaults in manual and Ralph runs. Ralph bypasses prompts only.
+
+- plan: `--research=grep`
+- work: `--branch=new`
+- review: `rp` when `rp-cli` exists, otherwise `none`
+
+Override via flags or `scripts/ralph/config.env`.
+
 ### Planning Phase
 
 1. **Research (parallel subagents)**: `repo-scout` (or `context-scout` if rp-cli) + `practice-scout` + `docs-scout`
@@ -284,6 +307,67 @@ Natural language also works:
 
 ---
 
+## Ralph Mode (Autonomous, Opt-In)
+
+Ralph is repo-local and opt-in. Files are created only by `/flow-next:ralph-init`. Remove with `rm -rf scripts/ralph/`.
+
+What it automates (one unit per iteration, fresh context each time):
+- Selector chooses plan vs work unit (`flowctl next`)
+- Plan gate = plan review loop until Ship (if enabled)
+- Work gate = one task until pass (tests + validate + optional impl review)
+
+Enable:
+```bash
+/flow-next:ralph-init
+./scripts/ralph/ralph_once.sh   # one iteration (interactive)
+./scripts/ralph/ralph.sh        # full loop (AFK)
+```
+
+### Ralph defaults vs recommended (plan review gate)
+
+`REQUIRE_PLAN_REVIEW` controls whether Ralph must pass the **plan review gate** before doing any implementation work.
+
+**Default (safe, won't stall):**
+
+* `REQUIRE_PLAN_REVIEW=0`
+  Ralph can proceed to work tasks even if `rp-cli` is missing or unavailable overnight.
+
+**Recommended (best results, requires rp-cli):**
+
+* `REQUIRE_PLAN_REVIEW=1`
+* `PLAN_REVIEW=rp`
+
+This forces Ralph to run `/flow-next:plan-review` until the epic plan is approved before starting tasks.
+
+**Tip:** If you don't have `rp-cli` installed, keep `REQUIRE_PLAN_REVIEW=0` or Ralph may repeatedly select the plan gate and make no progress.
+
+### Ralph loop (one iteration)
+
+```mermaid
+flowchart TD
+  A[ralph.sh iteration] --> B[flowctl next]
+  B -->|status=plan| C[/flow-next:plan-review fn-N/]
+  C -->|verdict=SHIP| D[flowctl epic set-plan-review-status=ship]
+  C -->|verdict!=SHIP| A
+
+  B -->|status=work| E[/flow-next:work fn-N.M/]
+  E --> F[tests + validate]
+  F -->|fail| A
+
+  F -->|WORK_REVIEW!=none| R[/flow-next:impl-review/]
+  R -->|verdict=SHIP| G[git commit + flowctl done]
+  R -->|verdict!=SHIP| A
+
+  F -->|WORK_REVIEW=none| G
+
+  G --> A
+  B -->|status=none| H[<promise>COMPLETE</promise>]
+```
+
+**YOLO safety**: YOLO mode uses `--dangerously-skip-permissions`. Use a sandbox/container and no secrets in env for unattended runs.
+
+---
+
 ## .flow/ Directory
 
 ```
@@ -294,11 +378,17 @@ Natural language also works:
 ├── specs/
 │   └── fn-1.md            # Epic spec (plan, scope, acceptance)
 ├── tasks/
-│   ├── fn-1.1.json        # Task metadata (id, status, deps, assignee)
+│   ├── fn-1.1.json        # Task metadata (id, status, priority, deps, assignee)
 │   ├── fn-1.1.md          # Task spec (description, acceptance, done summary)
 │   └── ...
 └── memory/                # Reserved for future context features
 ```
+
+Flowctl accepts schema v1 and v2; new fields are optional and defaulted.
+
+New fields:
+- Epic JSON: `plan_review_status`, `plan_reviewed_at`
+- Task JSON: `priority`
 
 ### ID Format
 
@@ -326,10 +416,11 @@ flowctl detect                            # Check if .flow/ exists
 # Epics
 flowctl epic create --title "..."         # Create epic
 flowctl epic set-plan fn-1 --file spec.md # Set epic spec from file
+flowctl epic set-plan-review-status fn-1 --status ship
 flowctl epic close fn-1                   # Close epic (requires all tasks done)
 
 # Tasks
-flowctl task create --epic fn-1 --title "..." --deps fn-1.2,fn-1.3
+flowctl task create --epic fn-1 --title "..." --deps fn-1.2,fn-1.3 --priority 10
 flowctl task set-description fn-1.1 --file desc.md
 flowctl task set-acceptance fn-1.1 --file accept.md
 
@@ -338,8 +429,10 @@ flowctl dep add fn-1.3 fn-1.2             # fn-1.3 depends on fn-1.2
 
 # Workflow
 flowctl ready --epic fn-1                 # Show ready/in_progress/blocked
+flowctl next                              # Select next plan/work unit
 flowctl start fn-1.1                      # Claim and start task
 flowctl done fn-1.1 --summary-file s.md --evidence-json e.json
+flowctl block fn-1.2 --reason-file r.md
 
 # Queries
 flowctl show fn-1 --json                  # Epic with all tasks
@@ -379,7 +472,9 @@ Follow-ups:
 ```markdown
 ## Evidence
 
-{"commits":["a3f21b9"],"tests":["bun test"],"prs":[]}
+- Commits: a3f21b9
+- Tests: bun test
+- PRs:
 ```
 
 This creates a complete audit trail: what was planned, what was done, how it was verified.
@@ -390,23 +485,23 @@ This creates a complete audit trail: what was planned, what was done, how it was
 
 | | Flow | Flow-Next |
 |:--|:--|:--|
-| **Task tracking** | Beads CLI or standalone plan files | `.flow/` directory (bundled flowctl) |
-| **Install** | Plugin + optionally Beads | Plugin only |
-| **Artifacts** | `plans/<slug>.md` | `.flow/specs/` and `.flow/tasks/` |
-| **Config edits** | CLAUDE.md (for Beads) | None |
-| **Multi-user** | Via Beads | Built-in (scan-based IDs, soft claims) |
-| **Uninstall** | Remove plugin + Beads config | Delete `.flow/` folder |
+| **Task tracking** | External tracker or standalone plan files | `.flow/` directory (bundled flowctl) |
+| **Install** | Plugin + optional external tracker | Plugin only |
+| **Artifacts** | Standalone plan files | `.flow/specs/` and `.flow/tasks/` |
+| **Config edits** | External config edits (if using tracker) | None |
+| **Multi-user** | Via external tracker | Built-in (scan-based IDs, soft claims) |
+| **Uninstall** | Remove plugin + external tracker config | Delete `.flow/` (and `scripts/ralph/` if enabled) |
 
 **Choose Flow-Next if you want:**
 - Zero external dependencies
 - No config file edits
-- Clean uninstall (just delete `.flow/`)
+- Clean uninstall (delete `.flow/`, and `scripts/ralph/` if enabled)
 - Built-in multi-user safety
 
 **Choose Flow if you:**
-- Already use Beads for issue tracking
+- Already use an external tracker for issue tracking
 - Want plan files as standalone artifacts
-- Need Beads' full issue management features
+- Need full issue management features
 
 ---
 

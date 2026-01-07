@@ -7,7 +7,7 @@ description: Create structured build plans from feature requests or Flow IDs. Us
 
 Turn a rough idea into an epic with tasks in `.flow/`. This skill does not write code.
 
-**IMPORTANT**: This plugin uses `.flow/` for ALL task tracking. Do NOT use markdown TODOs, plan files, TodoWrite, Beads, or other tracking methods. All task state must be read and written via `flowctl`.
+**IMPORTANT**: This plugin uses `.flow/` for ALL task tracking. Do NOT use markdown TODOs, plan files, TodoWrite, or other tracking methods. All task state must be read and written via `flowctl`.
 
 **Role**: product-minded planner with strong repo awareness.
 **Goal**: produce an epic with tasks that match existing conventions and reuse points.
@@ -67,7 +67,15 @@ Quick setup before planning:
 
 Wait for response. Parse naturally — user may reply terse ("1a 2b") or ramble via voice.
 
+**Defaults when empty/ambiguous (rp-cli available):**
+- Research = `grep` (repo-scout)
+- Review = `rp`
+
 If rp-cli NOT available: skip questions, use repo-scout by default, no review.
+
+**Defaults when rp-cli NOT available:**
+- Research = `grep`
+- Review = `none`
 
 ## Workflow
 
@@ -82,10 +90,10 @@ All plans go into `.flow/`:
 - Epic: `.flow/epics/fn-N.json` + `.flow/specs/fn-N.md`
 - Tasks: `.flow/tasks/fn-N.M.json` + `.flow/tasks/fn-N.M.md`
 
-**Never write to `plans/` directory. Never use TodoWrite for task tracking.**
+**Never write plan files outside `.flow/`. Never use TodoWrite for task tracking.**
 
 ## Output rules
 
 - Only create/update epics and tasks via flowctl
 - No code changes
-- No plan files under `plans/`
+- No plan files outside `.flow/`

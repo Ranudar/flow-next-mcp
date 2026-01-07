@@ -263,6 +263,8 @@ End with:
 - Overall: Ship / Needs Work / Major Rethink
 - Patterns from codebase the code should adopt
 - What the implementation does well
+- Final verdict tag (exact, single line):
+  - `<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`
 
 **List ALL issues.** Agent fixes all Critical/Major/Minor before re-review.
 ```
