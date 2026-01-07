@@ -7,4 +7,3 @@ plans/
 todos/
 /docs/
 !plugins/*/docs/
-plugins/flow-next/scripts/smoke_test.sh
