@@ -18,12 +18,12 @@
 
 ## The Problem
 
-Most AI agent failures aren't about model capability. They're about process:
+Process failures, not model failures:
 
 - Starting to code before understanding the codebase
-- Reinventing patterns that already exist
+- Reinventing patterns already there
 - Forgetting the plan mid-implementation
-- Skipping edge cases that were obvious in hindsight
+- Skipping edge cases obvious in hindsight
 
 This marketplace ships plugins that fix these problems.
 
@@ -33,7 +33,7 @@ This marketplace ships plugins that fix these problems.
 
 | Plugin | What It Does |
 |--------|--------------|
-| [**flow-next**](#flow-next) | Plan-first workflow with `.flow/` task tracking. Zero deps. Multi-user safe. |
+| [**flow-next**](#flow-next) | Plan-first workflow with `.flow/` task tracking. Zero deps. Multi-user safe. **Recommended.** |
 | [**flow**](#flow) | Full-featured plan+work with optional Beads integration |
 
 ---
@@ -51,6 +51,43 @@ This marketplace ships plugins that fix these problems.
 /flow-next:work fn-1
 ```
 
+Start with a short spec (prompt or file). If fuzzy, run `/flow-next:interview` first.
+
+Agents that finish what they start.
+
+```mermaid
+flowchart TD
+  A[Idea or short spec<br/>prompt or doc] --> B{Need deeper spec?}
+  B -- yes --> C[Optional: /flow-next:interview fn-N or spec.md<br/>40+ deep questions to refine spec]
+  C --> D[Refined spec]
+  B -- no --> D
+  D --> E[/flow-next:plan idea or fn-N/]
+  E --> F[Parallel subagents: repo patterns + online docs + best practices]
+  F --> G[flow-gap-analyst: edge cases + missing reqs]
+  G --> H[Writes .flow/ epic + tasks + deps]
+  H --> I{Plan review? rp-cli only}
+  I -- yes --> J[/flow-next:plan-review fn-N/]
+  J --> K{Plan passes review?}
+  K -- no --> L[Re-anchor + fix plan]
+  L --> J
+  K -- yes --> M[/flow-next:work fn-N/]
+  I -- no --> M
+  M --> N[Re-anchor before EVERY task]
+  N --> O[Implement]
+  O --> P[Test + verify acceptance]
+  P --> Q[flowctl done: write done summary + evidence]
+  Q --> R{Impl review? rp-cli only}
+  R -- yes --> S[/flow-next:impl-review/]
+  S --> T{Next ready task?}
+  R -- no --> T
+  T -- yes --> N
+  T -- no --> U[flowctl epic close fn-N]
+  classDef optional stroke-dasharray: 6 4,stroke:#999;
+  class C,J,S optional;
+```
+
+📖 **Full guide (CLI, workflow, .flow layout):** [plugins/flow-next/README.md](plugins/flow-next/README.md)
+
 <table>
 <tr>
 <td><img src="assets/flow-next-plan.png" alt="Planning Phase" width="400"/></td>
@@ -62,11 +99,9 @@ This marketplace ships plugins that fix these problems.
 </tr>
 </table>
 
-### Why We Built This
+### Why I Built This
 
-AI agents fail for predictable reasons: they forget the plan mid-task, skip steps, lose context in long sessions, produce work that drifts from the original intent. These aren't capability problems. They're process problems.
-
-Flow-Next is an orchestration layer that fixes these failure modes. It gives agents structured task graphs with explicit dependencies, forces re-anchoring before every task, records evidence of completion, and runs cross-model reviews.
+Agents forget, drift, and skip edge cases. Flow-Next fixes the process: task graphs, re-anchoring, evidence, cross-model review.
 
 Instead of relying on external CLIs and config file edits, Flow-Next bundles a fully-featured task system in a single Python script. No npm packages. No daemons. No CLAUDE.md modifications. Try it in 30 seconds. Delete `.flow/` to uninstall completely.
 
@@ -74,20 +109,20 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 
 | | |
 |:--|:--|
-| **Re-anchoring** | Before EVERY task, re-reads epic/task specs + git state. Per Anthropic's long-running agent guidance. No context drift. |
-| **Multi-user safe** | Merge-safe IDs (scans files, no counters). Soft claims via assignee. Auto-detects actor from git email. Teams work parallel branches without coordination servers. |
-| **Zero deps** | Bundled `flowctl.py`. No external CLI installs. Just Python 3. |
+| **Re-anchoring** | Before EVERY task, re-reads epic/task specs + git state. No drift. |
+| **Multi-user safe** | Scan-based IDs. Soft claims via assignee. Actor auto-detect. |
+| **Zero deps** | Bundled `flowctl.py`. No external CLI. Just Python 3. |
 | **Non-invasive** | No hooks, daemons, or CLAUDE.md edits. Delete `.flow/` to uninstall completely. |
 | **CI-ready** | `flowctl validate --all` exits 1 on errors. Drop into pre-commit or GitHub Actions. |
 | **One file per task** | Merge-friendly. Conflict surface is minimal. |
-| **Automated reviews** | Carmack-level plan + impl reviews via [RepoPrompt](https://repoprompt.com). Highly recommended. |
+| **Automated reviews** | Require [RepoPrompt](https://repoprompt.com) (rp-cli). Without it, reviews are skipped. |
 | **Dependency graphs** | Tasks declare blockers. Nothing starts until dependencies resolve. |
 
 ### Commands
 
 | Command | What It Does |
 |---------|--------------|
-| `/flow-next:plan` | Research, produce epic with tasks in `.flow/` |
+| `/flow-next:plan` | Research, create epic + tasks in `.flow/` |
 | `/flow-next:work` | Execute epic end-to-end, task by task |
 | `/flow-next:interview` | Deep interview to flesh out a spec |
 | `/flow-next:plan-review` | Carmack-level plan review via rp-cli |
@@ -95,7 +130,7 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 
 ### Autonomous Mode
 
-All commands accept flags to bypass interactive questions—the first step toward fully autonomous operation:
+All commands accept flags to bypass interactive questions:
 
 ```bash
 # Interactive (asks questions)

@@ -19,9 +19,11 @@
 
 ## What Is This?
 
-Flow-Next is an AI workflow orchestration plugin for Claude Code. It enforces a disciplined plan-then-execute pattern with dependency-aware task tracking, automated code reviews, and multi-user safety.
+Flow-Next is a Claude Code plugin for plan-first orchestration. Bundled task tracking, dependency graphs, re-anchoring, and cross-model reviews.
 
 Everything lives in a `.flow/` directory in your repo. No external services. No global config. Delete the folder to uninstall.
+
+**Agents that finish what they start.**
 
 <table>
 <tr>
@@ -36,16 +38,16 @@ Everything lives in a `.flow/` directory in your repo. No external services. No 
 
 ---
 
-## Why We Built This
+## Why I Built This
 
-AI agents fail for predictable reasons: they forget the plan mid-task, skip steps, lose context in long sessions, produce work that drifts from the original intent. These aren't capability problems. They're process problems.
+Process failures, not model failures.
 
-Flow-Next is an orchestration layer that fixes these failure modes:
+- Forgetting the plan mid-implementation
+- Losing context in long sessions
+- Drifting from original intent
+- Skipping edge cases obvious in hindsight
 
-- **Structured task graphs** with explicit dependencies. Nothing starts until blockers resolve.
-- **Re-anchoring** before every task. Agents re-read specs and git state to prevent drift.
-- **Evidence capture.** Every completed task records what changed and how it was verified.
-- **Cross-model reviews.** Carmack-level reviews via [RepoPrompt](https://repoprompt.com) catch blind spots. Highly recommended.
+Flow-Next gives agents structured task graphs, forces re-anchoring before every task, records evidence of completion, and runs cross-model reviews.
 
 Instead of relying on external CLIs and config file edits, Flow-Next bundles a fully-featured task system in a single Python script:
 
@@ -63,6 +65,8 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 /plugin install flow-next
 ```
 
+Try it in ~30 seconds. Uninstall with `rm -rf .flow/`.
+
 ---
 
 ## Quick Start
@@ -75,11 +79,58 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 /flow-next:work fn-1
 ```
 
-That's it. The plugin handles research, task ordering, reviews, and audit trails.
+Start with a short spec (prompt or file). If fuzzy, run `/flow-next:interview` first.
+
+That's it. Flow-Next handles research, task ordering, reviews, and audit trails.
+
+---
+
+## Human-in-the-Loop Workflow (Detailed)
+
+Full autonomous "Ralph" coming soon. For now, this is the human-in-the-loop flow:
+
+```mermaid
+flowchart TD
+  A[Idea or short spec<br/>prompt or doc] --> B{Need deeper spec?}
+  B -- yes --> C[Optional: /flow-next:interview fn-N or spec.md<br/>40+ deep questions to refine spec]
+  C --> D[Refined spec]
+  B -- no --> D
+  D --> E[/flow-next:plan idea or fn-N/]
+  E --> F[Parallel subagents: repo patterns + online docs + best practices]
+  F --> G[flow-gap-analyst: edge cases + missing reqs]
+  G --> H[Writes .flow/ epic + tasks + deps]
+  H --> I{Plan review? rp-cli only}
+  I -- yes --> J[/flow-next:plan-review fn-N/]
+  J --> K{Plan passes review?}
+  K -- no --> L[Re-anchor + fix plan]
+  L --> J
+  K -- yes --> M[/flow-next:work fn-N/]
+  I -- no --> M
+  M --> N[Re-anchor before EVERY task]
+  N --> O[Implement]
+  O --> P[Test + verify acceptance]
+  P --> Q[flowctl done: write done summary + evidence]
+  Q --> R{Impl review? rp-cli only}
+  R -- yes --> S[/flow-next:impl-review/]
+  S --> T{Next ready task?}
+  R -- no --> T
+  T -- yes --> N
+  T -- no --> U[flowctl epic close fn-N]
+  classDef optional stroke-dasharray: 6 4,stroke:#999;
+  class C,J,S optional;
+```
+
+Notes:
+- `/flow-next:interview` accepts Flow IDs or spec file paths and writes refinements back
+- `/flow-next:plan` accepts new ideas or an existing Flow ID to update the plan
+
+Recommendation: open RepoPrompt in the repo before starting a new flow so plan/impl reviews have fast context.
 
 ---
 
 ## Features
+
+Built for reliability. These are the guardrails.
 
 ### Re-anchoring
 
@@ -137,7 +188,7 @@ Each epic and task gets its own JSON + markdown file pair. Merge conflicts are r
 
 ### Automated Reviews
 
-When [rp-cli](https://repoprompt.com) ([RepoPrompt](https://repoprompt.com)) is installed, both plan and work phases can run Carmack-level reviews using a separate model. This is highly recommended: cross-model review catches blind spots that same-model self-review misses. Without rp-cli, reviews are skipped.
+Reviews require [rp-cli](https://repoprompt.com) ([RepoPrompt](https://repoprompt.com)). Without it, review steps are skipped. Cross-model review catches blind spots.
 
 ### Dependency Graphs
 
@@ -146,6 +197,8 @@ Tasks declare their blockers. `flowctl ready` shows what can start. Nothing exec
 ---
 
 ## Commands
+
+Five commands, complete workflow:
 
 | Command | What It Does |
 |---------|--------------|
@@ -157,7 +210,7 @@ Tasks declare their blockers. `flowctl ready` shows what can start. Nothing exec
 
 ### Autonomous Mode (Flags)
 
-All commands accept flags to bypass interactive questions—the first step toward fully autonomous Flow-Next:
+All commands accept flags to skip questions:
 
 ```bash
 # Plan with flags
@@ -193,20 +246,21 @@ Natural language also works:
 
 ### Planning Phase
 
-1. **Research**: Parallel agents scan your codebase for patterns, conventions, related code
-2. **Gap analysis**: Identifies edge cases, missing requirements, open questions
-3. **Epic creation**: Writes structured spec to `.flow/specs/fn-N.md`
-4. **Task breakdown**: Creates tasks with explicit dependencies
-5. **Review** (optional): Sends to RepoPrompt for cross-model review
+1. **Research (parallel subagents)**: `repo-scout` (or `context-scout` if rp-cli) + `practice-scout` + `docs-scout`
+2. **Gap analysis**: `flow-gap-analyst` finds edge cases + missing requirements
+3. **Epic creation**: Writes spec to `.flow/specs/fn-N.md`
+4. **Task breakdown**: Creates tasks + explicit dependencies in `.flow/tasks/`
+5. **Validate**: `flowctl validate --epic fn-N`
+6. **Review** (optional): `/flow-next:plan-review fn-N` with re-anchor + fix loop until "Ship"
 
 ### Work Phase
 
-1. **Re-anchor**: Re-read epic spec, task spec, git state (EVERY task)
-2. **Execute**: Implement the task following existing patterns
-3. **Test**: Run relevant tests, verify acceptance criteria
-4. **Record**: `flowctl done` captures summary + evidence
-5. **Review** (optional): Cross-model review of implementation
-6. **Loop**: Next ready task
+1. **Re-anchor**: Re-read epic + task specs + git state (EVERY task)
+2. **Execute**: Implement using existing patterns
+3. **Test**: Verify acceptance criteria
+4. **Record**: `flowctl done` adds summary + evidence to the task spec
+5. **Review** (optional): `/flow-next:impl-review` via RepoPrompt
+6. **Loop**: Next ready task → repeat until epic closes
 
 ---
 
