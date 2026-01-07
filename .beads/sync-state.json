@@ -1,7 +1,0 @@
-{
-  "last_failure": "2026-01-07T10:30:49.782406+01:00",
-  "failure_count": 1,
-  "backoff_until": "2026-01-07T10:31:19.782407+01:00",
-  "needs_manual_sync": false,
-  "failure_reason": "git pull failed in worktree: exit status 1\nfatal: unable to access 'https://github.com/gmickel/gmickel-claude-marketplace/': Could not resolve host: github.com\n"
-}
