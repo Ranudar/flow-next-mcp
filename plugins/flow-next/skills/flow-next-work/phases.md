@@ -5,7 +5,7 @@
 **CRITICAL**: If you are about to create:
 - a markdown TODO list,
 - a task list outside `.flow/`,
-- or any content under `plans/`,
+- or any plan files outside `.flow/`,
 
 **STOP** and instead:
 - create/update tasks in `.flow/` using `flowctl`,

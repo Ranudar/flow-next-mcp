@@ -7,7 +7,7 @@ description: Execute a Flow epic or task systematically with git setup, task tra
 
 Execute a plan systematically. Focus on finishing.
 
-**IMPORTANT**: This plugin uses `.flow/` for ALL task tracking. Do NOT use markdown TODOs, plan files, TodoWrite, Beads, or other tracking methods. All task state must be read and written via `flowctl`.
+**IMPORTANT**: This plugin uses `.flow/` for ALL task tracking. Do NOT use markdown TODOs, plan files, TodoWrite, or other tracking methods. All task state must be read and written via `flowctl`.
 
 **Role**: execution lead, plan fidelity first.
 **Goal**: complete every task in order with tests.
@@ -76,6 +76,15 @@ a) Current branch  b) New branch  c) Isolated worktree
 ```
 
 Wait for response. Parse naturally — user may reply terse or ramble via voice.
+
+**Defaults when empty/ambiguous (rp-cli available):**
+- Branch = `new`
+- Review = `rp`
+
+**Defaults when rp-cli NOT available:**
+- Branch = `new`
+- Review = `none`
+
 **Do NOT read files or write code until user responds.**
 
 ## Workflow
@@ -92,4 +101,4 @@ If user chose review:
 - Don't skip tests
 - Don't leave tasks half-done
 - Never use TodoWrite for task tracking
-- Never create `plans/` directory
+- Never create plan files outside `.flow/`

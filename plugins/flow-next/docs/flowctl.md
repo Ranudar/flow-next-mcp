@@ -5,7 +5,7 @@ CLI for `.flow/` task tracking. Agents must use flowctl for all writes.
 ## Available Commands
 
 ```
-init, detect, epic, task, dep, show, cat, ready, start, done, validate, prep-chat
+init, detect, epic, task, dep, show, cat, ready, next, start, done, block, validate, prep-chat
 ```
 
 Aliases: `list` → `show`, `ls` → `show`
@@ -32,6 +32,12 @@ Works out of the box for parallel branches. No setup required.
 ├── tasks/fn-N.M.md    # Task spec (markdown)
 └── memory/            # Agent memory (reserved)
 ```
+
+Flowctl accepts schema v1 and v2; new fields are optional and defaulted.
+
+New fields:
+- Epic JSON: `plan_review_status`, `plan_reviewed_at`
+- Task JSON: `priority`
 
 ## ID Format
 
@@ -82,6 +88,14 @@ Overwrite epic spec from file.
 flowctl epic set-plan fn-1 --file plan.md [--json]
 ```
 
+### epic set-plan-review-status
+
+Set plan review status and timestamp.
+
+```bash
+flowctl epic set-plan-review-status fn-1 --status ship|needs_work|unknown [--json]
+```
+
 ### epic close
 
 Close epic (requires all tasks done).
@@ -95,7 +109,7 @@ flowctl epic close fn-1 [--json]
 Create task under epic.
 
 ```bash
-flowctl task create --epic fn-1 --title "Task title" [--deps fn-1.2,fn-1.3] [--acceptance-file accept.md] [--json]
+flowctl task create --epic fn-1 --title "Task title" [--deps fn-1.2,fn-1.3] [--acceptance-file accept.md] [--priority 10] [--json]
 ```
 
 Output:
@@ -138,7 +152,7 @@ flowctl show fn-1 [--json]     # Epic with tasks
 flowctl show fn-1.2 [--json]   # Task only
 ```
 
-Epic output includes `tasks` array with id/title/status/depends_on.
+Epic output includes `tasks` array with id/title/status/priority/depends_on.
 
 ### cat
 
@@ -169,6 +183,19 @@ Output:
 }
 ```
 
+### next
+
+Select next plan/work unit.
+
+```bash
+flowctl next [--epics-file epics.json] [--require-plan-review] [--json]
+```
+
+Output:
+```json
+{"status":"plan|work|none","epic":"fn-12","task":"fn-12.3","reason":"needs_plan_review|resume_in_progress|ready_task|none"}
+```
+
 ### start
 
 Start task (set status=in_progress). Sets assignee to current actor.
@@ -179,6 +206,7 @@ flowctl start fn-1.2 [--force] [--note "..."] [--json]
 
 Validates:
 - Status is `todo` (or `in_progress` if resuming own task)
+- Status is not `blocked` unless `--force`
 - All dependencies are `done`
 - Not claimed by another actor
 
@@ -198,6 +226,14 @@ Use `--force` to skip status check.
 Evidence JSON format:
 ```json
 {"commits": ["abc123"], "tests": ["test_foo"], "prs": ["#42"]}
+```
+
+### block
+
+Block a task and record a reason in the task spec.
+
+```bash
+flowctl block fn-1.2 --reason-file reason.md [--json]
 ```
 
 ### validate
@@ -229,6 +265,7 @@ All epics output:
 Checks:
 - Epic/task specs exist
 - Task specs have required headings
+- Task statuses are valid (`todo`, `in_progress`, `blocked`, `done`)
 - Dependencies exist and are within epic
 - No dependency cycles
 - Done status consistency

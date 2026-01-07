@@ -75,7 +75,7 @@ Then search for supporting documentation:
 rp-cli -w W -e 'search "PRD" --mode path'
 rp-cli -w W -e 'search "prd_" --mode path'
 
-# Find beads JSONL
+# Find Flow files
 rp-cli -w W -e 'search ".flow/" --mode path'
 
 # Find architecture docs
@@ -228,6 +228,8 @@ For each issue:
 End with:
 - Overall: Ship / Needs Work / Major Rethink
 - Patterns from codebase the plan should adopt
+- Final verdict tag (exact, single line):
+  - `<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`
 
 **List ALL issues.** Agent fixes all Critical/Major/Minor before re-review.
 ```
@@ -458,7 +460,7 @@ If skipping, explain WHY clearly in the re-review message so the reviewer can re
 - **Ignoring builder's handoff prompt** – it's the foundation; add criteria on top, don't replace
 - **Forgetting `-w <id>` flag** – commands will fail with "Multiple windows" error
 - Skipping `builder` – you'll miss architectural context
-- Reviewing without PRD/beads context – you won't know the "why"
+- Reviewing without PRD/Flow context – you won't know the "why"
 - Shallow review – thorough analysis takes time; don't rush
 - Not selecting supporting docs – chat can't see what's not selected
 - Documenting issues instead of fixing – after review feedback, edit the plan directly

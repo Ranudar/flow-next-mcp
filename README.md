@@ -36,6 +36,11 @@ This marketplace ships plugins that fix these problems.
 | [**flow-next**](#flow-next) | Plan-first workflow with `.flow/` task tracking. Zero deps. Multi-user safe. **Recommended.** |
 | [**flow**](#flow) | Full-featured plan+work with optional Beads integration |
 
+## Pick a plugin
+
+- **flow-next**: `.flow/` + bundled `flowctl` + Ralph mode (autonomous overnight loop) via `/flow-next:ralph-init`
+- **flow**: original behavior (plan files, optional external tracker)
+
 ---
 
 ## Flow-Next
@@ -103,7 +108,7 @@ flowchart TD
 
 Agents forget, drift, and skip edge cases. Flow-Next fixes the process: task graphs, re-anchoring, evidence, cross-model review.
 
-Instead of relying on external CLIs and config file edits, Flow-Next bundles a fully-featured task system in a single Python script. No npm packages. No daemons. No CLAUDE.md modifications. Try it in 30 seconds. Delete `.flow/` to uninstall completely.
+Instead of relying on external CLIs and config file edits, Flow-Next bundles a fully-featured task system in a single Python script. No npm packages. No daemons. No CLAUDE.md modifications. Try it in 30 seconds. Uninstall by deleting `.flow/` (and `scripts/ralph/` if enabled).
 
 ### Features
 
@@ -112,7 +117,7 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 | **Re-anchoring** | Before EVERY task, re-reads epic/task specs + git state. No drift. |
 | **Multi-user safe** | Scan-based IDs. Soft claims via assignee. Actor auto-detect. |
 | **Zero deps** | Bundled `flowctl.py`. No external CLI. Just Python 3. |
-| **Non-invasive** | No hooks, daemons, or CLAUDE.md edits. Delete `.flow/` to uninstall completely. |
+| **Non-invasive** | No hooks, daemons, or CLAUDE.md edits. Delete `.flow/` (and `scripts/ralph/` if enabled) to uninstall. |
 | **CI-ready** | `flowctl validate --all` exits 1 on errors. Drop into pre-commit or GitHub Actions. |
 | **One file per task** | Merge-friendly. Conflict surface is minimal. |
 | **Automated reviews** | Require [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (rp-cli). Without it, reviews are skipped. |
@@ -127,6 +132,8 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 | `/flow-next:interview` | Deep interview to flesh out a spec |
 | `/flow-next:plan-review` | Carmack-level plan review via rp-cli |
 | `/flow-next:impl-review` | Carmack-level impl review (current branch) |
+
+- **Ralph mode (autonomous overnight loop)** is available via `/flow-next:ralph-init`.
 
 ### Autonomous Mode
 

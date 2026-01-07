@@ -7,7 +7,7 @@ description: Interview user in-depth about an epic, task, or spec file to extrac
 
 Conduct an extremely thorough interview about a task/spec and write refined details back.
 
-**IMPORTANT**: This plugin uses `.flow/` for ALL task tracking. Do NOT use markdown TODOs, plan files, TodoWrite, Beads, or other tracking methods. All task state must be read and written via `flowctl`.
+**IMPORTANT**: This plugin uses `.flow/` for ALL task tracking. Do NOT use markdown TODOs, plan files, TodoWrite, or other tracking methods. All task state must be read and written via `flowctl`.
 
 **Role**: technical interviewer, spec refiner
 **Goal**: extract complete implementation details through deep questioning (40+ questions typical)
