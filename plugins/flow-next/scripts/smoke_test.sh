@@ -112,7 +112,7 @@ else
   FAIL=$((FAIL + 1))
 fi
 
-scripts/flowctl start fn-2.1 --json >/dev/null
+scripts/flowctl start fn-2.1 --force --json >/dev/null
 scripts/flowctl done fn-2.1 --summary-file "$TEST_DIR/summary.md" --evidence-json "$TEST_DIR/evidence.json" --json >/dev/null
 scripts/flowctl start fn-2.2 --json >/dev/null
 scripts/flowctl done fn-2.2 --summary-file "$TEST_DIR/summary.md" --evidence-json "$TEST_DIR/evidence.json" --json >/dev/null
