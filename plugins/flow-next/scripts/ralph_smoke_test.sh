@@ -92,7 +92,7 @@ if [[ "$mode" == "retry" ]]; then
 fi
 
 if [[ "$prompt" == *"Ralph plan gate iteration"* ]]; then
-  epic_id="$(printf '%s\n' "$prompt" | sed -n 's/.*EPIC_ID=\(fn-[0-9]\+\).*/\1/p' | head -n1)"
+  epic_id="$(printf '%s\n' "$prompt" | sed -n 's/.*EPIC_ID=\(fn-[0-9][0-9]*\).*/\1/p' | head -n1)"
   if [[ -n "$epic_id" ]]; then
     scripts/ralph/flowctl epic set-plan-review-status "$epic_id" --status ship --json >/dev/null
   fi
@@ -101,7 +101,7 @@ if [[ "$prompt" == *"Ralph plan gate iteration"* ]]; then
 fi
 
 if [[ "$prompt" == *"Ralph work iteration"* ]]; then
-  task_id="$(printf '%s\n' "$prompt" | sed -n 's/.*TASK_ID=\(fn-[0-9]\+\.[0-9]\+\).*/\1/p' | head -n1)"
+  task_id="$(printf '%s\n' "$prompt" | sed -n 's/.*TASK_ID=\(fn-[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' | head -n1)"
   summary="$(mktemp)"
   evidence="$(mktemp)"
   printf "ok\n" > "$summary"
