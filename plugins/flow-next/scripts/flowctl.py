@@ -153,6 +153,8 @@ def normalize_epic(epic_data: dict) -> dict:
         epic_data["plan_review_status"] = "unknown"
     if "plan_reviewed_at" not in epic_data:
         epic_data["plan_reviewed_at"] = None
+    if "depends_on_epics" not in epic_data:
+        epic_data["depends_on_epics"] = []
     return epic_data
 
 
@@ -502,6 +504,7 @@ def cmd_epic_create(args: argparse.Namespace) -> None:
         "status": "open",
         "plan_review_status": "unknown",
         "plan_reviewed_at": None,
+        "depends_on_epics": [],
         "spec_path": f"{FLOW_DIR}/{SPECS_DIR}/{epic_id}.md",
         "next_task": 1,
         "created_at": now_iso(),
@@ -997,6 +1000,8 @@ def cmd_next(args: argparse.Namespace) -> None:
         _, task_num = parse_id(t["id"])
         return (task_priority(t), task_num if task_num is not None else 0)
 
+    blocked_epics: dict[str, list[str]] = {}
+
     for epic_id in epic_ids:
         epic_path = flow_dir / EPICS_DIR / f"{epic_id}.json"
         if not epic_path.exists():
@@ -1006,6 +1011,22 @@ def cmd_next(args: argparse.Namespace) -> None:
 
         epic_data = normalize_epic(load_json_or_exit(epic_path, f"Epic {epic_id}", use_json=args.json))
         if epic_data.get("status") == "done":
+            continue
+
+        # Skip epics blocked by epic-level dependencies
+        blocked_by: list[str] = []
+        for dep in epic_data.get("depends_on_epics", []) or []:
+            if dep == epic_id:
+                continue
+            dep_path = flow_dir / EPICS_DIR / f"{dep}.json"
+            if not dep_path.exists():
+                blocked_by.append(dep)
+                continue
+            dep_data = normalize_epic(load_json_or_exit(dep_path, f"Epic {dep}", use_json=args.json))
+            if dep_data.get("status") != "done":
+                blocked_by.append(dep)
+        if blocked_by:
+            blocked_epics[epic_id] = blocked_by
             continue
 
         if args.require_plan_review and epic_data.get("plan_review_status") != "ship":
@@ -1081,9 +1102,18 @@ def cmd_next(args: argparse.Namespace) -> None:
             return
 
     if args.json:
-        json_output({"status": "none", "epic": None, "task": None, "reason": "none"})
+        payload = {"status": "none", "epic": None, "task": None, "reason": "none"}
+        if blocked_epics:
+            payload["reason"] = "blocked_by_epic_deps"
+            payload["blocked_epics"] = blocked_epics
+        json_output(payload)
     else:
-        print("none")
+        if blocked_epics:
+            print("none blocked_by_epic_deps")
+            for epic_id, deps in blocked_epics.items():
+                print(f"  {epic_id}: {', '.join(deps)}")
+        else:
+            print("none")
 
 
 def cmd_start(args: argparse.Namespace) -> None:
@@ -1403,6 +1433,24 @@ def validate_epic(flow_dir: Path, epic_id: str, use_json: bool = True) -> tuple[
     epic_spec = flow_dir / SPECS_DIR / f"{epic_id}.md"
     if not epic_spec.exists():
         errors.append(f"Epic spec missing: {epic_spec}")
+
+    # Validate epic dependencies
+    deps = epic_data.get("depends_on_epics", [])
+    if deps is None:
+        deps = []
+    if not isinstance(deps, list):
+        errors.append(f"Epic {epic_id}: depends_on_epics must be a list")
+    else:
+        for dep in deps:
+            if not isinstance(dep, str) or not is_epic_id(dep):
+                errors.append(f"Epic {epic_id}: invalid depends_on_epics entry '{dep}'")
+                continue
+            if dep == epic_id:
+                errors.append(f"Epic {epic_id}: depends_on_epics cannot include itself")
+                continue
+            dep_path = flow_dir / EPICS_DIR / f"{dep}.json"
+            if not dep_path.exists():
+                errors.append(f"Epic {epic_id}: depends_on_epics missing epic {dep}")
 
     # Get all tasks
     tasks_dir = flow_dir / TASKS_DIR

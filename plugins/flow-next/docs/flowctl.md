@@ -36,7 +36,7 @@ Works out of the box for parallel branches. No setup required.
 Flowctl accepts schema v1 and v2; new fields are optional and defaulted.
 
 New fields:
-- Epic JSON: `plan_review_status`, `plan_reviewed_at`
+- Epic JSON: `plan_review_status`, `plan_reviewed_at`, `depends_on_epics`
 - Task JSON: `priority`
 
 ## ID Format
@@ -193,7 +193,7 @@ flowctl next [--epics-file epics.json] [--require-plan-review] [--json]
 
 Output:
 ```json
-{"status":"plan|work|none","epic":"fn-12","task":"fn-12.3","reason":"needs_plan_review|resume_in_progress|ready_task|none"}
+{"status":"plan|work|none","epic":"fn-12","task":"fn-12.3","reason":"needs_plan_review|resume_in_progress|ready_task|none|blocked_by_epic_deps","blocked_epics":{"fn-12":["fn-3"]}}
 ```
 
 ### start
@@ -225,7 +225,7 @@ Use `--force` to skip status check.
 
 Evidence JSON format:
 ```json
-{"commits": ["abc123"], "tests": ["test_foo"], "prs": ["#42"]}
+{"commits": [], "tests": ["test_foo"], "prs": ["#42"]}
 ```
 
 ### block
