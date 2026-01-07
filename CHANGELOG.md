@@ -2,6 +2,20 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.2.0] - 2026-01-07
+
+### Added
+- **Autonomous mode flags**: All commands now accept flags to bypass interactive questions
+  - `/flow-next:plan`: `--research=rp|grep`, `--review=rp|export|none`, `--no-review`
+  - `/flow-next:work`: `--branch=current|new|worktree`, `--review=rp|export|none`, `--no-review`
+  - `/flow-next:plan-review`: `--mode=rp|export`
+  - `/flow-next:impl-review`: `--mode=rp|export`
+- Natural language parsing also works ("use context-scout", "skip review", "current branch")
+- First step toward fully autonomous Flow-Next operation
+
+### Fixed
+- Homepage URL now points to `/apps/flow-next` instead of `/apps/flow`
+
 ## [0.8.2] - 2026-01-06
 
 ### Changed

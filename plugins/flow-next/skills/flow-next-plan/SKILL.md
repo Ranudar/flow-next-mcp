@@ -29,11 +29,26 @@ Examples:
 
 If empty, ask: "What should I plan? Give me the feature or bug in 1-5 sentences."
 
-## FIRST: Setup Questions (if rp-cli available)
+## FIRST: Parse Options or Ask Questions
 
 Check: `which rp-cli >/dev/null 2>&1`
 
-If available, output these questions as text (do NOT use AskUserQuestion tool):
+### Option Parsing (skip questions if found in arguments)
+
+Parse the arguments for these patterns. If found, use them and skip questions:
+
+**Research approach** (only if rp-cli available):
+- `--research=rp` or `--research rp` or "use rp" or "context-scout" or "use repoprompt" → context-scout
+- `--research=grep` or `--research grep` or "use grep" or "repo-scout" or "fast" → repo-scout
+
+**Review mode**:
+- `--review=rp` or "review with rp" or "rp chat" or "repoprompt review" → RepoPrompt chat
+- `--review=export` or "export review" or "external llm" → export for external LLM
+- `--review=none` or `--no-review` or "no review" or "skip review" → no review
+
+### If options NOT found in arguments
+
+If rp-cli available, output these questions as text (do NOT use AskUserQuestion tool):
 
 ```
 Quick setup before planning:

@@ -30,13 +30,27 @@ Examples:
 
 If no input provided, ask for it.
 
-## FIRST: Setup Questions (REQUIRED)
-
-**Before doing anything else**, output these questions as text (do NOT use AskUserQuestion tool):
+## FIRST: Parse Options or Ask Questions
 
 Check if rp-cli available: `which rp-cli >/dev/null 2>&1`
 
-If rp-cli available, ask both:
+### Option Parsing (skip questions if found in arguments)
+
+Parse the arguments for these patterns. If found, use them and skip corresponding questions:
+
+**Branch mode**:
+- `--branch=current` or `--current` or "current branch" or "stay on this branch" → current branch
+- `--branch=new` or `--new-branch` or "new branch" or "create branch" → new branch
+- `--branch=worktree` or `--worktree` or "isolated worktree" or "worktree" → isolated worktree
+
+**Review mode** (only if rp-cli available):
+- `--review=rp` or "review with rp" or "rp chat" or "repoprompt review" → RepoPrompt chat
+- `--review=export` or "export review" or "external llm" → export for external LLM
+- `--review=none` or `--no-review` or "no review" or "skip review" → no review
+
+### If options NOT found in arguments
+
+If rp-cli available, output these questions as text (do NOT use AskUserQuestion tool):
 ```
 Quick setup before starting:
 

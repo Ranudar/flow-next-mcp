@@ -30,6 +30,16 @@ FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 Check: `which rp-cli >/dev/null 2>&1`
 If NOT available: inform user rp-cli is required for this skill.
 
+### Option Parsing (skip questions if found in arguments)
+
+Parse the arguments for these patterns. If found, use them and skip the question:
+
+**Review mode**:
+- `--mode=rp` or `--rp` or "rp chat" or "repoprompt" → RepoPrompt chat
+- `--mode=export` or `--export` or "export" or "external llm" → export for external LLM
+
+### If options NOT found
+
 **If review mode was already chosen earlier in this conversation** (e.g., user answered "2a" or "2b" during `/flow-next:plan` or `/flow-next:work` setup):
 → Use that mode, don't ask again.
 

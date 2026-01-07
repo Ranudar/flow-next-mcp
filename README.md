@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-blueviolet)](https://claude.ai/code)
-[![Flow-next](https://img.shields.io/badge/Flow--next-v0.1.0-green)](plugins/flow-next/)
+[![Flow-next](https://img.shields.io/badge/Flow--next-v0.2.0-green)](plugins/flow-next/)
 [![Flow](https://img.shields.io/badge/Flow-v0.8.3-blue)](plugins/flow/)
 [![Author](https://img.shields.io/badge/Author-Gordon_Mickel-orange)](https://mickel.tech)
 [![Twitter](https://img.shields.io/badge/@gmickel-black?logo=x)](https://twitter.com/gmickel)
@@ -92,6 +92,15 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 | `/flow-next:interview` | Deep interview to flesh out a spec |
 | `/flow-next:plan-review` | Carmack-level plan review via rp-cli |
 | `/flow-next:impl-review` | Carmack-level impl review (current branch) |
+
+### Autonomous Mode
+
+All commands accept flags to bypass interactive questions—the first step toward fully autonomous operation:
+
+```bash
+/flow-next:plan Add caching --research=grep --no-review
+/flow-next:work fn-1 --branch=current --no-review
+```
 
 📖 **[Full documentation](plugins/flow-next/README.md)**
 

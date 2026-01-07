@@ -1,13 +1,13 @@
 {
   "name": "flow-next",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Flow workflow backed by .flow/ (md specs + json metadata), no Beads, no plan files",
   "author": {
     "name": "Gordon Mickel",
     "email": "gordon@mickel.tech",
     "url": "https://mickel.tech"
   },
-  "homepage": "https://mickel.tech/apps/flow",
+  "homepage": "https://mickel.tech/apps/flow-next",
   "repository": "https://github.com/gmickel/gmickel-claude-marketplace",
   "license": "MIT",
   "keywords": [

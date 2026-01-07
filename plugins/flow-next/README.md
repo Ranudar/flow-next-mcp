@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/Version-0.1.0-green)](../../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.2.0-green)](../../CHANGELOG.md)
 [![Status](https://img.shields.io/badge/Status-Experimental-orange)]()
 
 **Plan first, work second. Zero external dependencies.**
@@ -154,6 +154,38 @@ Tasks declare their blockers. `flowctl ready` shows what can start. Nothing exec
 | `/flow-next:interview <id>` | Deep interview to flesh out a spec before planning |
 | `/flow-next:plan-review <id>` | Carmack-level plan review via rp-cli |
 | `/flow-next:impl-review` | Carmack-level impl review of current branch |
+
+### Autonomous Mode (Flags)
+
+All commands accept flags to bypass interactive questions—the first step toward fully autonomous Flow-Next:
+
+```bash
+# Plan with flags
+/flow-next:plan Add caching --research=grep --no-review
+/flow-next:plan Add auth --research=rp --review=rp
+
+# Work with flags
+/flow-next:work fn-1 --branch=current --no-review
+/flow-next:work fn-1 --branch=new --review=export
+
+# Reviews with flags
+/flow-next:plan-review fn-1 --mode=rp
+/flow-next:impl-review --mode=export
+```
+
+Natural language also works:
+
+```bash
+/flow-next:plan Add webhooks, use context-scout, skip review
+/flow-next:work fn-1 current branch, no review
+```
+
+| Command | Available Flags |
+|---------|-----------------|
+| `/flow-next:plan` | `--research=rp\|grep`, `--review=rp\|export\|none`, `--no-review` |
+| `/flow-next:work` | `--branch=current\|new\|worktree`, `--review=rp\|export\|none`, `--no-review` |
+| `/flow-next:plan-review` | `--mode=rp\|export` |
+| `/flow-next:impl-review` | `--mode=rp\|export` |
 
 ---
 
