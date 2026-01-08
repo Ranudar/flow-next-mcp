@@ -1866,10 +1866,13 @@ def cmd_rp_prompt_export(args: argparse.Namespace) -> None:
 
 
 def cmd_rp_setup_review(args: argparse.Namespace) -> None:
-    """Atomic setup: pick-window + ensure-workspace + builder.
+    """Atomic setup: pick-window + builder.
 
     Returns W=<window> T=<tab> on success, exits non-zero on failure.
     Writes state file for ralph-guard to verify pick-window ran.
+
+    Note: ensure-workspace removed - if user opens RP on a folder, workspace
+    already exists. pick-window matches by folder path.
     """
     import hashlib
 
@@ -1908,59 +1911,7 @@ def cmd_rp_setup_review(args: argparse.Namespace) -> None:
     state_file = Path(f"/tmp/.ralph-pick-window-{repo_hash}")
     state_file.write_text(f"{win_id}\n{repo_root}\n")
 
-    # Step 2: ensure-workspace
-    ws_name = os.path.basename(repo_root)
-
-    list_cmd = [
-        "--raw-json",
-        "-w",
-        str(win_id),
-        "-e",
-        f"call manage_workspaces {json.dumps({'action': 'list'})}",
-    ]
-    list_res = run_rp_cli(list_cmd)
-    try:
-        data = json.loads(list_res.stdout)
-    except json.JSONDecodeError as e:
-        error_exit(f"workspace list JSON parse failed: {e}", use_json=False, code=2)
-
-    def extract_ws_names(obj: Any) -> set[str]:
-        names: set[str] = set()
-        if isinstance(obj, dict):
-            if "workspaces" in obj:
-                obj = obj["workspaces"]
-            elif "result" in obj:
-                obj = obj["result"]
-        if isinstance(obj, list):
-            for item in obj:
-                if isinstance(item, str):
-                    names.add(item)
-                elif isinstance(item, dict):
-                    for key in ("name", "workspace", "title"):
-                        if key in item:
-                            names.add(str(item[key]))
-        return names
-
-    names = extract_ws_names(data)
-
-    if ws_name not in names:
-        create_cmd = [
-            "-w",
-            str(win_id),
-            "-e",
-            f"call manage_workspaces {json.dumps({'action': 'create', 'name': ws_name, 'folder_path': repo_root})}",
-        ]
-        run_rp_cli(create_cmd)
-
-    switch_cmd = [
-        "-w",
-        str(win_id),
-        "-e",
-        f"call manage_workspaces {json.dumps({'action': 'switch', 'workspace': ws_name, 'window_id': win_id})}",
-    ]
-    run_rp_cli(switch_cmd)
-
-    # Step 3: builder
+    # Step 2: builder
     builder_cmd = [
         "-w",
         str(win_id),
