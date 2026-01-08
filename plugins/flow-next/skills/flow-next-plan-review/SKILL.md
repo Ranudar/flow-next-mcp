@@ -1,55 +1,36 @@
 ---
 name: flow-next-plan-review
-description: Carmack-level plan review via flowctl rp wrappers (RepoPrompt builder + chat). Use when reviewing Flow epic specs or design docs. Triggers on /flow-next:plan-review.
+description: Carmack-level plan review via flowctl rp wrappers. Use when reviewing Flow epic specs or design docs. Triggers on /flow-next:plan-review.
 model: claude-opus-4-5-20251101
-hooks:
-  PreToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/ralph-guard.sh"
-  Stop:
-    - hooks:
-        - type: command
-          command: "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/ralph-receipt-guard.sh"
-  PostToolUse:
-    - matcher: Bash
-      hooks:
-        - type: command
-          command: "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/ralph-verbose-log.sh"
 ---
 
-# Plan Review Mode (CLI)
+# Plan Review Mode
 
-Conduct a John Carmack-level review of implementation plans using RepoPrompt's context builder and chat.
+**Read [workflow.md](workflow.md) for detailed phases and anti-patterns.**
+
+Conduct a John Carmack-level review using RepoPrompt's context builder and chat.
 
 **Role**: Code Review Coordinator (NOT the reviewer)
-**Tool**: flowctl rp wrappers for context building and chat delegation
+**Tool**: `flowctl rp` wrappers ONLY
 
-## Critical Rule
+## Critical Rules
 
-**DO NOT REVIEW THE PLAN YOURSELF** - you coordinate, RepoPrompt reviews.
-
-If `REVIEW_RECEIPT_PATH` is set or `FLOW_RALPH=1`:
-- Use `flowctl rp` wrappers only (no direct `rp-cli`)
-- Must write receipt after chat returns (any verdict)
-- Any failure → output `<promise>RETRY</promise>` and stop
+1. **DO NOT REVIEW THE PLAN YOURSELF** - you coordinate, RepoPrompt reviews
+2. **MUST use `setup-review`** - handles window selection + builder atomically
+3. If `REVIEW_RECEIPT_PATH` set: write receipt after chat returns (any verdict)
+4. Any failure → output `<promise>RETRY</promise>` and stop
 
 ## Input
 
 Arguments: #$ARGUMENTS
 Format: `<flow-epic-id> [focus areas]`
 
-Example: `/flow-next:plan-review fn-1 focus on security`
-
-## Setup
+## Workflow
 
 ```bash
 FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ```
-
-## Workflow
 
 ### Step 1: Get Plan Content
 
@@ -58,90 +39,32 @@ $FLOWCTL show <id> --json
 $FLOWCTL cat <id>
 ```
 
-Build a compact task table from show output (ids, deps, statuses).
-
-### Step 2: Atomic Setup (MUST RUN)
-
-Run this single command - it handles window selection, workspace, and builder:
+### Step 2: Atomic Setup (MANDATORY)
 
 ```bash
-eval "$($FLOWCTL rp setup-review --repo-root "$REPO_ROOT" --summary "Review plan for <EPIC_ID>: <1-2 sentence summary>")"
+eval "$($FLOWCTL rp setup-review --repo-root "$REPO_ROOT" --summary "Review plan for <EPIC_ID>: <summary>")"
 ```
 
-This outputs `W=<window> T=<tab>`. The `eval` captures both variables.
-
-If setup-review fails, output `<promise>RETRY</promise>` and stop.
+Outputs `W=<window> T=<tab>`. If fails → `<promise>RETRY</promise>`.
 
 ### Step 3: Augment Selection
 
 ```bash
-# Check what builder selected
 $FLOWCTL rp select-get --window "$W" --tab "$T"
-
-# Add the plan spec file
 $FLOWCTL rp select-add --window "$W" --tab "$T" .flow/specs/<epic-id>.md
-
-# Add any supporting docs (PRD, architecture)
-$FLOWCTL rp select-add --window "$W" --tab "$T" <path-to-docs>
 ```
 
 ### Step 4: Build Review Prompt
 
-Get builder's handoff prompt:
 ```bash
 $FLOWCTL rp prompt-get --window "$W" --tab "$T"
 ```
 
-Create combined prompt via heredoc:
-```bash
-cat > /tmp/review-prompt.md << 'EOF'
-[BUILDER'S HANDOFF PROMPT]
-
----
-
-## Plan Under Review
-[PASTE flowctl show OUTPUT]
-
-## Review Focus
-[USER'S FOCUS AREAS FROM ARGUMENTS]
-
-## Review Criteria
-
-Conduct a John Carmack-level review. Evaluate against:
-
-### 1. Simplicity & Minimalism
-- Simplest possible solution?
-- Unnecessary abstraction layers?
-
-### 2. DRY & Code Reuse
-- Duplicated logic?
-- Could leverage existing patterns?
-
-### 3. Architecture & Design
-- Data flow makes sense?
-- Clear boundaries/responsibilities?
-
-### 4. Edge Cases & Error Handling
-- Unhandled failure modes?
-- Race conditions?
-
-### 5. Security
-- Injection vulnerabilities?
-- Auth/authz gaps?
-
-## Output Format
-
-For each issue:
-1. **Severity**: Critical / Major / Minor / Nitpick
-2. **Location**: Where in the plan
-3. **Problem**: What's wrong
-4. **Suggestion**: How to fix
-
-End with:
-- Overall: Ship / Needs Work / Major Rethink
-- Final verdict tag: `<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`
-EOF
-```
+Write prompt to `/tmp/review-prompt.md` with:
+- Builder's handoff prompt
+- Plan content from flowctl show
+- Review criteria (simplicity, DRY, architecture, edge cases, security)
+- Required verdict tag: `<verdict>SHIP|NEEDS_WORK|MAJOR_RETHINK</verdict>`
 
 ### Step 5: Execute Review
 
@@ -151,7 +74,7 @@ $FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/review-prompt
 
 **WAIT** for response (1-5+ minutes).
 
-### Step 6: Write Receipt (if REVIEW_RECEIPT_PATH set)
+### Step 6: Write Receipt
 
 ```bash
 if [[ -n "${REVIEW_RECEIPT_PATH:-}" ]]; then
@@ -166,24 +89,14 @@ fi
 
 ### Step 7: Update Status
 
-Extract verdict from chat response, then:
 ```bash
 $FLOWCTL epic set-plan-review-status <EPIC_ID> --status ship --json
 # OR
 $FLOWCTL epic set-plan-review-status <EPIC_ID> --status needs_work --json
 ```
 
-If no verdict tag in response, output `<promise>RETRY</promise>` and stop.
+If no verdict tag → `<promise>RETRY</promise>`.
 
 ## Fix Loop
 
-If verdict is NEEDS_WORK:
-1. Parse issues by severity
-2. Fix Critical → Major → Minor in plan
-3. Update plan: `$FLOWCTL epic set-plan <id> --file /tmp/updated-plan.md`
-4. Re-review via chat-send (no need to re-run builder)
-
-## Reference
-
-See [workflow.md](workflow.md) for detailed phases.
-See [rp-cli-reference.md](rp-cli-reference.md) for wrapper commands.
+If NEEDS_WORK: fix plan via `$FLOWCTL epic set-plan`, re-review via `$FLOWCTL rp chat-send` (no need to re-run setup-review).

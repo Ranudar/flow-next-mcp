@@ -1,6 +1,6 @@
 # RepoPrompt Wrapper Reference
 
-Use `flowctl rp` wrappers only. Do **not** call `rp-cli` directly.
+Use `flowctl rp` wrappers only.
 
 ## Primary Command (Ralph mode)
 
