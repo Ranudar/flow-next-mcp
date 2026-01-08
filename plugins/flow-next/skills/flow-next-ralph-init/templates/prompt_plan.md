@@ -13,11 +13,9 @@ Steps:
    - git log -10 --oneline
 
 Ralph mode rules (must follow):
-- Do NOT call `rp-cli` directly.
-- Use `flowctl rp` wrappers only (builder, prompt-get, select-add, chat-send).
+- Use `flowctl rp` wrappers only (setup-review, select-add, prompt-get, chat-send).
 - Write receipt via bash heredoc (no Write tool) if `REVIEW_RECEIPT_PATH` set.
 - If any rule is violated, output `<promise>RETRY</promise>` and stop.
-Reason: rp-cli chat omits tool output; Ralph gates on receipts.
 
 2) Plan review gate:
    - If PLAN_REVIEW=rp: run `/flow-next:plan-review {{EPIC_ID}} --mode=rp`
