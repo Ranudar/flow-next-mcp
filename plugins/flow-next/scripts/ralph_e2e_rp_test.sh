@@ -294,11 +294,11 @@ if [[ "${FLOW_RALPH_VERBOSE:-}" == "1" ]]; then
   log_file="scripts/ralph/runs/$run_dir/ralph.log"
   [[ -f "$log_file" ]] || fail "missing verbose log $log_file"
   if command -v rg >/dev/null 2>&1; then
-    rg -q "flowctl rp builder" "$log_file" || fail "missing builder in ralph.log"
+    rg -q "flowctl rp setup-review" "$log_file" || fail "missing setup-review in ralph.log"
     rg -q "flowctl rp chat-send" "$log_file" || fail "missing chat-send in ralph.log"
     rg -q "REVIEW_RECEIPT_WRITTEN" "$log_file" || fail "missing receipt marker in ralph.log"
   else
-    grep -q "flowctl rp builder" "$log_file" || fail "missing builder in ralph.log"
+    grep -q "flowctl rp setup-review" "$log_file" || fail "missing setup-review in ralph.log"
     grep -q "flowctl rp chat-send" "$log_file" || fail "missing chat-send in ralph.log"
     grep -q "REVIEW_RECEIPT_WRITTEN" "$log_file" || fail "missing receipt marker in ralph.log"
   fi
