@@ -206,7 +206,7 @@ Each epic and task gets its own JSON + markdown file pair. Merge conflicts are r
 
 ### Automated Reviews
 
-Reviews require [rp-cli](https://repoprompt.com) ([RepoPrompt](https://repoprompt.com)). Without it, review steps are skipped. Cross-model review catches blind spots.
+Reviews require [rp-cli](https://repoprompt.com/?atp=KJbuL4) ([RepoPrompt](https://repoprompt.com/?atp=KJbuL4)). Without it, review steps are skipped. Cross-model review catches blind spots.
 
 ### Dependency Graphs
 
@@ -414,7 +414,7 @@ This creates a complete audit trail: what was planned, what was done, how it was
 
 - Python 3.8+
 - git
-- [rp-cli](https://repoprompt.com) ([RepoPrompt](https://repoprompt.com)) — optional but highly recommended. Enables the entire review flow: AI-powered context building, cross-model plan reviews, and implementation reviews using a separate model. Without it, reviews are skipped.
+- [rp-cli](https://repoprompt.com/?atp=KJbuL4) ([RepoPrompt](https://repoprompt.com/?atp=KJbuL4)) — optional but highly recommended. Enables the entire review flow: AI-powered context building, cross-model plan reviews, and implementation reviews using a separate model. Without it, reviews are skipped.
 
 ---
 

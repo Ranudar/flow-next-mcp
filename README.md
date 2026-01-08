@@ -115,7 +115,7 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 | **Non-invasive** | No hooks, daemons, or CLAUDE.md edits. Delete `.flow/` to uninstall completely. |
 | **CI-ready** | `flowctl validate --all` exits 1 on errors. Drop into pre-commit or GitHub Actions. |
 | **One file per task** | Merge-friendly. Conflict surface is minimal. |
-| **Automated reviews** | Require [RepoPrompt](https://repoprompt.com) (rp-cli). Without it, reviews are skipped. |
+| **Automated reviews** | Require [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (rp-cli). Without it, reviews are skipped. |
 | **Dependency graphs** | Tasks declare blockers. Nothing starts until dependencies resolve. |
 
 ### Commands
@@ -200,7 +200,7 @@ Then install whichever plugin you want:
 
 ### Integrations
 
-- **[RepoPrompt](https://repoprompt.com)** for token-efficient codebase exploration + cross-model reviews
+- **[RepoPrompt](https://repoprompt.com/?atp=KJbuL4)** for token-efficient codebase exploration + cross-model reviews
 - **[Beads](https://github.com/steveyegge/beads)** for dependency-aware issue tracking (auto-detected)
 
 📖 **[Full documentation](plugins/flow/README.md)** · **[Changelog](CHANGELOG.md)**
