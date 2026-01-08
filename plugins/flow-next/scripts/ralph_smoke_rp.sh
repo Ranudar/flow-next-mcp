@@ -239,6 +239,17 @@ exec "$CLAUDE_BIN" --plugin-dir "$PLUGIN_ROOT" "\$@"
 EOF
 chmod +x "$TEST_DIR/bin/claude"
 
+# CREATE mode: set up repo and exit (user opens RP, then re-runs without CREATE)
+if [[ "${CREATE:-0}" == "1" ]]; then
+  echo -e "${GREEN}✓${NC} Test repo created: $TEST_DIR/repo"
+  echo ""
+  echo "Next steps:"
+  echo "  1. Open RepoPrompt on: $TEST_DIR/repo"
+  echo "  2. Re-run without CREATE:"
+  echo "     FLOW_RALPH_PIN_SESSION_ID=1 RP_SMOKE=1 TEST_DIR=$TEST_DIR KEEP_TEST_DIR=1 $0"
+  exit 0
+fi
+
 REPO_ROOT="$(pwd)"
 W="$($FLOWCTL rp pick-window --repo-root "$REPO_ROOT")"
 [[ -n "$W" ]] || fail "no rp-cli window for $REPO_ROOT"
@@ -286,11 +297,11 @@ if [[ "${FLOW_RALPH_VERBOSE:-}" == "1" ]]; then
   log_file="scripts/ralph/runs/$run_dir/ralph.log"
   [[ -f "$log_file" ]] || fail "missing verbose log $log_file"
   if command -v rg >/dev/null 2>&1; then
-    rg -q "flowctl rp builder" "$log_file" || fail "missing builder in ralph.log"
+    rg -q "flowctl rp setup-review" "$log_file" || fail "missing setup-review in ralph.log"
     rg -q "flowctl rp chat-send" "$log_file" || fail "missing chat-send in ralph.log"
     rg -q "REVIEW_RECEIPT_WRITTEN" "$log_file" || fail "missing receipt marker in ralph.log"
   else
-    grep -q "flowctl rp builder" "$log_file" || fail "missing builder in ralph.log"
+    grep -q "flowctl rp setup-review" "$log_file" || fail "missing setup-review in ralph.log"
     grep -q "flowctl rp chat-send" "$log_file" || fail "missing chat-send in ralph.log"
     grep -q "REVIEW_RECEIPT_WRITTEN" "$log_file" || fail "missing receipt marker in ralph.log"
   fi

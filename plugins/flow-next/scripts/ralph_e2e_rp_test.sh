@@ -246,6 +246,17 @@ exec "$CLAUDE_BIN" --plugin-dir "$PLUGIN_ROOT" "\$@"
 EOF
 chmod +x "$TEST_DIR/bin/claude"
 
+# CREATE mode: set up repo and exit (user opens RP, then re-runs without CREATE)
+if [[ "${CREATE:-0}" == "1" ]]; then
+  echo -e "${GREEN}✓${NC} Test repo created: $TEST_DIR/repo"
+  echo ""
+  echo "Next steps:"
+  echo "  1. Open RepoPrompt on: $TEST_DIR/repo"
+  echo "  2. Re-run without CREATE:"
+  echo "     FLOW_RALPH_PIN_SESSION_ID=1 TEST_DIR=$TEST_DIR KEEP_TEST_DIR=1 $0"
+  exit 0
+fi
+
 echo -e "${YELLOW}--- running ralph (rp) ---${NC}"
 REPO_ROOT="$(pwd)"
 W="$($FLOWCTL rp pick-window --repo-root "$REPO_ROOT")"
