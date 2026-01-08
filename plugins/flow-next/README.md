@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/Version-0.2.6-green)](../../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.2.8-green)](../../CHANGELOG.md)
 [![Status](https://img.shields.io/badge/Status-Experimental-orange)]()
 
 **Plan first, work second. Zero external dependencies.**
@@ -410,7 +410,7 @@ flowchart TD
 Flowctl accepts schema v1 and v2; new fields are optional and defaulted.
 
 New fields:
-- Epic JSON: `plan_review_status`, `plan_reviewed_at`, `depends_on_epics`
+- Epic JSON: `plan_review_status`, `plan_reviewed_at`, `depends_on_epics`, `branch_name`
 - Task JSON: `priority`
 
 ### ID Format
@@ -438,6 +438,7 @@ flowctl detect                            # Check if .flow/ exists
 
 # Epics
 flowctl epic create --title "..."         # Create epic
+flowctl epic create --title "..." --branch "fn-1-epic"
 flowctl epic set-plan fn-1 --file spec.md # Set epic spec from file
 flowctl epic set-plan-review-status fn-1 --status ship
 flowctl epic close fn-1                   # Close epic (requires all tasks done)

@@ -15,6 +15,7 @@ Follow this skill and linked workflows exactly. Deviations cause drift, bad gate
 - You MUST run `flowctl done` for each completed task and verify the task status is `done`.
 - You MUST stage with `git add -A` (never list files). This ensures `.flow/` and `scripts/ralph/` (if present) are included.
 - Do NOT claim completion until `flowctl show <task>` reports `status: done`.
+- Do NOT invoke `/flow-next:impl-review` until tests/Quick commands are green.
 
 **Role**: execution lead, plan fidelity first.
 **Goal**: complete every task in order with tests.

@@ -122,6 +122,49 @@ ensure_attempts_file "$ATTEMPTS_FILE"
 BRANCHES_FILE="$RUN_DIR/branches.json"
 RECEIPTS_DIR="$RUN_DIR/receipts"
 mkdir -p "$RECEIPTS_DIR"
+PROGRESS_FILE="$RUN_DIR/progress.txt"
+{
+  echo "# Ralph Progress Log"
+  echo "Run: $RUN_ID"
+  echo "Started: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "---"
+} > "$PROGRESS_FILE"
+
+extract_tag() {
+  local tag="$1"
+  python3 - "$tag" <<'PY'
+import re, sys
+tag = sys.argv[1]
+text = sys.stdin.read()
+matches = re.findall(rf"<{tag}>(.*?)</{tag}>", text, flags=re.S)
+print(matches[-1] if matches else "")
+PY
+}
+
+append_progress() {
+  local verdict="$1"
+  local promise="$2"
+  local plan_review_status="${3:-}"
+  local task_status="${4:-}"
+  local receipt_exists="0"
+  if [[ -n "${REVIEW_RECEIPT_PATH:-}" && -f "$REVIEW_RECEIPT_PATH" ]]; then
+    receipt_exists="1"
+  fi
+  {
+    echo "## $(date -u +%Y-%m-%dT%H:%M:%SZ) - iter $iter"
+    echo "status=$status epic=${epic_id:-} task=${task_id:-} reason=${reason:-}"
+    echo "claude_rc=$claude_rc"
+    echo "verdict=${verdict:-}"
+    echo "promise=${promise:-}"
+    echo "receipt=${REVIEW_RECEIPT_PATH:-} exists=$receipt_exists"
+    echo "plan_review_status=${plan_review_status:-}"
+    echo "task_status=${task_status:-}"
+    echo "iter_log=$iter_log"
+    echo "last_output:"
+    tail -n 10 "$iter_log" || true
+    echo "---"
+  } >> "$PROGRESS_FILE"
+}
 
 init_branches_file() {
   if [[ -f "$BRANCHES_FILE" ]]; then return; fi
@@ -331,6 +374,18 @@ while (( iter <= MAX_ITERATIONS )); do
   export RALPH_MODE="1"
   claude_args=(-p --max-turns "$MAX_TURNS" --output-format text)
   [[ "$YOLO" == "1" ]] && claude_args+=(--dangerously-skip-permissions)
+  [[ -n "${FLOW_RALPH_CLAUDE_MODEL:-}" ]] && claude_args+=(--model "$FLOW_RALPH_CLAUDE_MODEL")
+  [[ -n "${FLOW_RALPH_CLAUDE_SESSION_ID:-}" ]] && claude_args+=(--session-id "$FLOW_RALPH_CLAUDE_SESSION_ID")
+  [[ -n "${FLOW_RALPH_CLAUDE_PERMISSION_MODE:-}" ]] && claude_args+=(--permission-mode "$FLOW_RALPH_CLAUDE_PERMISSION_MODE")
+  [[ "${FLOW_RALPH_CLAUDE_NO_SESSION_PERSISTENCE:-}" == "1" ]] && claude_args+=(--no-session-persistence)
+  if [[ -n "${FLOW_RALPH_CLAUDE_DEBUG:-}" ]]; then
+    if [[ "${FLOW_RALPH_CLAUDE_DEBUG}" == "1" ]]; then
+      claude_args+=(--debug)
+    else
+      claude_args+=(--debug "$FLOW_RALPH_CLAUDE_DEBUG")
+    fi
+  fi
+  [[ "${FLOW_RALPH_CLAUDE_VERBOSE:-}" == "1" ]] && claude_args+=(--verbose)
 
   set +e
   claude_out="$("$CLAUDE_BIN" "${claude_args[@]}" "$prompt" 2>&1)"
@@ -341,6 +396,8 @@ while (( iter <= MAX_ITERATIONS )); do
   log "claude rc=$claude_rc log=$iter_log"
 
   force_retry=0
+  plan_review_status=""
+  task_status=""
   if [[ "$status" == "plan" && "$PLAN_REVIEW" == "rp" ]]; then
     if ! verify_receipt "$REVIEW_RECEIPT_PATH" "plan_review" "$epic_id"; then
       echo "ralph: missing plan review receipt; forcing retry" >> "$iter_log"
@@ -348,6 +405,8 @@ while (( iter <= MAX_ITERATIONS )); do
       "$FLOWCTL" epic set-plan-review-status "$epic_id" --status needs_work --json >/dev/null 2>&1 || true
       force_retry=1
     fi
+    epic_json="$("$FLOWCTL" show "$epic_id" --json 2>/dev/null || true)"
+    plan_review_status="$(json_get plan_review_status "$epic_json")"
   fi
   if [[ "$status" == "work" && "$WORK_REVIEW" == "rp" ]]; then
     if ! verify_receipt "$REVIEW_RECEIPT_PATH" "impl_review" "$task_id"; then
@@ -365,6 +424,10 @@ while (( iter <= MAX_ITERATIONS )); do
       force_retry=1
     fi
   fi
+
+  verdict="$(printf '%s' "$claude_out" | extract_tag verdict)"
+  promise="$(printf '%s' "$claude_out" | extract_tag promise)"
+  append_progress "$verdict" "$promise" "$plan_review_status" "$task_status"
 
   if echo "$claude_out" | grep -q "<promise>COMPLETE</promise>"; then
     echo "<promise>COMPLETE</promise>"

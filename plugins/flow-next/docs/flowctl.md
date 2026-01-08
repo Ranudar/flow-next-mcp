@@ -36,7 +36,7 @@ Works out of the box for parallel branches. No setup required.
 Flowctl accepts schema v1 and v2; new fields are optional and defaulted.
 
 New fields:
-- Epic JSON: `plan_review_status`, `plan_reviewed_at`, `depends_on_epics`
+- Epic JSON: `plan_review_status`, `plan_reviewed_at`, `depends_on_epics`, `branch_name`
 - Task JSON: `priority`
 
 ## ID Format
@@ -72,7 +72,7 @@ Output:
 Create new epic.
 
 ```bash
-flowctl epic create --title "Epic title" [--json]
+flowctl epic create --title "Epic title" [--branch "fn-1-epic"] [--json]
 ```
 
 Output:
@@ -94,6 +94,14 @@ Set plan review status and timestamp.
 
 ```bash
 flowctl epic set-plan-review-status fn-1 --status ship|needs_work|unknown [--json]
+```
+
+### epic set-branch
+
+Set epic branch_name.
+
+```bash
+flowctl epic set-branch fn-1 --branch "fn-1-epic" [--json]
 ```
 
 ### epic close

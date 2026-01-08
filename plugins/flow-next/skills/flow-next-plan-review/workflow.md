@@ -25,6 +25,7 @@ W="$($FLOWCTL rp pick-window --repo-root "$REPO_ROOT")"
 ```
 
 If pick-window fails, output `<promise>RETRY</promise>` and stop. **Do not** proceed with a manual review.
+`$W` **must be a numeric window id**. Do not invent names or use tab titles. If missing or non-numeric, output `<promise>RETRY</promise>` and stop.
 
 Ensure the window has the repo workspace:
 ```bash

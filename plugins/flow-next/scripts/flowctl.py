@@ -258,6 +258,8 @@ def normalize_epic(epic_data: dict) -> dict:
         epic_data["plan_review_status"] = "unknown"
     if "plan_reviewed_at" not in epic_data:
         epic_data["plan_reviewed_at"] = None
+    if "branch_name" not in epic_data:
+        epic_data["branch_name"] = None
     if "depends_on_epics" not in epic_data:
         epic_data["depends_on_epics"] = []
     return epic_data
@@ -609,6 +611,7 @@ def cmd_epic_create(args: argparse.Namespace) -> None:
         "status": "open",
         "plan_review_status": "unknown",
         "plan_reviewed_at": None,
+        "branch_name": args.branch if args.branch else None,
         "depends_on_epics": [],
         "spec_path": f"{FLOW_DIR}/{SPECS_DIR}/{epic_id}.md",
         "next_task": 1,
@@ -908,6 +911,35 @@ def cmd_epic_set_plan_review_status(args: argparse.Namespace) -> None:
         })
     else:
         print(f"Epic {args.id} plan review status set to {args.status}")
+
+
+def cmd_epic_set_branch(args: argparse.Namespace) -> None:
+    """Set epic branch name."""
+    if not ensure_flow_exists():
+        error_exit(".flow/ does not exist. Run 'flowctl init' first.", use_json=args.json)
+
+    if not is_epic_id(args.id):
+        error_exit(f"Invalid epic ID: {args.id}. Expected format: fn-N", use_json=args.json)
+
+    flow_dir = get_flow_dir()
+    epic_path = flow_dir / EPICS_DIR / f"{args.id}.json"
+
+    if not epic_path.exists():
+        error_exit(f"Epic {args.id} not found", use_json=args.json)
+
+    epic_data = normalize_epic(load_json_or_exit(epic_path, f"Epic {args.id}", use_json=args.json))
+    epic_data["branch_name"] = args.branch
+    epic_data["updated_at"] = now_iso()
+    atomic_write_json(epic_path, epic_data)
+
+    if args.json:
+        json_output({
+            "id": args.id,
+            "branch_name": epic_data["branch_name"],
+            "message": f"Epic {args.id} branch_name set to {args.branch}"
+        })
+    else:
+        print(f"Epic {args.id} branch_name set to {args.branch}")
 
 
 def cmd_task_set_description(args: argparse.Namespace) -> None:
@@ -1968,6 +2000,7 @@ def main() -> None:
 
     p_epic_create = epic_sub.add_parser("create", help="Create new epic")
     p_epic_create.add_argument("--title", required=True, help="Epic title")
+    p_epic_create.add_argument("--branch", help="Branch name to store on epic")
     p_epic_create.add_argument("--json", action="store_true", help="JSON output")
     p_epic_create.set_defaults(func=cmd_epic_create)
 
@@ -1987,6 +2020,12 @@ def main() -> None:
     )
     p_epic_set_review.add_argument("--json", action="store_true", help="JSON output")
     p_epic_set_review.set_defaults(func=cmd_epic_set_plan_review_status)
+
+    p_epic_set_branch = epic_sub.add_parser("set-branch", help="Set epic branch name")
+    p_epic_set_branch.add_argument("id", help="Epic ID (fn-N)")
+    p_epic_set_branch.add_argument("--branch", required=True, help="Branch name")
+    p_epic_set_branch.add_argument("--json", action="store_true", help="JSON output")
+    p_epic_set_branch.set_defaults(func=cmd_epic_set_branch)
 
     p_epic_close = epic_sub.add_parser("close", help="Close epic")
     p_epic_close.add_argument("id", help="Epic ID (fn-N)")

@@ -13,6 +13,7 @@ Follow this skill and linked workflows exactly. Deviations cause drift, bad gate
 
 **Role**: product-minded planner with strong repo awareness.
 **Goal**: produce an epic with tasks that match existing conventions and reuse points.
+**Task size**: every task must fit one `/flow-next:work` iteration. If it won't, split it.
 
 ## Input
 

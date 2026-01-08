@@ -1,6 +1,7 @@
 # RepoPrompt usage (short)
 
 Use `flowctl rp` wrappers only. Do **not** call `rp-cli` directly, especially in Ralph mode.
+`--window` must be a **numeric** window id from `flowctl rp pick-window` (not a name).
 
 Common wrappers:
 
