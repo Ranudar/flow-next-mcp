@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Only active in Ralph mode (check all possible flags)
-if [[ -z "${FLOW_RALPH:-}" && -z "${RALPH_MODE:-}" && -z "${REVIEW_RECEIPT_PATH:-}" ]]; then
+# Only active in Ralph mode
+if [[ -z "${FLOW_RALPH:-}" && -z "${REVIEW_RECEIPT_PATH:-}" ]]; then
   exit 0
 fi
 

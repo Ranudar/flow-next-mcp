@@ -371,7 +371,7 @@ while (( iter <= MAX_ITERATIONS )); do
     fail "invalid selector status: $status"
   fi
 
-  export RALPH_MODE="1"
+  export FLOW_RALPH="1"
   claude_args=(-p --max-turns "$MAX_TURNS" --output-format text)
   [[ "$YOLO" == "1" ]] && claude_args+=(--dangerously-skip-permissions)
   [[ -n "${FLOW_RALPH_CLAUDE_MODEL:-}" ]] && claude_args+=(--model "$FLOW_RALPH_CLAUDE_MODEL")

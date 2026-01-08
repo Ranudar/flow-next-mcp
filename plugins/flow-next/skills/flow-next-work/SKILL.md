@@ -22,7 +22,7 @@ Follow this skill and linked workflows exactly. Deviations cause drift, bad gate
 
 ## Ralph Mode Rules (always follow)
 
-If `REVIEW_RECEIPT_PATH` is set or `RALPH_MODE=1`:
+If `REVIEW_RECEIPT_PATH` is set or `FLOW_RALPH=1`:
 - **Must** use `flowctl done` and verify task status is `done` before committing.
 - **Must** stage with `git add -A` (never list files).
 - **Do NOT** use TodoWrite for tracking.
