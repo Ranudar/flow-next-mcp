@@ -127,7 +127,23 @@ scripts/ralph/ralph.sh    # run the loop
 
 Ralph writes run artifacts under `scripts/ralph/runs/`, including review receipts used for gating.
 
+> **⚠️ Warning**: Autonomous code generation is powerful but requires care. I've tested Ralph extensively on my own production projects, but you should understand the gating mechanisms before running unattended. Start with `ralph_once.sh` to observe behavior step-by-step.
+
 📖 **[Ralph deep dive](docs/ralph.md)**
+
+### How Ralph Differs from Other Autonomous Agents
+
+Autonomous coding agents are taking the industry by storm—loop until done, commit, repeat. Most solutions gate progress by tests and linting alone. Ralph goes further.
+
+**Multi-model review gates**: Ralph uses [RepoPrompt](https://repoprompt.com) to send plan and implementation reviews to a *different* model (we recommend GPT-5.2 High). A second set of eyes catches blind spots that self-review misses. The reviewing model sees full file context via RepoPrompt's builder, not just diffs.
+
+**Review loops until Ship**: Reviews don't just flag issues—they block progress until resolved. Ralph runs fix → re-review cycles until the reviewer returns `<verdict>SHIP</verdict>`. No "LGTM with nits" that get ignored.
+
+**Receipt-based gating**: Reviews must produce a receipt JSON file proving they ran. No receipt = no progress. This prevents drift where Claude skips the review step and marks things done anyway.
+
+**Atomic window selection**: The `setup-review` command handles RepoPrompt window matching atomically. Claude can't skip steps or invent window IDs—the entire sequence runs as one unit or fails.
+
+The result: code that's been reviewed by two models, tested, linted, and iteratively refined. Not perfect, but meaningfully more robust than single-model autonomous loops.
 
 ---
 

@@ -4,6 +4,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TEST_DIR="/tmp/ralph-smoke-$$"
+
+# Safety: never run tests from the main plugin repo
+if [[ -f "$PWD/.claude-plugin/marketplace.json" ]] || [[ -f "$PWD/plugins/flow-next/.claude-plugin/plugin.json" ]]; then
+  echo "ERROR: refusing to run from main plugin repo. Run from any other directory." >&2
+  exit 1
+fi
 PASS=0
 FAIL=0
 
