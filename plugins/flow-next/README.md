@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/Version-0.2.0-green)](../../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.2.6-green)](../../CHANGELOG.md)
 [![Status](https://img.shields.io/badge/Status-Experimental-orange)]()
 
 **Plan first, work second. Zero external dependencies.**
@@ -115,6 +115,22 @@ That's it. Flow-Next handles research, task ordering, reviews, and audit trails.
 
 ---
 
+## Ralph (Autonomous Mode)
+
+Ralph is the repo-local autonomous loop that plans and works through tasks end-to-end.
+Requires Claude Code **2.1.0+** (skill-scoped hooks).
+
+```bash
+/flow-next:ralph-init     # scaffold scripts/ralph/
+scripts/ralph/ralph.sh    # run the loop
+```
+
+Ralph writes run artifacts under `scripts/ralph/runs/`, including review receipts used for gating.
+
+📖 **[Ralph deep dive](docs/ralph.md)**
+
+---
+
 ## Human-in-the-Loop Workflow (Detailed)
 
 Default flow when you drive manually:
@@ -129,7 +145,7 @@ flowchart TD
   E --> F[Parallel subagents: repo patterns + online docs + best practices]
   F --> G[flow-gap-analyst: edge cases + missing reqs]
   G --> H[Writes .flow/ epic + tasks + deps]
-  H --> I{Plan review? rp-cli only}
+  H --> I{Plan review? RepoPrompt only}
   I -- yes --> J[/flow-next:plan-review fn-N/]
   J --> K{Plan passes review?}
   K -- no --> L[Re-anchor + fix plan]
@@ -140,12 +156,12 @@ flowchart TD
   N --> O[Implement]
   O --> P[Test + verify acceptance]
   P --> Q[flowctl done: write done summary + evidence]
-  Q --> R{Impl review? rp-cli only}
+  Q --> R{Impl review? RepoPrompt only}
   R -- yes --> S[/flow-next:impl-review/]
   S --> T{Next ready task?}
   R -- no --> T
   T -- yes --> N
-  T -- no --> U[flowctl epic close fn-N]
+  T -- no --> U[Close epic (manual or Ralph)]
   classDef optional stroke-dasharray: 6 4,stroke:#999;
   class C,J,S optional;
 ```
@@ -155,6 +171,7 @@ Notes:
 - `/flow-next:plan` accepts new ideas or an existing Flow ID to update the plan
 
 Recommendation: open RepoPrompt in the repo before starting a new flow so plan/impl reviews have fast context.
+Plan review in rp mode requires `flowctl rp chat-send`; if rp-cli/windows unavailable, the review gate retries.
 
 ---
 
@@ -235,7 +252,7 @@ Five commands, complete workflow:
 | `/flow-next:plan <idea>` | Research the codebase, create epic with dependency-ordered tasks |
 | `/flow-next:work <id>` | Execute epic or single task, re-anchoring before each |
 | `/flow-next:interview <id>` | Deep interview to flesh out a spec before planning |
-| `/flow-next:plan-review <id>` | Carmack-level plan review via rp-cli |
+| `/flow-next:plan-review <id>` | Carmack-level plan review via RepoPrompt |
 | `/flow-next:impl-review` | Carmack-level impl review of current branch |
 | `/flow-next:ralph-init` | Scaffold repo-local Ralph harness (`scripts/ralph/`) |
 
@@ -303,7 +320,7 @@ Override via flags or `scripts/ralph/config.env`.
 3. **Test**: Verify acceptance criteria
 4. **Record**: `flowctl done` adds summary + evidence to the task spec
 5. **Review** (optional): `/flow-next:impl-review` via RepoPrompt
-6. **Loop**: Next ready task → repeat until epic closes
+6. **Loop**: Next ready task → repeat until no ready tasks. Close epic manually (`flowctl epic close fn-N`) or let Ralph close at loop end.
 
 ---
 
@@ -344,6 +361,8 @@ This forces Ralph to run `/flow-next:plan-review` until the epic plan is approve
 
 **Tip:** If you don't have `rp-cli` installed, keep `REQUIRE_PLAN_REVIEW=0` or Ralph may repeatedly select the plan gate and make no progress.
 
+Ralph verifies RepoPrompt reviews via receipt JSON files in `scripts/ralph/runs/<run>/receipts/` (plan + impl).
+
 ### Ralph loop (one iteration)
 
 ```mermaid
@@ -364,7 +383,8 @@ flowchart TD
   F -->|WORK_REVIEW=none| G
 
   G --> A
-  B -->|status=none| H[<promise>COMPLETE</promise>]
+  B -->|status=none| H[close done epics]
+  H --> I[<promise>COMPLETE</promise>]
 ```
 
 **YOLO safety**: YOLO mode uses `--dangerously-skip-permissions`. Use a sandbox/container and no secrets in env for unattended runs.
@@ -446,10 +466,12 @@ flowctl validate --epic fn-1              # Validate single epic
 flowctl validate --all                    # Validate everything (for CI)
 
 # Review helpers
+flowctl rp chat-send --window W --tab T --message-file m.md
 flowctl prep-chat --message-file m.md --selected-paths a.ts b.ts -o payload.json
 ```
 
-📖 **[Full CLI reference](docs/flowctl.md)**
+📖 **[Full CLI reference](docs/flowctl.md)**  
+🤖 **[Ralph deep dive](docs/ralph.md)**
 
 ---
 

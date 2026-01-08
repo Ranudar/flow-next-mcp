@@ -31,7 +31,7 @@
     {
       "name": "flow-next",
       "description": "Flow workflow backed by .flow/ (md specs + json metadata), no Beads, no plan files",
-      "version": "0.2.0",
+    "version": "0.2.6",
       "author": {
         "name": "Gordon Mickel",
         "email": "gordon@mickel.tech",

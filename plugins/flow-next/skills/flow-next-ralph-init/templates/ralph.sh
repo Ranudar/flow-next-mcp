@@ -7,6 +7,7 @@ CONFIG="$SCRIPT_DIR/config.env"
 FLOWCTL="$SCRIPT_DIR/flowctl"
 
 fail() { echo "ralph: $*" >&2; exit 1; }
+log() { echo "ralph: $*"; }
 
 [[ -f "$CONFIG" ]] || fail "missing config.env"
 [[ -x "$FLOWCTL" ]] || fail "missing flowctl"
@@ -60,7 +61,7 @@ render_template() {
 import os, sys
 path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
-keys = ["EPIC_ID","TASK_ID","PLAN_REVIEW","WORK_REVIEW","BRANCH_MODE","BRANCH_MODE_EFFECTIVE","REQUIRE_PLAN_REVIEW"]
+keys = ["EPIC_ID","TASK_ID","PLAN_REVIEW","WORK_REVIEW","BRANCH_MODE","BRANCH_MODE_EFFECTIVE","REQUIRE_PLAN_REVIEW","REVIEW_RECEIPT_PATH"]
 for k in keys:
     text = text.replace("{{%s}}" % k, os.environ.get(k, ""))
 print(text)
@@ -119,6 +120,8 @@ mkdir -p "$RUN_DIR"
 ATTEMPTS_FILE="$RUN_DIR/attempts.json"
 ensure_attempts_file "$ATTEMPTS_FILE"
 BRANCHES_FILE="$RUN_DIR/branches.json"
+RECEIPTS_DIR="$RUN_DIR/receipts"
+mkdir -p "$RECEIPTS_DIR"
 
 init_branches_file() {
   if [[ -f "$BRANCHES_FILE" ]]; then return; fi
@@ -174,6 +177,78 @@ except FileNotFoundError:
 PY
 }
 
+list_epics_from_file() {
+  python3 - "$EPICS_FILE" <<'PY'
+import json, sys
+path = sys.argv[1]
+if not path:
+    sys.exit(0)
+try:
+    data = json.load(open(path, encoding="utf-8"))
+except FileNotFoundError:
+    sys.exit(0)
+epics = data.get("epics", []) or []
+print(" ".join(epics))
+PY
+}
+
+epic_all_tasks_done() {
+  python3 - "$1" <<'PY'
+import json, sys
+try:
+    data = json.loads(sys.argv[1])
+except json.JSONDecodeError:
+    print("0")
+    sys.exit(0)
+tasks = data.get("tasks", []) or []
+if not tasks:
+    print("0")
+    sys.exit(0)
+for t in tasks:
+    if t.get("status") != "done":
+        print("0")
+        sys.exit(0)
+print("1")
+PY
+}
+
+maybe_close_epics() {
+  [[ -z "$EPICS_FILE" ]] && return
+  local epics json status all_done
+  epics="$(list_epics_from_file)"
+  [[ -z "$epics" ]] && return
+  for epic in $epics; do
+    json="$("$FLOWCTL" show "$epic" --json 2>/dev/null || true)"
+    [[ -z "$json" ]] && continue
+    status="$(json_get status "$json")"
+    [[ "$status" == "done" ]] && continue
+    all_done="$(epic_all_tasks_done "$json")"
+    if [[ "$all_done" == "1" ]]; then
+      "$FLOWCTL" epic close "$epic" --json >/dev/null 2>&1 || true
+    fi
+  done
+}
+
+verify_receipt() {
+  local path="$1"
+  local kind="$2"
+  local id="$3"
+  [[ -f "$path" ]] || return 1
+  python3 - "$path" "$kind" "$id" <<'PY'
+import json, sys
+path, kind, rid = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    data = json.load(open(path, encoding="utf-8"))
+except Exception:
+    sys.exit(1)
+if data.get("type") != kind:
+    sys.exit(1)
+if data.get("id") != rid:
+    sys.exit(1)
+sys.exit(0)
+PY
+}
+
 ensure_epic_branch() {
   local epic_id="$1"
   if [[ "$BRANCH_MODE" != "new" ]]; then
@@ -218,10 +293,13 @@ while (( iter <= MAX_ITERATIONS )); do
   task_id="$(json_get task "$selector_json")"
   reason="$(json_get reason "$selector_json")"
 
+  log "iter $iter status=$status epic=${epic_id:-} task=${task_id:-} reason=${reason:-}"
+
   if [[ "$status" == "none" ]]; then
     if [[ "$reason" == "blocked_by_epic_deps" ]]; then
-      echo "ralph: blocked by epic deps"
+      log "blocked by epic deps"
     fi
+    maybe_close_epics
     echo "<promise>COMPLETE</promise>"
     exit 0
   fi
@@ -230,6 +308,8 @@ while (( iter <= MAX_ITERATIONS )); do
     export EPIC_ID="$epic_id"
     export PLAN_REVIEW
     export REQUIRE_PLAN_REVIEW
+    export REVIEW_RECEIPT_PATH="$RECEIPTS_DIR/plan-${epic_id}.json"
+    log "plan epic=$epic_id review=$PLAN_REVIEW receipt=$REVIEW_RECEIPT_PATH require=$REQUIRE_PLAN_REVIEW"
     prompt="$(render_template "$SCRIPT_DIR/prompt_plan.md")"
   elif [[ "$status" == "work" ]]; then
     epic_id="${task_id%%.*}"
@@ -241,11 +321,14 @@ while (( iter <= MAX_ITERATIONS )); do
     fi
     export BRANCH_MODE_EFFECTIVE
     export WORK_REVIEW
+    export REVIEW_RECEIPT_PATH="$RECEIPTS_DIR/impl-${task_id}.json"
+    log "work task=$task_id review=$WORK_REVIEW receipt=$REVIEW_RECEIPT_PATH branch=$BRANCH_MODE_EFFECTIVE"
     prompt="$(render_template "$SCRIPT_DIR/prompt_work.md")"
   else
     fail "invalid selector status: $status"
   fi
 
+  export RALPH_MODE="1"
   claude_args=(-p --max-turns "$MAX_TURNS" --output-format text)
   [[ "$YOLO" == "1" ]] && claude_args+=(--dangerously-skip-permissions)
 
@@ -255,6 +338,33 @@ while (( iter <= MAX_ITERATIONS )); do
   set -e
 
   printf '%s\n' "$claude_out" > "$iter_log"
+  log "claude rc=$claude_rc log=$iter_log"
+
+  force_retry=0
+  if [[ "$status" == "plan" && "$PLAN_REVIEW" == "rp" ]]; then
+    if ! verify_receipt "$REVIEW_RECEIPT_PATH" "plan_review" "$epic_id"; then
+      echo "ralph: missing plan review receipt; forcing retry" >> "$iter_log"
+      log "missing plan receipt; forcing retry"
+      "$FLOWCTL" epic set-plan-review-status "$epic_id" --status needs_work --json >/dev/null 2>&1 || true
+      force_retry=1
+    fi
+  fi
+  if [[ "$status" == "work" && "$WORK_REVIEW" == "rp" ]]; then
+    if ! verify_receipt "$REVIEW_RECEIPT_PATH" "impl_review" "$task_id"; then
+      echo "ralph: missing impl review receipt; forcing retry" >> "$iter_log"
+      log "missing impl receipt; forcing retry"
+      force_retry=1
+    fi
+  fi
+  if [[ "$status" == "work" ]]; then
+    task_json="$("$FLOWCTL" show "$task_id" --json 2>/dev/null || true)"
+    task_status="$(json_get status "$task_json")"
+    if [[ "$task_status" != "done" ]]; then
+      echo "ralph: task not done; forcing retry" >> "$iter_log"
+      log "task $task_id status=$task_status; forcing retry"
+      force_retry=1
+    fi
+  fi
 
   if echo "$claude_out" | grep -q "<promise>COMPLETE</promise>"; then
     echo "<promise>COMPLETE</promise>"
@@ -266,16 +376,20 @@ while (( iter <= MAX_ITERATIONS )); do
     exit_code=1
   elif echo "$claude_out" | grep -q "<promise>RETRY</promise>"; then
     exit_code=2
+  elif [[ "$force_retry" == "1" ]]; then
+    exit_code=2
   elif [[ "$claude_rc" -ne 0 ]]; then
     exit_code=1
   fi
 
   if [[ "$exit_code" -eq 1 ]]; then
+    log "exit=fail"
     exit 1
   fi
 
   if [[ "$exit_code" -eq 2 && "$status" == "work" ]]; then
     attempts="$(bump_attempts "$ATTEMPTS_FILE" "$task_id")"
+    log "retry task=$task_id attempts=$attempts"
     if (( attempts >= MAX_ATTEMPTS_PER_TASK )); then
       reason_file="$RUN_DIR/block-${task_id}.md"
       {

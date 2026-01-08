@@ -1,0 +1,9 @@
+{
+  "name": "tmp-flow-next-ralph-smoke",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node -e \"console.log('ok')\""
+  }
+}

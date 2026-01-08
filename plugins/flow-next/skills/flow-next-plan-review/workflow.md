@@ -16,32 +16,27 @@ We already KNOW the plan file. Builder's job is finding the **surrounding contex
 
 ## Phase 0: Window Selection
 
-**CRITICAL**: Always start by listing windows and selecting the correct one.
+**CRITICAL**: Always select the correct RepoPrompt window via flowctl wrappers. RepoPrompt must already be open with the repo workspace. Never review manually.
 
 ```bash
-rp-cli -e 'windows'
+FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+W="$($FLOWCTL rp pick-window --repo-root "$REPO_ROOT")"
 ```
 
-Output shows window IDs with workspace names. **Identify the window for the project you're reviewing.**
+If pick-window fails, output `<promise>RETRY</promise>` and stop. **Do not** proceed with a manual review.
 
-For all subsequent commands, use `-w <id>` to target that window:
+Ensure the window has the repo workspace:
 ```bash
-rp-cli -w 1 -e 'tree --folders'
+$FLOWCTL rp ensure-workspace --window "$W" --repo-root "$REPO_ROOT"
 ```
 
 **Tab Isolation (for parallel agents):**
 
-`builder` automatically creates an isolated compose tab with an AI-generated name. Subsequent commands in the same rp-cli invocation stay in that tab. For separate invocations, rebind by name or UUID:
-```bash
-# Builder output includes: Tab: <UUID> • <Name>
-# Rebind in later commands:
-rp-cli -w 1 -e 'workspace tab "<Name>" && select add file.md'
-```
+`builder` returns a tab ID. For all subsequent commands, pass `--tab "$T"` to flowctl rp wrappers.
 
-When possible, chain commands in single invocations to maintain tab context:
-```bash
-rp-cli -w W -e 'builder "..." && select add plan.md && select get'
-```
+**Hard rule (rp mode):** You must run `builder` and `chat-send`. If you do not, output `<promise>RETRY</promise>` and stop.
+If `REVIEW_RECEIPT_PATH` is provided, write a receipt JSON file after review returns (any verdict).
 
 ---
 
@@ -62,25 +57,15 @@ Additional text in arguments = focus areas/context. Save these for Phase 3.
 
 **If markdown plan:**
 
-Read the plan file (replace W with your window ID from Phase 0):
-```bash
-rp-cli -w W -e 'read <plan-file-from-args>'
-```
+Read the plan file locally (Read tool or `sed -n '1,200p' file`).
 
 Compose a **concise but descriptive summary** of what the plan accomplishes (for builder prompt). Simple plans: 1-2 sentences. Complex epics: brief paragraph capturing key scope.
 
-Then search for supporting documentation:
+Then search for supporting documentation (local):
 ```bash
-# Find PRD if exists
-rp-cli -w W -e 'search "PRD" --mode path'
-rp-cli -w W -e 'search "prd_" --mode path'
-
-# Find Flow files
-rp-cli -w W -e 'search ".flow/" --mode path'
-
-# Find architecture docs
-rp-cli -w W -e 'search "architecture" --mode path'
-rp-cli -w W -e 'search "docs/" --mode path'
+rg --files -g '*PRD*' -g '*prd_*' .
+rg --files -g '.flow/**' .
+rg --files -g '*architecture*' -g 'docs/**' .
 ```
 
 Read any relevant supporting docs you find.
@@ -93,8 +78,10 @@ Read any relevant supporting docs you find.
 
 Give builder a simple, intent-focused prompt. Let it discover context autonomously:
 ```bash
-rp-cli -w W -e 'builder "Review a plan to [CONCISE SUMMARY OF WHAT PLAN ACCOMPLISHES]"'
+T="$($FLOWCTL rp builder --window "$W" --summary "Review a plan to [CONCISE SUMMARY OF WHAT PLAN ACCOMPLISHES]")"
 ```
+
+Builder returns a tab ID. Use `T` for all subsequent steps.
 
 **Examples:**
 - Simple: `"Review a plan to add OAuth authentication to the API"`
@@ -116,7 +103,7 @@ Builder returns:
 
 Get the current prompt:
 ```bash
-rp-cli -w W -e 'prompt get'
+$FLOWCTL rp prompt-get --window "$W" --tab "$T"
 ```
 
 ### Step 3: Review and augment selection
@@ -124,14 +111,14 @@ rp-cli -w W -e 'prompt get'
 Builder is AI-driven and non-deterministic. Review what it found, then add must-haves:
 ```bash
 # Check what builder selected
-rp-cli -w W -e 'select get'
+$FLOWCTL rp select-get --window "$W" --tab "$T"
 
 # Always add the plan file (builder may not have selected it)
-rp-cli -w W -e 'select add <plan-file>'
+$FLOWCTL rp select-add --window "$W" --tab "$T" <plan-file>
 
 # Add supporting docs from Phase 1 (PRD, architecture, etc.)
-rp-cli -w W -e 'select add <path-to-prd>'
-rp-cli -w W -e 'select add <path-to-architecture-doc>'
+$FLOWCTL rp select-add --window "$W" --tab "$T" <path-to-prd>
+$FLOWCTL rp select-add --window "$W" --tab "$T" <path-to-architecture-doc>
 
 # Add any files you know are critical that builder missed
 ```
@@ -139,7 +126,7 @@ rp-cli -w W -e 'select add <path-to-architecture-doc>'
 ### Step 4: Verify final selection
 
 ```bash
-rp-cli -w W -e 'select get'
+$FLOWCTL rp select-get --window "$W" --tab "$T"
 ```
 
 Confirm selection includes:
@@ -160,6 +147,8 @@ Combine three pieces:
 1. **Builder's handoff prompt** (from Phase 2 Step 2) - factual context foundation
 2. **Review criteria** - Carmack-level checklist
 3. **User's focus areas** (from arguments) - specific concerns to prioritize
+
+**Do NOT write the review yourself.** Use this prompt only to send via `flowctl rp chat-send`.
 
 **Prompt structure:**
 ```
@@ -238,8 +227,6 @@ End with:
 
 Use chat in **chat mode**. The chat sees all selected files.
 
-**Use `flowctl prep-chat`** to handle JSON escaping reliably:
-
 ```bash
 FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 
@@ -248,37 +235,35 @@ cat > /tmp/review-prompt.md << 'EOF'
 <COMBINED_PROMPT>
 EOF
 
-# 2. Generate properly escaped JSON
-$FLOWCTL prep-chat \
-  --message-file /tmp/review-prompt.md \
-  --mode chat \
-  --new-chat \
-  --chat-name "Plan Review: [PLAN_NAME]" \
-  -o /tmp/chat-payload.json
-
-# 3. Send to rp-cli
-rp-cli -w W -e "call chat_send $(cat /tmp/chat-payload.json)"
+# 2. Send via flowctl rp wrapper
+$FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/review-prompt.md --new-chat --chat-name "Plan Review: [PLAN_NAME]"
 ```
 
 ⚠️ **WAIT FOR RESPONSE**: Chat takes 1-5+ minutes. Do NOT re-send or follow up until it returns.
+**Only** the RepoPrompt response counts as the review.
 
-**Follow-up/re-review** - include `selected_paths` so reviewer keeps file context:
-
+**Receipt (if requested):** Write this **for any verdict** (SHIP/NEEDS_WORK/MAJOR_RETHINK).
 ```bash
-cat > /tmp/followup.md << 'EOF'
-<FOLLOW_UP_MESSAGE>
+if [[ -n "${REVIEW_RECEIPT_PATH:-}" ]]; then
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  mkdir -p "$(dirname "$REVIEW_RECEIPT_PATH")"
+  cat > "$REVIEW_RECEIPT_PATH" <<EOF
+{"type":"plan_review","id":"<EPIC_ID>","mode":"rp","timestamp":"$ts","chat":"<chat-id-if-known>"}
 EOF
-
-$FLOWCTL prep-chat \
-  --message-file /tmp/followup.md \
-  --mode chat \
-  --selected-paths <FILE1> <FILE2> \
-  -o /tmp/chat-payload.json
-
-rp-cli -w W -e "call chat_send $(cat /tmp/chat-payload.json)"
+  echo "REVIEW_RECEIPT_WRITTEN: $REVIEW_RECEIPT_PATH"
+fi
 ```
 
-⚠️ **CRITICAL**: Chat follow-ups do NOT automatically see the selection. You MUST pass `--selected-paths` with the same files from your initial selection, or the reviewer loses file context.
+**Hard gate:** If chat-send did not return a verdict tag, output `<promise>RETRY</promise>` and stop. Do not set plan_review_status.
+
+**Set plan review status (required):** Use this command only:
+```bash
+$FLOWCTL epic set-plan-review-status <EPIC_ID> --status ship --json
+$FLOWCTL epic set-plan-review-status <EPIC_ID> --status needs_work --json
+```
+Do **not** use `set-plan-review` or `update` (they do not exist).
+
+**Follow-up/re-review**: write a new prompt file and re-run `flowctl rp chat-send`. Rebuild selection if needed. Rewrite receipt after each follow-up.
 
 ---
 
@@ -290,7 +275,11 @@ If user chose **export mode**, skip the chat and export context instead.
 
 Build the combined prompt (same structure as Phase 3 Step 1), then set it:
 ```bash
-rp-cli -w W -e 'prompt set "<COMBINED_PROMPT>"'
+cat > /tmp/review-prompt.md << 'EOF'
+<COMBINED_PROMPT>
+EOF
+
+$FLOWCTL rp prompt-set --window "$W" --tab "$T" --message-file /tmp/review-prompt.md
 ```
 
 The prompt should include:
@@ -302,10 +291,10 @@ The prompt should include:
 ### Step 2: Export to file
 
 ```bash
-rp-cli -w W -e 'prompt export ~/Desktop/plan-review-[PLAN_NAME].md'
+$FLOWCTL rp prompt-export --window "$W" --tab "$T" --out ~/Desktop/plan-review-[PLAN_NAME].md
 ```
 
-This exports: file tree, codemaps, selected file contents, and the review prompt.
+This exports: file tree, codemaps, selected file contents, and the review prompt. No `rp-cli codemap` command needed (avoid it in Ralph mode).
 
 ### Step 3: Open for user
 
@@ -335,19 +324,13 @@ After receiving feedback, return here to implement fixes.
 
 ## Iteration
 
-Continue the chat to drill deeper if needed (remember to include `--selected-paths`):
+Continue the chat to drill deeper if needed:
 ```bash
 cat > /tmp/followup.md << 'EOF'
 Elaborate on the [SPECIFIC CONCERN]. What exactly would you change?
 EOF
 
-$FLOWCTL prep-chat \
-  --message-file /tmp/followup.md \
-  --mode chat \
-  --selected-paths <FILE1> <FILE2> \
-  -o /tmp/chat-payload.json
-
-rp-cli -w W -e "call chat_send $(cat /tmp/chat-payload.json)"
+$FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/followup.md
 ```
 
 ---
@@ -373,10 +356,13 @@ rp-cli -w W -e "call chat_send $(cat /tmp/chat-payload.json)"
 2. **Re-anchor if needed**: If context was compacted or you're unsure of current state, re-read the plan file before editing
 3. **Fix Critical → Major → Minor → Nitpick**: Edit the plan to address each
    - For markdown plans: use Edit tool to update the file
-   - For Flow issues: use `flowctl epic set-plan <id> --body "..."`
+   - For Flow epics: write to a temp file and run:
+     ```bash
+     flowctl epic set-plan <id> --file /tmp/plan.md
+     ```
 3. **Augment selection** (if needed): Add any files touched during fixes that aren't already selected
    ```bash
-   rp-cli -w W -e 'select add path/to/newly-relevant-file.ts'
+  $FLOWCTL rp select-add --window "$W" --tab "$T" path/to/newly-relevant-file.ts
    ```
 4. **Re-review**: Continue the existing chat with detailed fix explanations
 
@@ -406,22 +392,14 @@ rp-cli -w W -e "call chat_send $(cat /tmp/chat-payload.json)"
 Please re-review.
 ```
 
-**Use `flowctl prep-chat`** for multi-line messages:
+Write re-review message and re-run chat:
 ```bash
 cat > /tmp/re-review.md << 'EOF'
 <RE_REVIEW_MESSAGE>
 EOF
 
-$FLOWCTL prep-chat \
-  --message-file /tmp/re-review.md \
-  --mode chat \
-  --selected-paths <FILE1> <FILE2> \
-  -o /tmp/chat-payload.json
-
-rp-cli -w W -e "call chat_send $(cat /tmp/chat-payload.json)"
+$FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/re-review.md
 ```
-
-⚠️ **CRITICAL**: Always include `--selected-paths` with the files from your initial selection. Without this, the reviewer cannot see file contents in follow-up messages.
 
 5. **Repeat**: Continue until review passes (Ship)
 
@@ -446,7 +424,7 @@ If skipping, explain WHY clearly in the re-review message so the reviewer can re
 
 ## Key Guidelines
 
-**Always use -w flag:** Every rp-cli command (except `windows`) needs `-w <id>` to target the correct window. W = your window ID from Phase 0.
+**Always pass --window + --tab:** Every flowctl rp wrapper needs the window id and tab id.
 
 **Token budget:** Stay under ~160k tokens. Builder manages this, but verify with `select get`.
 
@@ -458,7 +436,7 @@ If skipping, explain WHY clearly in the re-review message so the reviewer can re
 
 - **Stuffing builder prompt** – don't list files/modules/details; give intent, let builder discover
 - **Ignoring builder's handoff prompt** – it's the foundation; add criteria on top, don't replace
-- **Forgetting `-w <id>` flag** – commands will fail with "Multiple windows" error
+- Forgetting `--window/--tab` – commands will target the wrong window/tab
 - Skipping `builder` – you'll miss architectural context
 - Reviewing without PRD/Flow context – you won't know the "why"
 - Shallow review – thorough analysis takes time; don't rush

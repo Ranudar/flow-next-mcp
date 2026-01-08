@@ -5,7 +5,7 @@ CLI for `.flow/` task tracking. Agents must use flowctl for all writes.
 ## Available Commands
 
 ```
-init, detect, epic, task, dep, show, cat, ready, next, start, done, block, validate, prep-chat
+init, detect, epic, task, dep, show, cat, ready, next, start, done, block, validate, prep-chat, rp
 ```
 
 Aliases: `list` → `show`, `ls` → `show`
@@ -274,7 +274,8 @@ Exits with code 1 if validation fails (for CI use).
 
 ### prep-chat
 
-Generate properly escaped JSON for `rp-cli chat_send`. Avoids shell escaping issues with complex prompts.
+Generate properly escaped JSON for RepoPrompt chat. Avoids shell escaping issues with complex prompts.
+Optional legacy positional arg is ignored; do not pass epic/task IDs.
 
 ```bash
 # Write message to file (avoids escaping issues)
@@ -291,8 +292,8 @@ flowctl prep-chat \
   [--selected-paths file1.ts file2.ts] \
   [-o /tmp/payload.json]
 
-# Use with rp-cli
-rp-cli -w W -e "call chat_send $(cat /tmp/payload.json)"
+# Prefer flowctl rp chat-send (uses this internally)
+flowctl rp chat-send --window W --tab T --message-file /tmp/prompt.md
 ```
 
 Options:
@@ -307,6 +308,27 @@ Output (stdout or file):
 ```json
 {"message": "...", "mode": "chat", "new_chat": true, "chat_name": "...", "selected_paths": ["..."]}
 ```
+
+### rp
+
+RepoPrompt wrappers (preferred for reviews):
+
+```bash
+flowctl rp pick-window --repo-root "$REPO_ROOT"
+flowctl rp ensure-workspace --window "$W" --repo-root "$REPO_ROOT"
+flowctl rp builder --window "$W" --summary "Review a plan to ..."
+flowctl rp prompt-get --window "$W" --tab "$T"
+flowctl rp prompt-set --window "$W" --tab "$T" --message-file /tmp/review-prompt.md
+flowctl rp select-add --window "$W" --tab "$T" path/to/file
+flowctl rp chat-send --window "$W" --tab "$T" --message-file /tmp/review-prompt.md
+flowctl rp prompt-export --window "$W" --tab "$T" --out /tmp/export.md
+```
+
+## Ralph Receipts
+
+Review receipts are **not** managed by flowctl. They are written by the review skills when `REVIEW_RECEIPT_PATH` is set (Ralph sets this env var).
+
+See: [Ralph deep dive](ralph.md)
 
 ## JSON Output
 

@@ -11,6 +11,8 @@ import json
 import os
 import re
 import subprocess
+import shlex
+import shutil
 import sys
 import tempfile
 from datetime import datetime
@@ -78,6 +80,109 @@ def error_exit(message: str, code: int = 1, use_json: bool = True) -> None:
 def now_iso() -> str:
     """Current timestamp in ISO format."""
     return datetime.utcnow().isoformat() + "Z"
+
+
+def require_rp_cli() -> str:
+    """Ensure rp-cli is available."""
+    rp = shutil.which("rp-cli")
+    if not rp:
+        error_exit("rp-cli not found in PATH", use_json=False, code=2)
+    return rp
+
+
+def run_rp_cli(args: list[str]) -> subprocess.CompletedProcess:
+    """Run rp-cli with safe error handling."""
+    rp = require_rp_cli()
+    cmd = [rp] + args
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        msg = (e.stderr or e.stdout or str(e)).strip()
+        error_exit(f"rp-cli failed: {msg}", use_json=False, code=2)
+
+
+def normalize_repo_root(path: str) -> list[str]:
+    """Normalize repo root for window matching."""
+    root = os.path.realpath(path)
+    roots = [root]
+    if root.startswith("/private/tmp/"):
+        roots.append("/tmp/" + root[len("/private/tmp/"):])
+    elif root.startswith("/tmp/"):
+        roots.append("/private/tmp/" + root[len("/tmp/"):])
+    return list(dict.fromkeys(roots))
+
+
+def parse_windows(raw: str) -> list[dict[str, Any]]:
+    """Parse rp-cli windows JSON."""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict) and "windows" in data and isinstance(data["windows"], list):
+            return data["windows"]
+    except json.JSONDecodeError as e:
+        if "single-window mode" in raw:
+            return [{"windowID": 1, "rootFolderPaths": []}]
+        error_exit(f"windows JSON parse failed: {e}", use_json=False, code=2)
+    error_exit("windows JSON has unexpected shape", use_json=False, code=2)
+
+
+def extract_window_id(win: dict[str, Any]) -> Optional[int]:
+    for key in ("windowID", "windowId", "id"):
+        if key in win:
+            try:
+                return int(win[key])
+            except Exception:
+                return None
+    return None
+
+
+def extract_root_paths(win: dict[str, Any]) -> list[str]:
+    for key in ("rootFolderPaths", "rootFolders", "rootFolderPath"):
+        if key in win:
+            val = win[key]
+            if isinstance(val, list):
+                return [str(v) for v in val]
+            if isinstance(val, str):
+                return [val]
+    return []
+
+
+def parse_builder_tab(output: str) -> str:
+    match = re.search(r"Tab:\s*([A-Za-z0-9-]+)", output)
+    if not match:
+        error_exit("builder output missing Tab id", use_json=False, code=2)
+    return match.group(1)
+
+
+def parse_chat_id(output: str) -> Optional[str]:
+    match = re.search(r"Chat\s*:\s*`([^`]+)`", output)
+    if match:
+        return match.group(1)
+    match = re.search(r"\"chat_id\"\s*:\s*\"([^\"]+)\"", output)
+    if match:
+        return match.group(1)
+    return None
+
+
+def build_chat_payload(
+    message: str,
+    mode: str,
+    new_chat: bool = False,
+    chat_name: Optional[str] = None,
+    selected_paths: Optional[list[str]] = None,
+) -> str:
+    payload: dict[str, Any] = {
+        "message": message,
+        "mode": mode,
+    }
+    if new_chat:
+        payload["new_chat"] = True
+    if chat_name:
+        payload["chat_name"] = chat_name
+    if selected_paths:
+        payload["selected_paths"] = selected_paths
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 
 def is_supported_schema(version: Any) -> bool:
@@ -1527,29 +1632,205 @@ def cmd_prep_chat(args: argparse.Namespace) -> None:
     """Prepare JSON payload for rp-cli chat_send. Handles escaping safely."""
     # Read message from file
     message = read_text_or_exit(Path(args.message_file), "Message file", use_json=False)
-
-    # Build payload
-    payload: dict[str, Any] = {
-        "message": message,
-        "mode": args.mode,
-    }
-
-    # Optional fields
-    if args.new_chat:
-        payload["new_chat"] = True
-    if args.chat_name:
-        payload["chat_name"] = args.chat_name
-    if args.selected_paths:
-        payload["selected_paths"] = args.selected_paths
-
-    # Output JSON (compact, no extra whitespace)
-    json_str = json.dumps(payload, ensure_ascii=False)
+    json_str = build_chat_payload(
+        message=message,
+        mode=args.mode,
+        new_chat=args.new_chat,
+        chat_name=args.chat_name,
+        selected_paths=args.selected_paths,
+    )
 
     if args.output:
         atomic_write(Path(args.output), json_str)
         print(f"Wrote {args.output}", file=sys.stderr)
     else:
         print(json_str)
+
+
+def cmd_rp_windows(args: argparse.Namespace) -> None:
+    result = run_rp_cli(["--raw-json", "-e", "windows"])
+    raw = result.stdout or ""
+    if args.json:
+        windows = parse_windows(raw)
+        print(json.dumps(windows))
+    else:
+        print(raw, end="")
+
+
+def cmd_rp_pick_window(args: argparse.Namespace) -> None:
+    repo_root = args.repo_root
+    roots = normalize_repo_root(repo_root)
+    result = run_rp_cli(["--raw-json", "-e", "windows"])
+    windows = parse_windows(result.stdout or "")
+    if len(windows) == 1 and not extract_root_paths(windows[0]):
+        win_id = extract_window_id(windows[0])
+        if win_id is None:
+            error_exit("No window matches repo root", use_json=False, code=2)
+        if args.json:
+            print(json.dumps({"window": win_id}))
+        else:
+            print(win_id)
+        return
+    for win in windows:
+        win_id = extract_window_id(win)
+        if win_id is None:
+            continue
+        for path in extract_root_paths(win):
+            if path in roots:
+                if args.json:
+                    print(json.dumps({"window": win_id}))
+                else:
+                    print(win_id)
+                return
+    error_exit("No window matches repo root", use_json=False, code=2)
+
+
+def cmd_rp_ensure_workspace(args: argparse.Namespace) -> None:
+    window = args.window
+    repo_root = os.path.realpath(args.repo_root)
+    ws_name = os.path.basename(repo_root)
+
+    list_cmd = [
+        "--raw-json",
+        "-w",
+        str(window),
+        "-e",
+        f"call manage_workspaces {json.dumps({'action': 'list'})}",
+    ]
+    list_res = run_rp_cli(list_cmd)
+    try:
+        data = json.loads(list_res.stdout)
+    except json.JSONDecodeError as e:
+        error_exit(f"workspace list JSON parse failed: {e}", use_json=False, code=2)
+
+    def extract_names(obj: Any) -> set[str]:
+        names: set[str] = set()
+        if isinstance(obj, dict):
+            if "workspaces" in obj:
+                obj = obj["workspaces"]
+            elif "result" in obj:
+                obj = obj["result"]
+        if isinstance(obj, list):
+            for item in obj:
+                if isinstance(item, str):
+                    names.add(item)
+                elif isinstance(item, dict):
+                    for key in ("name", "workspace", "title"):
+                        if key in item:
+                            names.add(str(item[key]))
+        return names
+
+    names = extract_names(data)
+
+    if ws_name not in names:
+        create_cmd = [
+            "-w",
+            str(window),
+            "-e",
+            f"call manage_workspaces {json.dumps({'action': 'create', 'name': ws_name, 'folder_path': repo_root})}",
+        ]
+        run_rp_cli(create_cmd)
+
+    switch_cmd = [
+        "-w",
+        str(window),
+        "-e",
+        f"call manage_workspaces {json.dumps({'action': 'switch', 'workspace': ws_name, 'window_id': window})}",
+    ]
+    run_rp_cli(switch_cmd)
+
+
+def cmd_rp_builder(args: argparse.Namespace) -> None:
+    window = args.window
+    summary = args.summary
+    cmd = [
+        "-w",
+        str(window),
+        "-e",
+        f"builder {json.dumps(summary)}",
+    ]
+    res = run_rp_cli(cmd)
+    output = (res.stdout or "") + ("\n" + res.stderr if res.stderr else "")
+    tab = parse_builder_tab(output)
+    if args.json:
+        print(json.dumps({"window": window, "tab": tab}))
+    else:
+        print(tab)
+
+
+def cmd_rp_prompt_get(args: argparse.Namespace) -> None:
+    cmd = ["-w", str(args.window), "-t", args.tab, "-e", "prompt get"]
+    res = run_rp_cli(cmd)
+    print(res.stdout, end="")
+
+
+def cmd_rp_prompt_set(args: argparse.Namespace) -> None:
+    message = read_text_or_exit(Path(args.message_file), "Message file", use_json=False)
+    payload = json.dumps({"op": "set", "text": message})
+    cmd = [
+        "-w",
+        str(args.window),
+        "-t",
+        args.tab,
+        "-e",
+        f"call prompt {payload}",
+    ]
+    res = run_rp_cli(cmd)
+    print(res.stdout, end="")
+
+
+def cmd_rp_select_get(args: argparse.Namespace) -> None:
+    cmd = ["-w", str(args.window), "-t", args.tab, "-e", "select get"]
+    res = run_rp_cli(cmd)
+    print(res.stdout, end="")
+
+
+def cmd_rp_select_add(args: argparse.Namespace) -> None:
+    if not args.paths:
+        error_exit("select-add requires at least one path", use_json=False, code=2)
+    quoted = " ".join(shlex.quote(p) for p in args.paths)
+    cmd = ["-w", str(args.window), "-t", args.tab, "-e", f"select add {quoted}"]
+    res = run_rp_cli(cmd)
+    print(res.stdout, end="")
+
+
+def cmd_rp_chat_send(args: argparse.Namespace) -> None:
+    message = read_text_or_exit(Path(args.message_file), "Message file", use_json=False)
+    payload = build_chat_payload(
+        message=message,
+        mode="chat",
+        new_chat=args.new_chat,
+        chat_name=args.chat_name,
+        selected_paths=args.selected_paths,
+    )
+    cmd = [
+        "-w",
+        str(args.window),
+        "-t",
+        args.tab,
+        "-e",
+        f"call chat_send {payload}",
+    ]
+    res = run_rp_cli(cmd)
+    output = (res.stdout or "") + ("\n" + res.stderr if res.stderr else "")
+    chat_id = parse_chat_id(output)
+    if args.json:
+        print(json.dumps({"chat": chat_id}))
+    else:
+        print(res.stdout, end="")
+
+
+def cmd_rp_prompt_export(args: argparse.Namespace) -> None:
+    cmd = [
+        "-w",
+        str(args.window),
+        "-t",
+        args.tab,
+        "-e",
+        f"prompt export {shlex.quote(args.out)}",
+    ]
+    res = run_rp_cli(cmd)
+    print(res.stdout, end="")
 
 
 def cmd_validate(args: argparse.Namespace) -> None:
@@ -1804,6 +2085,7 @@ def main() -> None:
 
     # prep-chat (for rp-cli chat_send JSON escaping)
     p_prep = subparsers.add_parser("prep-chat", help="Prepare JSON for rp-cli chat_send")
+    p_prep.add_argument("id", nargs="?", help="(ignored) Epic/task ID for compatibility")
     p_prep.add_argument("--message-file", required=True, help="File containing message text")
     p_prep.add_argument("--mode", default="chat", choices=["chat", "ask"], help="Chat mode")
     p_prep.add_argument("--new-chat", action="store_true", help="Start new chat")
@@ -1811,6 +2093,68 @@ def main() -> None:
     p_prep.add_argument("--selected-paths", nargs="*", help="Files to include in context")
     p_prep.add_argument("--output", "-o", help="Output file (default: stdout)")
     p_prep.set_defaults(func=cmd_prep_chat)
+
+    # rp (RepoPrompt wrappers)
+    p_rp = subparsers.add_parser("rp", help="RepoPrompt helpers")
+    rp_sub = p_rp.add_subparsers(dest="rp_cmd", required=True)
+
+    p_rp_windows = rp_sub.add_parser("windows", help="List RepoPrompt windows (raw JSON)")
+    p_rp_windows.add_argument("--json", action="store_true", help="JSON output (raw)")
+    p_rp_windows.set_defaults(func=cmd_rp_windows)
+
+    p_rp_pick = rp_sub.add_parser("pick-window", help="Pick window by repo root")
+    p_rp_pick.add_argument("--repo-root", required=True, help="Repo root path")
+    p_rp_pick.add_argument("--json", action="store_true", help="JSON output")
+    p_rp_pick.set_defaults(func=cmd_rp_pick_window)
+
+    p_rp_ws = rp_sub.add_parser("ensure-workspace", help="Ensure workspace and switch window")
+    p_rp_ws.add_argument("--window", type=int, required=True, help="Window id")
+    p_rp_ws.add_argument("--repo-root", required=True, help="Repo root path")
+    p_rp_ws.set_defaults(func=cmd_rp_ensure_workspace)
+
+    p_rp_builder = rp_sub.add_parser("builder", help="Run builder and return tab")
+    p_rp_builder.add_argument("--window", type=int, required=True, help="Window id")
+    p_rp_builder.add_argument("--summary", required=True, help="Builder summary")
+    p_rp_builder.add_argument("--json", action="store_true", help="JSON output")
+    p_rp_builder.set_defaults(func=cmd_rp_builder)
+
+    p_rp_prompt_get = rp_sub.add_parser("prompt-get", help="Get current prompt")
+    p_rp_prompt_get.add_argument("--window", type=int, required=True, help="Window id")
+    p_rp_prompt_get.add_argument("--tab", required=True, help="Tab id or name")
+    p_rp_prompt_get.set_defaults(func=cmd_rp_prompt_get)
+
+    p_rp_prompt_set = rp_sub.add_parser("prompt-set", help="Set current prompt")
+    p_rp_prompt_set.add_argument("--window", type=int, required=True, help="Window id")
+    p_rp_prompt_set.add_argument("--tab", required=True, help="Tab id or name")
+    p_rp_prompt_set.add_argument("--message-file", required=True, help="Message file")
+    p_rp_prompt_set.set_defaults(func=cmd_rp_prompt_set)
+
+    p_rp_select_get = rp_sub.add_parser("select-get", help="Get selection")
+    p_rp_select_get.add_argument("--window", type=int, required=True, help="Window id")
+    p_rp_select_get.add_argument("--tab", required=True, help="Tab id or name")
+    p_rp_select_get.set_defaults(func=cmd_rp_select_get)
+
+    p_rp_select_add = rp_sub.add_parser("select-add", help="Add files to selection")
+    p_rp_select_add.add_argument("--window", type=int, required=True, help="Window id")
+    p_rp_select_add.add_argument("--tab", required=True, help="Tab id or name")
+    p_rp_select_add.add_argument("paths", nargs="+", help="Paths to add")
+    p_rp_select_add.set_defaults(func=cmd_rp_select_add)
+
+    p_rp_chat = rp_sub.add_parser("chat-send", help="Send chat via rp-cli")
+    p_rp_chat.add_argument("--window", type=int, required=True, help="Window id")
+    p_rp_chat.add_argument("--tab", required=True, help="Tab id or name")
+    p_rp_chat.add_argument("--message-file", required=True, help="Message file")
+    p_rp_chat.add_argument("--new-chat", action="store_true", help="Start new chat")
+    p_rp_chat.add_argument("--chat-name", help="Chat name (with --new-chat)")
+    p_rp_chat.add_argument("--selected-paths", nargs="*", help="Override selected paths")
+    p_rp_chat.add_argument("--json", action="store_true", help="JSON output (no review text)")
+    p_rp_chat.set_defaults(func=cmd_rp_chat_send)
+
+    p_rp_export = rp_sub.add_parser("prompt-export", help="Export prompt to file")
+    p_rp_export.add_argument("--window", type=int, required=True, help="Window id")
+    p_rp_export.add_argument("--tab", required=True, help="Tab id or name")
+    p_rp_export.add_argument("--out", required=True, help="Output file")
+    p_rp_export.set_defaults(func=cmd_rp_prompt_export)
 
     args = parser.parse_args()
     args.func(args)

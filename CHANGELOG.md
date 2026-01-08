@@ -2,6 +2,52 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.2.6] - 2026-01-08
+
+### Changed
+- Add flowctl rp wrappers; remove direct rp-cli usage in review workflows
+- Add skill-scoped Ralph hooks (guard + receipt + optional verbose log)
+- Update review skills/commands/docs to use wrappers + Claude Code 2.1.0+ note
+
+## [flow-next 0.2.5] - 2026-01-07
+
+### Changed
+- Align rp-cli refs + option text to `call chat_send` (no rp-cli chat)
+- Ralph work prompt no longer double-calls impl review; receipts always any verdict
+- Window switch uses git root + explicit -w; add jq + tab rebind guidance
+- Docs clarify receipt gating + Ralph mode bans rp-cli chat/codemap/slice
+- Add drift warning preamble to plan/work/plan-review/impl-review skills
+
+## [flow-next 0.2.4] - 2026-01-07
+
+### Changed
+- Added Ralph-mode rule blocks to plan/impl review + work skills
+- Ralph prompts now restate anti-drift rules
+- Ralph sets `RALPH_MODE=1` for stricter skill behavior
+
+## [flow-next 0.2.3] - 2026-01-07
+
+### Changed
+- /flow-next:work now hard-requires flowctl done + task status check before commit
+- Work workflow requires git add -A (no file lists) to include .flow + ralph artifacts
+- Review skills now RETRY if rp-cli chat/codemap/slice are used (enforce call chat_send)
+- Ralph forces retry if task status is not done after work iteration
+
+## [flow-next 0.2.2] - 2026-01-07
+
+### Changed
+- Plan/impl review skills now mandate receipt write when `REVIEW_RECEIPT_PATH` is set
+- Plan-review guidance now pins correct flowctl command for status updates
+- Ralph loop logs per-iteration status, mode, receipt checks
+- Flow-next docs add Ralph deep dive and receipt notes
+
+## [flow-next 0.2.1] - 2026-01-07
+
+### Changed
+- Plan/impl review workflows now auto-select RepoPrompt window by repo root (fallback to first window)
+- Review workflows write receipts only when `REVIEW_RECEIPT_PATH` is set
+- `plan-review` and `impl-review` command stubs trimmed to route to skills
+
 ## [flow-next 0.2.0] - 2026-01-07
 
 ### Added

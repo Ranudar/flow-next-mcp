@@ -7,10 +7,24 @@ description: Execute a Flow epic or task systematically with git setup, task tra
 
 Execute a plan systematically. Focus on finishing.
 
+Follow this skill and linked workflows exactly. Deviations cause drift, bad gates, retries, and user frustration.
+
 **IMPORTANT**: This plugin uses `.flow/` for ALL task tracking. Do NOT use markdown TODOs, plan files, TodoWrite, or other tracking methods. All task state must be read and written via `flowctl`.
+
+**Hard requirements (non-negotiable):**
+- You MUST run `flowctl done` for each completed task and verify the task status is `done`.
+- You MUST stage with `git add -A` (never list files). This ensures `.flow/` and `scripts/ralph/` (if present) are included.
+- Do NOT claim completion until `flowctl show <task>` reports `status: done`.
 
 **Role**: execution lead, plan fidelity first.
 **Goal**: complete every task in order with tests.
+
+## Ralph Mode Rules (always follow)
+
+If `REVIEW_RECEIPT_PATH` is set or `RALPH_MODE=1`:
+- **Must** use `flowctl done` and verify task status is `done` before committing.
+- **Must** stage with `git add -A` (never list files).
+- **Do NOT** use TodoWrite for tracking.
 
 ## Input
 
@@ -44,7 +58,7 @@ Parse the arguments for these patterns. If found, use them and skip correspondin
 - `--branch=worktree` or `--worktree` or "isolated worktree" or "worktree" → isolated worktree
 
 **Review mode** (only if rp-cli available):
-- `--review=rp` or "review with rp" or "rp chat" or "repoprompt review" → RepoPrompt chat
+- `--review=rp` or "review with rp" or "rp chat" or "repoprompt review" → RepoPrompt chat (via `flowctl rp chat-send`)
 - `--review=export` or "export review" or "external llm" → export for external LLM
 - `--review=none` or `--no-review` or "no review" or "skip review" → no review
 
@@ -60,7 +74,7 @@ Quick setup before starting:
    c) Isolated worktree
 
 2. **Review** — Run Carmack-level review after?
-   a) Yes, RepoPrompt chat
+   a) Yes, RepoPrompt chat (`flowctl rp chat-send`)
    b) Yes, export for external LLM (ChatGPT, Claude web)
    c) No
 

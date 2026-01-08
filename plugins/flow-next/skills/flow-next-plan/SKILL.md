@@ -7,6 +7,8 @@ description: Create structured build plans from feature requests or Flow IDs. Us
 
 Turn a rough idea into an epic with tasks in `.flow/`. This skill does not write code.
 
+Follow this skill and linked workflows exactly. Deviations cause drift, bad gates, retries, and user frustration.
+
 **IMPORTANT**: This plugin uses `.flow/` for ALL task tracking. Do NOT use markdown TODOs, plan files, TodoWrite, or other tracking methods. All task state must be read and written via `flowctl`.
 
 **Role**: product-minded planner with strong repo awareness.
@@ -42,7 +44,7 @@ Parse the arguments for these patterns. If found, use them and skip questions:
 - `--research=grep` or `--research grep` or "use grep" or "repo-scout" or "fast" → repo-scout
 
 **Review mode**:
-- `--review=rp` or "review with rp" or "rp chat" or "repoprompt review" → RepoPrompt chat
+- `--review=rp` or "review with rp" or "rp chat" or "repoprompt review" → RepoPrompt chat (via `flowctl rp chat-send`)
 - `--review=export` or "export review" or "external llm" → export for external LLM
 - `--review=none` or `--no-review` or "no review" or "skip review" → no review
 
@@ -58,7 +60,7 @@ Quick setup before planning:
    b) No, repo-scout (faster)
 
 2. **Review** — Run Carmack-level review after?
-   a) Yes, RepoPrompt chat
+   a) Yes, RepoPrompt chat (`flowctl rp chat-send`)
    b) Yes, export for external LLM (ChatGPT, Claude web)
    c) No
 

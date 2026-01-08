@@ -130,9 +130,16 @@ After step 5, run the smoke command from epic spec's "Quick commands" section.
    $FLOWCTL done <task-id> --summary-file <summary.md> --evidence-json <evidence.json> --json
    ```
 
+   Verify the task is actually marked done:
+   ```bash
+   $FLOWCTL show <task-id> --json
+   ```
+   If status is not `done`, stop and re-run `flowctl done` before proceeding.
+
 5. **Commit changes**:
    ```bash
-   git add -A
+   git add -A   # never list files; include .flow/ and scripts/ralph/ if present
+   git status --short
    git commit -m "<short summary of what was done>"
    ```
 
@@ -171,10 +178,8 @@ git diff --staged
 git commit -m "<final summary>"
 ```
 
-**Close epic** (if all tasks done):
-```bash
-$FLOWCTL epic close <epic-id> --json
-```
+**Do NOT close the epic here** unless the user explicitly asked.
+Ralph closes done epics at the end of the loop.
 
 Then push + open PR if user wants.
 
