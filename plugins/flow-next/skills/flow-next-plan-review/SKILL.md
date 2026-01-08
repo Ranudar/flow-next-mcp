@@ -1,6 +1,7 @@
 ---
 name: flow-next-plan-review
 description: Carmack-level plan review via flowctl rp wrappers (RepoPrompt builder + chat). Use when reviewing Flow epic specs or design docs. Triggers on /flow-next:plan-review.
+model: claude-opus-4-5-20251101
 hooks:
   PreToolUse:
     - matcher: Bash
@@ -32,6 +33,8 @@ Follow this skill and linked workflows exactly. Deviations cause drift, bad gate
 If `REVIEW_RECEIPT_PATH` is set or `RALPH_MODE=1`:
 - **Do NOT** run `rp-cli` directly (no chat/codemap/slice/help).
 - **Must** use `flowctl rp` wrappers (`builder`, `prompt-get`, `select-*`, `chat-send`).
+- **Must** resolve a **numeric** RepoPrompt window id via `flowctl rp pick-window --repo-root "$REPO_ROOT"` and validate it before running builder. If missing/invalid, output `<promise>RETRY</promise>` and stop.
+- **Never** call `flowctl rp builder` without `--window` **and** `--summary`. Builder does not accept epic IDs or window names.
 - **Must** write receipt via **bash heredoc** (no Write tool) after review returns (any verdict).
 - If you violate any rule: output `<promise>RETRY</promise>` and stop.
 Reason: Ralph ignores stdout; only receipts prove the review ran.
@@ -50,6 +53,10 @@ Create `/tmp/review-prompt.md` via bash heredoc (avoid Write tool).
 FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 W="$($FLOWCTL rp pick-window --repo-root "$REPO_ROOT")"
+if [[ -z "$W" || ! "$W" =~ ^[0-9]+$ ]]; then
+  echo "<promise>RETRY</promise>"
+  exit 0
+fi
 $FLOWCTL rp ensure-workspace --window "$W" --repo-root "$REPO_ROOT"
 T="$($FLOWCTL rp builder --window "$W" --summary "Review a plan to <summary>")"
 $FLOWCTL rp prompt-get --window "$W" --tab "$T"

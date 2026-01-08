@@ -1,6 +1,7 @@
 ---
 name: flow-next-impl-review
 description: John Carmack-level implementation review via flowctl rp wrappers (RepoPrompt). Use when reviewing code changes, PRs, or implementations. Triggers on /flow-next:impl-review.
+model: claude-opus-4-5-20251101
 hooks:
   PreToolUse:
     - matcher: Bash
@@ -32,6 +33,8 @@ Follow this skill and linked workflows exactly. Deviations cause drift, bad gate
 If `REVIEW_RECEIPT_PATH` is set or `RALPH_MODE=1`:
 - **Do NOT** run `rp-cli` directly (no chat/codemap/slice/help).
 - **Must** use `flowctl rp` wrappers (`builder`, `prompt-get`, `select-*`, `chat-send`).
+- **Must** resolve a **numeric** RepoPrompt window id via `flowctl rp pick-window --repo-root "$REPO_ROOT"` and validate it before running builder. If missing/invalid, output `<promise>RETRY</promise>` and stop.
+- **Never** call `flowctl rp builder` without `--window` **and** `--summary`. Builder does not accept epic IDs or window names.
 - **Must** write receipt via **bash heredoc** (no Write tool) after review returns (any verdict).
 - If you violate any rule: output `<promise>RETRY</promise>` and stop.
 Reason: Ralph ignores stdout; only receipts prove the review ran.

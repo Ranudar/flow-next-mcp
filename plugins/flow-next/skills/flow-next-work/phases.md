@@ -99,8 +99,9 @@ After step 5, run the smoke command from epic spec's "Quick commands" section.
 2. **Implement + test thoroughly**:
    - Read task spec for requirements
    - Write code
-   - Run tests
+   - Run tests (including epic spec "Quick commands")
    - Verify acceptance criteria
+   - If any command fails, fix before proceeding
 
 3. **If you discover new work**:
    - Draft new task title + acceptance checklist
@@ -190,6 +191,7 @@ If user chose "Yes" to review in setup questions:
 2. If review returns "Needs Work" or "Major Rethink":
    - **Immediately fix the issues** (do NOT ask for confirmation — user already consented)
    - Commit fixes
+   - Re-run tests/Quick commands
    - Re-run `/flow-next:impl-review`
 3. Repeat until review returns "Ship"
 

@@ -85,7 +85,10 @@ mkdir -p "$TEST_DIR/bin"
 cat > "$TEST_DIR/bin/claude" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-mode="${STUB_MODE:-success}"
+ mode="${STUB_MODE:-success}"
+ write_receipt="${STUB_WRITE_RECEIPT:-1}"
+ write_plan="${STUB_WRITE_PLAN_RECEIPT:-$write_receipt}"
+ write_impl="${STUB_WRITE_IMPL_RECEIPT:-$write_receipt}"
 has_p=0
 for arg in "$@"; do
   if [[ "$arg" == "-p" ]]; then has_p=1; break; fi
@@ -105,6 +108,14 @@ if [[ "$prompt" == *"Ralph plan gate iteration"* ]]; then
   if [[ -n "$epic_id" ]]; then
     scripts/ralph/flowctl epic set-plan-review-status "$epic_id" --status ship --json >/dev/null
   fi
+  if [[ "$write_plan" == "1" && -n "${REVIEW_RECEIPT_PATH:-}" ]]; then
+    ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    mkdir -p "$(dirname "$REVIEW_RECEIPT_PATH")"
+    cat > "$REVIEW_RECEIPT_PATH" <<EOF_RECEIPT
+{"type":"plan_review","id":"$epic_id","mode":"stub","timestamp":"$ts"}
+EOF_RECEIPT
+    echo "REVIEW_RECEIPT_WRITTEN: $REVIEW_RECEIPT_PATH"
+  fi
   echo "<verdict>SHIP</verdict>"
   exit 0
 fi
@@ -118,6 +129,14 @@ if [[ "$prompt" == *"Ralph work iteration"* ]]; then
   scripts/ralph/flowctl start "$task_id" --json >/dev/null
   scripts/ralph/flowctl done "$task_id" --summary-file "$summary" --evidence-json "$evidence" --json >/dev/null
   rm -f "$summary" "$evidence"
+  if [[ "$write_impl" == "1" && -n "${REVIEW_RECEIPT_PATH:-}" ]]; then
+    ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    mkdir -p "$(dirname "$REVIEW_RECEIPT_PATH")"
+    cat > "$REVIEW_RECEIPT_PATH" <<EOF_RECEIPT
+{"type":"impl_review","id":"$task_id","mode":"stub","timestamp":"$ts"}
+EOF_RECEIPT
+    echo "REVIEW_RECEIPT_WRITTEN: $REVIEW_RECEIPT_PATH"
+  fi
   echo "done $task_id"
   exit 0
 fi
@@ -128,6 +147,10 @@ EOF
 chmod +x "$TEST_DIR/bin/claude"
 
 scripts/ralph/flowctl init --json >/dev/null
+
+latest_run_dir() {
+  ls -t scripts/ralph/runs | grep -v '^\\.gitkeep$' | head -n 1
+}
 
 echo -e "${YELLOW}--- ralph_once ---${NC}"
 scripts/ralph/flowctl epic create --title "Ralph Epic" --json >/dev/null
@@ -142,7 +165,7 @@ scripts/ralph/flowctl epic create --title "Ralph Epic 2" --json >/dev/null
 scripts/ralph/flowctl task create --epic fn-2 --title "Task 1" --json >/dev/null
 scripts/ralph/flowctl task create --epic fn-2 --title "Task 2" --json >/dev/null
 write_config "rp" "none" "1" "new" "6" "5" "2"
-STUB_MODE=success CLAUDE_BIN="$TEST_DIR/bin/claude" scripts/ralph/ralph.sh >/dev/null
+STUB_MODE=success STUB_WRITE_RECEIPT=1 CLAUDE_BIN="$TEST_DIR/bin/claude" scripts/ralph/ralph.sh >/dev/null
 python3 - <<'PY'
 import json
 from pathlib import Path
@@ -150,6 +173,27 @@ for tid in ["fn-2.1", "fn-2.2"]:
     data = json.loads(Path(f".flow/tasks/{tid}.json").read_text())
     assert data["status"] == "done"
 PY
+run_dir="$(latest_run_dir)"
+python3 - <<'PY' "$run_dir"
+import json, sys
+from pathlib import Path
+run_dir = sys.argv[1]
+receipts = Path(f"scripts/ralph/runs/{run_dir}/receipts")
+plan = json.loads((receipts / "plan-fn-2.json").read_text())
+impl = json.loads((receipts / "impl-fn-2.1.json").read_text())
+assert plan["type"] == "plan_review"
+assert plan["id"] == "fn-2"
+assert impl["type"] == "impl_review"
+assert impl["id"] == "fn-2.1"
+PY
+iter_log="scripts/ralph/runs/$run_dir/iter-001.log"
+if [[ -f "$iter_log" ]]; then
+  if command -v rg >/dev/null 2>&1; then
+    rg -q "<verdict>" "$iter_log"
+  else
+    grep -q "<verdict>" "$iter_log"
+  fi
+fi
 echo -e "${GREEN}✓${NC} ralph completes tasks"
 PASS=$((PASS + 1))
 
@@ -159,6 +203,13 @@ if [[ -f "scripts/ralph/runs/$run_dir/branches.json" ]]; then
   PASS=$((PASS + 1))
 else
   echo -e "${RED}✗${NC} branches.json created"
+  FAIL=$((FAIL + 1))
+fi
+if [[ -f "scripts/ralph/runs/$run_dir/progress.txt" ]]; then
+  echo -e "${GREEN}✓${NC} progress.txt created"
+  PASS=$((PASS + 1))
+else
+  echo -e "${RED}✗${NC} progress.txt created"
   FAIL=$((FAIL + 1))
 fi
 
@@ -175,6 +226,24 @@ assert data["status"] == "blocked"
 PY
 echo -e "${GREEN}✓${NC} blocks after attempts"
 PASS=$((PASS + 1))
+
+echo -e "${YELLOW}--- missing receipt forces retry ---${NC}"
+scripts/ralph/flowctl epic create --title "Ralph Epic 4" --json >/dev/null
+scripts/ralph/flowctl task create --epic fn-4 --title "Receipt Task" --json >/dev/null
+write_config "none" "rp" "0" "new" "3" "5" "1"
+set +e
+STUB_MODE=success STUB_WRITE_PLAN_RECEIPT=1 STUB_WRITE_IMPL_RECEIPT=0 CLAUDE_BIN="$TEST_DIR/bin/claude" scripts/ralph/ralph.sh >/dev/null
+rc=$?
+set -e
+run_dir="$(latest_run_dir)"
+receipts_dir="scripts/ralph/runs/$run_dir/receipts"
+if [[ -f "$receipts_dir/impl-fn-4.1.json" ]]; then
+  echo -e "${RED}✗${NC} impl receipt unexpectedly exists"
+  FAIL=$((FAIL + 1))
+else
+  echo -e "${GREEN}✓${NC} missing impl receipt forces retry (rc=$rc)"
+  PASS=$((PASS + 1))
+fi
 
 run_count="$(ls -1 scripts/ralph/runs | wc -l | tr -d ' ')"
 STUB_MODE=retry CLAUDE_BIN="$TEST_DIR/bin/claude" scripts/ralph/ralph.sh >/dev/null

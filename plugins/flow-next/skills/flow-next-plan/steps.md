@@ -16,6 +16,7 @@
 - Plan references existing files/patterns with line refs
 - Reuse points are explicit (centralized code called out)
 - Acceptance checks are testable
+- Tasks are small enough for one `/flow-next:work` iteration (split if not)
 - Open questions are listed
 
 ## Step 0: Initialize .flow
@@ -109,29 +110,36 @@ Default to short unless complexity demands more.
    ```
    This returns the epic ID (e.g., fn-1).
 
-2. Write epic spec:
+2. Set epic branch_name (deterministic):
+   - Default: `fn-N` (use epic ID)
+   ```bash
+   $FLOWCTL epic set-branch <epic-id> --branch "<epic-id>" --json
+   ```
+   - If user specified a branch, use that instead.
+
+3. Write epic spec:
    - Create a temp file with the full plan/spec content
    - Include: Overview, Scope, Approach, Quick commands (REQUIRED - at least one smoke test command), Acceptance, References
    - `$FLOWCTL epic set-plan <epic-id> --file <temp-md> --json`
 
-3. Create child tasks:
+4. Create child tasks:
    ```bash
    # For each task:
    $FLOWCTL task create --epic <epic-id> --title "<Task title>" --json
    ```
 
-4. Write task specs:
+5. Write task specs:
    - For each task, write description and acceptance to temp files
    - `$FLOWCTL task set-description <task-id> --file <temp-md> --json`
    - `$FLOWCTL task set-acceptance <task-id> --file <temp-md> --json`
 
-5. Add dependencies:
+6. Add dependencies:
    ```bash
    # If task B depends on task A:
    $FLOWCTL dep add <task-B-id> <task-A-id> --json
    ```
 
-6. Output current state:
+7. Output current state:
    ```bash
    $FLOWCTL show <epic-id> --json
    $FLOWCTL cat <epic-id>

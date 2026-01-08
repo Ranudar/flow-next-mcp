@@ -27,5 +27,32 @@ if "flowctl prep-chat" in cmd:
     print("Ralph mode: use flowctl rp chat-send (no prep-chat).", file=sys.stderr)
     sys.exit(2)
 
+try:
+    import shlex
+    tokens = shlex.split(cmd)
+except Exception:
+    tokens = cmd.split()
+
+def token_has_flowctl(tok: str) -> bool:
+    return "flowctl" in tok
+
+def flag_value(flag: str):
+    for i, tok in enumerate(tokens):
+        if tok.startswith(flag + "="):
+            return tok.split("=", 1)[1]
+        if tok == flag and i + 1 < len(tokens):
+            return tokens[i + 1]
+    return None
+
+if "rp" in tokens and "builder" in tokens and any(token_has_flowctl(t) for t in tokens):
+    window = flag_value("--window")
+    summary = flag_value("--summary")
+    if not window or not summary:
+        print("Ralph mode: flowctl rp builder requires --window <id> and --summary \"...\".", file=sys.stderr)
+        sys.exit(2)
+    if not window.isdigit():
+        print("Ralph mode: flowctl rp builder --window must be numeric id from pick-window.", file=sys.stderr)
+        sys.exit(2)
+
 sys.exit(0)
 PY

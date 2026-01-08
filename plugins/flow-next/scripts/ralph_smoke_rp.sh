@@ -76,6 +76,30 @@ latest_jsonl() {
   ls -t "$HOME/.claude/projects"/*.jsonl 2>/dev/null | head -n 1 || true
 }
 
+new_session_id() {
+  python3 - <<'PY'
+import uuid
+print(uuid.uuid4())
+PY
+}
+
+pin_session_id() {
+  if [[ "${FLOW_RALPH_PIN_SESSION_ID:-0}" == "1" && -z "${FLOW_RALPH_CLAUDE_SESSION_ID:-}" ]]; then
+    FLOW_RALPH_CLAUDE_SESSION_ID="$(new_session_id)"
+    export FLOW_RALPH_CLAUDE_SESSION_ID
+  fi
+}
+
+find_jsonl() {
+  if [[ -n "${FLOW_RALPH_CLAUDE_SESSION_ID:-}" ]]; then
+    if command -v fd >/dev/null 2>&1; then
+      fd -a "${FLOW_RALPH_CLAUDE_SESSION_ID}.jsonl" "$HOME/.claude/projects" | head -n 1 || true
+    else
+      find "$HOME/.claude/projects" -name "${FLOW_RALPH_CLAUDE_SESSION_ID}.jsonl" -print 2>/dev/null | head -n 1 || true
+    fi
+  fi
+}
+
 cleanup() {
   if [[ "${KEEP_TEST_DIR:-0}" != "1" ]]; then
     rm -rf "$TEST_DIR"
@@ -86,6 +110,8 @@ trap cleanup EXIT
 [[ "${RP_SMOKE:-0}" == "1" ]] || fail "set RP_SMOKE=1 to run"
 command -v "$CLAUDE_BIN" >/dev/null 2>&1 || fail "claude not found (set CLAUDE_BIN if needed)"
 command -v rp-cli >/dev/null 2>&1 || fail "rp-cli not found (required for rp review)"
+
+pin_session_id
 
 echo -e "${YELLOW}=== ralph smoke (rp) ===${NC}"
 echo "Test dir: $TEST_DIR"
@@ -102,3 +128,180 @@ cat > src/index.ts <<'EOF'
 export function add(a: number, b: number): number {
   return a + b;
 }
+EOF
+
+cat > package.json <<'EOF'
+{
+  "name": "tmp-flow-next-ralph-smoke",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node -e \"console.log('ok')\""
+  }
+}
+EOF
+
+cat > README.md <<'EOF'
+# tmp-flow-next-ralph-smoke
+
+TBD
+EOF
+
+git add .
+git commit -m "chore: init" >/dev/null
+
+mkdir -p scripts/ralph
+cp -R "$PLUGIN_ROOT/skills/flow-next-ralph-init/templates/." scripts/ralph/
+cp "$PLUGIN_ROOT/scripts/flowctl.py" scripts/ralph/flowctl.py
+cp "$PLUGIN_ROOT/scripts/flowctl" scripts/ralph/flowctl
+chmod +x scripts/ralph/ralph.sh scripts/ralph/ralph_once.sh scripts/ralph/flowctl
+FLOWCTL="scripts/ralph/flowctl"
+
+python3 - <<'PY'
+from pathlib import Path
+import re
+cfg = Path("scripts/ralph/config.env")
+text = cfg.read_text()
+text = text.replace("{{PLAN_REVIEW}}", "rp").replace("{{WORK_REVIEW}}", "rp")
+text = re.sub(r"^REQUIRE_PLAN_REVIEW=.*$", "REQUIRE_PLAN_REVIEW=1", text, flags=re.M)
+text = re.sub(r"^BRANCH_MODE=.*$", "BRANCH_MODE=new", text, flags=re.M)
+text = re.sub(r"^MAX_ITERATIONS=.*$", "MAX_ITERATIONS=4", text, flags=re.M)
+text = re.sub(r"^MAX_TURNS=.*$", "MAX_TURNS=30", text, flags=re.M)
+text = re.sub(r"^MAX_ATTEMPTS_PER_TASK=.*$", "MAX_ATTEMPTS_PER_TASK=1", text, flags=re.M)
+text = re.sub(r"^YOLO=.*$", "YOLO=1", text, flags=re.M)
+text = re.sub(r"^EPICS=.*$", "EPICS=fn-1", text, flags=re.M)
+cfg.write_text(text)
+PY
+
+scripts/ralph/flowctl init --json >/dev/null
+scripts/ralph/flowctl epic create --title "Tiny lib" --json >/dev/null
+
+cat > "$TEST_DIR/epic.md" <<'EOF'
+# fn-1 Tiny lib
+
+## Overview
+Add a tiny add() helper doc update and verify README.
+
+## Current State
+- `add()` exists in `src/index.ts`
+- README is a placeholder
+
+## Scope
+- `src/index.ts`: add brief JSDoc (params + return)
+- `README.md`: add TS usage snippet and note TS tooling required
+
+## Approach
+Edit src/index.ts and README.md only. Repo is source-only (no build step).
+
+## Quick commands
+- `npm test` (smoke only)
+
+## Acceptance
+- [ ] `add(a: number, b: number): number` exported as named export
+- [ ] `add()` has brief JSDoc (params + return)
+- [ ] README includes:
+  - snippet:
+    ```ts
+    import { add } from "./src/index.ts";
+    console.log(add(1, 2)); // 3
+    ```
+  - note that TS tooling is required to run
+- [ ] `npm test` passes (smoke only)
+
+## Risks
+- README import path is TypeScript source; call out runtime requirements
+
+## References
+- None
+EOF
+
+scripts/ralph/flowctl epic set-plan fn-1 --file "$TEST_DIR/epic.md" --json >/dev/null
+
+cat > "$TEST_DIR/accept.md" <<'EOF'
+- [ ] Add JSDoc for add() (params + return)
+- [ ] README snippet uses `import { add } from "./src/index.ts"` and shows `console.log(add(1,2)) // 3`
+- [ ] README notes TS tooling required
+EOF
+
+scripts/ralph/flowctl task create --epic fn-1 --title "Add docs" --acceptance-file "$TEST_DIR/accept.md" --json >/dev/null
+
+mkdir -p "$TEST_DIR/bin"
+cat > "$TEST_DIR/bin/claude" <<EOF
+#!/usr/bin/env bash
+exec "$CLAUDE_BIN" --plugin-dir "$PLUGIN_ROOT" "\$@"
+EOF
+chmod +x "$TEST_DIR/bin/claude"
+
+REPO_ROOT="$(pwd)"
+W="$($FLOWCTL rp pick-window --repo-root "$REPO_ROOT")"
+[[ -n "$W" ]] || fail "no rp-cli window for $REPO_ROOT"
+ALT_ROOT="$(swap_tmp_root "$REPO_ROOT")"
+W_ALT="$($FLOWCTL rp pick-window --repo-root "$ALT_ROOT")"
+[[ -n "$W_ALT" ]] || fail "path normalization failed for $ALT_ROOT"
+
+$FLOWCTL rp ensure-workspace --window "$W" --repo-root "$REPO_ROOT"
+preflight_msg="$TEST_DIR/preflight.md"
+cat > "$preflight_msg" <<'EOF'
+Smoke preflight: confirm chat pipeline.
+EOF
+T="$(retry_cmd "rp builder" 180 2 "$FLOWCTL" rp builder --window "$W" --summary "Smoke preflight")"
+retry_cmd "rp chat-send" 180 2 "$FLOWCTL" rp chat-send --window "$W" --tab "$T" --message-file "$preflight_msg" --new-chat --chat-name "Smoke Preflight" >/dev/null
+
+echo -e "${YELLOW}--- running ralph (rp) ---${NC}"
+CLAUDE_BIN="$TEST_DIR/bin/claude" scripts/ralph/ralph.sh
+
+python3 - <<'PY'
+import json
+from pathlib import Path
+for tid in ["fn-1.1"]:
+    data = json.loads(Path(f".flow/tasks/{tid}.json").read_text())
+    assert data["status"] == "done"
+PY
+
+run_dir="$(ls -t scripts/ralph/runs | grep -v '^\\.gitkeep$' | head -n 1)"
+receipts="scripts/ralph/runs/$run_dir/receipts"
+if [[ ! -f "scripts/ralph/runs/$run_dir/progress.txt" ]]; then
+  fail "missing progress.txt"
+fi
+python3 - <<'PY' "$receipts"
+import json, sys
+from pathlib import Path
+receipts = Path(sys.argv[1])
+plan = json.loads((receipts / "plan-fn-1.json").read_text())
+impl = json.loads((receipts / "impl-fn-1.1.json").read_text())
+assert plan["type"] == "plan_review"
+assert plan["id"] == "fn-1"
+assert impl["type"] == "impl_review"
+assert impl["id"] == "fn-1.1"
+PY
+
+if [[ "${FLOW_RALPH_VERBOSE:-}" == "1" ]]; then
+  log_file="scripts/ralph/runs/$run_dir/ralph.log"
+  [[ -f "$log_file" ]] || fail "missing verbose log $log_file"
+  if command -v rg >/dev/null 2>&1; then
+    rg -q "flowctl rp builder" "$log_file" || fail "missing builder in ralph.log"
+    rg -q "flowctl rp chat-send" "$log_file" || fail "missing chat-send in ralph.log"
+    rg -q "REVIEW_RECEIPT_WRITTEN" "$log_file" || fail "missing receipt marker in ralph.log"
+  else
+    grep -q "flowctl rp builder" "$log_file" || fail "missing builder in ralph.log"
+    grep -q "flowctl rp chat-send" "$log_file" || fail "missing chat-send in ralph.log"
+    grep -q "REVIEW_RECEIPT_WRITTEN" "$log_file" || fail "missing receipt marker in ralph.log"
+  fi
+fi
+
+jsonl="$(find_jsonl)"
+[[ -n "$jsonl" ]] || jsonl="$(latest_jsonl)"
+[[ -n "$jsonl" ]] || fail "no claude jsonl logs found"
+if command -v rg >/dev/null 2>&1; then
+  rg -q "REVIEW_RECEIPT_WRITTEN" "$jsonl" || fail "missing receipt marker in jsonl"
+  rg -q "<verdict>" "$jsonl" || fail "missing verdict tag in jsonl"
+else
+  grep -q "REVIEW_RECEIPT_WRITTEN" "$jsonl" || fail "missing receipt marker in jsonl"
+  grep -q "<verdict>" "$jsonl" || fail "missing verdict tag in jsonl"
+fi
+
+echo -e "${GREEN}✓${NC} task done"
+echo -e "${GREEN}✓${NC} ralph smoke rp complete"
+echo "Run logs: $TEST_DIR/repo/scripts/ralph/runs"
+echo "Claude logs: /Users/gordon/.claude/projects"

@@ -20,6 +20,12 @@ Commands:
 - `/flow-next:plan-review` → Carmack-level plan review via rp-cli
 - `/flow-next:impl-review` → Carmack-level impl review (current branch)
 
+Ralph (autonomous loop):
+- Script template lives in `plugins/flow-next/skills/flow-next-ralph-init/templates/`.
+- Ralph uses `flowctl rp` wrappers (not direct rp-cli) for reviews.
+- Receipts gate progress when `REVIEW_RECEIPT_PATH` is set.
+- Runbooks: `plans/ralph-e2e-notes.md`, `plans/ralph-getting-started.md`.
+
 ### flow
 Original plugin with optional Beads integration. Plan files in `plans/`.
 
@@ -50,6 +56,52 @@ Commands:
 - Keep prompts concise and direct.
 - Avoid feature flags or backwards-compatibility scaffolding (plugins are pre-release).
 - Do not add extra commands/agents/skills unless explicitly requested.
+
+## Agent workflow (Ralph + RP)
+
+Runbooks:
+- `plans/ralph-e2e-notes.md`
+- `plans/ralph-getting-started.md`
+
+Tests:
+```bash
+plugins/flow-next/scripts/smoke_test.sh
+plugins/flow-next/scripts/ralph_smoke_test.sh
+```
+
+RP smoke (requires RepoPrompt window open on `${TEST_DIR}/repo`):
+```bash
+FLOW_RALPH_PIN_SESSION_ID=1 RP_SMOKE=1 TEST_DIR=/tmp/flow-next-ralph-smoke-rpN KEEP_TEST_DIR=1 \
+  plugins/flow-next/scripts/ralph_smoke_rp.sh
+```
+
+Full RP e2e (requires RepoPrompt window open on `${TEST_DIR}/repo`):
+```bash
+FLOW_RALPH_PIN_SESSION_ID=1 TEST_DIR=/tmp/flow-next-ralph-e2e-rpN KEEP_TEST_DIR=1 \
+  plugins/flow-next/scripts/ralph_e2e_rp_test.sh
+```
+
+RP gotchas (must follow):
+- Use `flowctl rp` wrappers only (no direct `rp-cli`).
+- Resolve numeric window id via `flowctl rp pick-window --repo-root "$REPO_ROOT"` before builder.
+- Do not call `flowctl rp builder` without `--window` and `--summary`.
+- Write receipt JSON after chat returns when `REVIEW_RECEIPT_PATH` is set.
+
+Debug envs (optional, Ralph only):
+```bash
+FLOW_RALPH_CLAUDE_MODEL=claude-opus-4-5-20251101
+FLOW_RALPH_PIN_SESSION_ID=1
+FLOW_RALPH_CLAUDE_DEBUG=hooks
+FLOW_RALPH_CLAUDE_VERBOSE=1
+FLOW_RALPH_CLAUDE_PERMISSION_MODE=bypassPermissions
+FLOW_RALPH_CLAUDE_NO_SESSION_PERSISTENCE=1
+```
+
+Logs:
+- Ralph run logs: `scripts/ralph/runs/<run>/`
+- Verbose log: `scripts/ralph/runs/<run>/ralph.log`
+- Receipts: `scripts/ralph/runs/<run>/receipts/`
+- Claude jsonl: `~/.claude/projects/**/<session_id>.jsonl`
 
 ## Release checklist (flow-next)
 

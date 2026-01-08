@@ -75,6 +75,29 @@ latest_jsonl() {
   ls -t "$HOME/.claude/projects"/*.jsonl 2>/dev/null | head -n 1 || true
 }
 
+new_session_id() {
+  python3 - <<'PY'
+import uuid
+print(uuid.uuid4())
+PY
+}
+
+pin_session_id() {
+  if [[ "${FLOW_RALPH_PIN_SESSION_ID:-0}" == "1" && -z "${FLOW_RALPH_CLAUDE_SESSION_ID:-}" ]]; then
+    FLOW_RALPH_CLAUDE_SESSION_ID="$(new_session_id)"
+    export FLOW_RALPH_CLAUDE_SESSION_ID
+  fi
+}
+
+find_jsonl() {
+  if [[ -n "${FLOW_RALPH_CLAUDE_SESSION_ID:-}" ]]; then
+    if command -v fd >/dev/null 2>&1; then
+      fd -a "${FLOW_RALPH_CLAUDE_SESSION_ID}.jsonl" "$HOME/.claude/projects" | head -n 1 || true
+    else
+      find "$HOME/.claude/projects" -name "${FLOW_RALPH_CLAUDE_SESSION_ID}.jsonl" -print 2>/dev/null | head -n 1 || true
+    fi
+  fi
+}
 cleanup() {
   if [[ "${KEEP_TEST_DIR:-0}" != "1" ]]; then
     rm -rf "$TEST_DIR"
@@ -84,6 +107,8 @@ trap cleanup EXIT
 
 command -v "$CLAUDE_BIN" >/dev/null 2>&1 || fail "claude not found (set CLAUDE_BIN if needed)"
 command -v rp-cli >/dev/null 2>&1 || fail "rp-cli not found (required for rp review)"
+
+pin_session_id
 
 echo -e "${YELLOW}=== ralph e2e (rp reviews) ===${NC}"
 echo "Test dir: $TEST_DIR"
@@ -242,6 +267,7 @@ for tid in ["fn-1.1", "fn-2.1"]:
 runs = [p for p in Path("scripts/ralph/runs").iterdir() if p.is_dir() and p.name != ".gitkeep"]
 runs.sort()
 run_dir = runs[0].name
+assert Path(f"scripts/ralph/runs/{run_dir}/progress.txt").exists()
 data = json.loads(Path(f"scripts/ralph/runs/{run_dir}/branches.json").read_text())
 assert "fn-1" in data.get("epics", {})
 assert "fn-2" in data.get("epics", {})
@@ -272,7 +298,8 @@ if [[ "${FLOW_RALPH_VERBOSE:-}" == "1" ]]; then
   fi
 fi
 
-jsonl="$(latest_jsonl)"
+jsonl="$(find_jsonl)"
+[[ -n "$jsonl" ]] || jsonl="$(latest_jsonl)"
 [[ -n "$jsonl" ]] || fail "no claude jsonl logs found"
 if command -v rg >/dev/null 2>&1; then
   rg -q "REVIEW_RECEIPT_WRITTEN" "$jsonl" || fail "missing receipt marker in jsonl"

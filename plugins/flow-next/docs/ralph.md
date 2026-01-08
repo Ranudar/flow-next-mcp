@@ -79,6 +79,7 @@ Each run creates a folder:
 ```
 scripts/ralph/runs/<run-id>/
   iter-###.log
+  progress.txt
   attempts.json
   branches.json
   receipts/
@@ -86,6 +87,7 @@ scripts/ralph/runs/<run-id>/
 ```
 
 - `iter-###.log`: raw Claude output per iteration.
+- `progress.txt`: append-only run log (verdicts, receipts, status).
 - `attempts.json`: per-task retry counts.
 - `branches.json`: epic → branch mapping (branch mode = new).
 - `receipts/`: plan/impl receipts.

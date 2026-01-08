@@ -148,6 +148,7 @@ python3 - <<'PY' "$run_dir"
 import json, sys
 from pathlib import Path
 run_dir = sys.argv[1]
+assert Path(f"scripts/ralph/runs/{run_dir}/progress.txt").exists()
 data = json.loads(Path(f"scripts/ralph/runs/{run_dir}/branches.json").read_text())
 assert "fn-1" in data.get("epics", {})
 assert "fn-2" in data.get("epics", {})

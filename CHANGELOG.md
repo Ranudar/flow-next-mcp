@@ -2,12 +2,29 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.2.8] - 2026-01-08
+
+### Changed
+- Enforce numeric RepoPrompt window selection + validation before builder
+- Clarify builder requires `--window` + `--summary`; no names/ids
+- Update plan/impl review rp-cli references + workflow guidance
+
+## [flow-next 0.2.7] - 2026-01-08
+
+### Changed
+- Add epic `branch_name` field + `flowctl epic set-branch` command
+- Ralph now writes run-local `progress.txt` per iteration
+- Plan guidance enforces one-iteration task sizing and sets epic branch_name
+- Work flow requires tests/Quick commands green before impl review
+- Smoke tests cover branch_name + progress.txt
+
 ## [flow-next 0.2.6] - 2026-01-08
 
 ### Changed
 - Add flowctl rp wrappers; remove direct rp-cli usage in review workflows
 - Add skill-scoped Ralph hooks (guard + receipt + optional verbose log)
 - Update review skills/commands/docs to use wrappers + Claude Code 2.1.0+ note
+
 
 ## [flow-next 0.2.5] - 2026-01-07
 

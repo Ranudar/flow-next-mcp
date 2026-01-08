@@ -78,6 +78,7 @@ path = Path(".flow/epics/fn-1.json")
 data = json.loads(path.read_text())
 data.pop("plan_review_status", None)
 data.pop("plan_reviewed_at", None)
+data.pop("branch_name", None)
 path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
 PY
 show_json="$(scripts/flowctl show fn-1 --json)"
@@ -86,8 +87,20 @@ import json, sys
 data = json.loads(sys.argv[1])
 assert data.get("plan_review_status") == "unknown"
 assert data.get("plan_reviewed_at") is None
+assert data.get("branch_name") is None
 PY
 echo -e "${GREEN}✓${NC} plan_review_status defaulted"
+PASS=$((PASS + 1))
+
+echo -e "${YELLOW}--- branch_name set ---${NC}"
+scripts/flowctl epic set-branch fn-1 --branch "fn-1-epic" --json >/dev/null
+show_json="$(scripts/flowctl show fn-1 --json)"
+python3 - <<'PY' "$show_json"
+import json, sys
+data = json.loads(sys.argv[1])
+assert data.get("branch_name") == "fn-1-epic"
+PY
+echo -e "${GREEN}✓${NC} branch_name set"
 PASS=$((PASS + 1))
 
 echo -e "${YELLOW}--- block + validate + epic close ---${NC}"
