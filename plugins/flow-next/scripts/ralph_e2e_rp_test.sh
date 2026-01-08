@@ -105,7 +105,7 @@ find_jsonl() {
   fi
 }
 cleanup() {
-  if [[ "${KEEP_TEST_DIR:-0}" != "1" ]]; then
+  if [[ "${KEEP_TEST_DIR:-0}" != "1" && "${CREATE:-0}" != "1" ]]; then
     rm -rf "$TEST_DIR"
   fi
 }
