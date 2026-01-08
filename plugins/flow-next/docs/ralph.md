@@ -46,7 +46,7 @@ Key points:
 ## Receipts (Review Gates)
 
 When review mode is `rp`, Ralph passes a `REVIEW_RECEIPT_PATH` env var to the review skills. The skills **must** write a receipt after the review returns (any verdict).
-Ralph also sets `RALPH_MODE=1` to enable stricter skill rules and anti-drift guards.
+Ralph also sets `FLOW_RALPH=1` to enable stricter skill rules and anti-drift guards.
 
 Receipt files live under:
 

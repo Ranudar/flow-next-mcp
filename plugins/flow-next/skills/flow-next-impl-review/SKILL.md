@@ -30,7 +30,7 @@ Conduct a John Carmack-level review of implementation changes on the current bra
 
 **DO NOT REVIEW CODE YOURSELF** - you coordinate, RepoPrompt reviews.
 
-If `REVIEW_RECEIPT_PATH` is set or `RALPH_MODE=1`:
+If `REVIEW_RECEIPT_PATH` is set or `FLOW_RALPH=1`:
 - Use `flowctl rp` wrappers only (no direct `rp-cli`)
 - Must write receipt after chat returns (any verdict)
 - Any failure → output `<promise>RETRY</promise>` and stop
