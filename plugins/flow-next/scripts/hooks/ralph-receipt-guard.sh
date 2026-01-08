@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ -z "${FLOW_RALPH:-}" && -z "${REVIEW_RECEIPT_PATH:-}" ]]; then
+if [[ -z "${FLOW_RALPH:-}" && -z "${RALPH_MODE:-}" && -z "${REVIEW_RECEIPT_PATH:-}" ]]; then
   exit 0
 fi
 
