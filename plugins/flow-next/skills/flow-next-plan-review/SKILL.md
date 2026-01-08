@@ -23,150 +23,167 @@ hooks:
 
 Conduct a John Carmack-level review of implementation plans using RepoPrompt's context builder and chat.
 
-Follow this skill and linked workflows exactly. Deviations cause drift, bad gates, retries, and user frustration.
-
 **Role**: Code Review Coordinator (NOT the reviewer)
 **Tool**: flowctl rp wrappers for context building and chat delegation
 
-## Ralph Mode Rules (always follow)
+## Critical Rule
+
+**DO NOT REVIEW THE PLAN YOURSELF** - you coordinate, RepoPrompt reviews.
 
 If `REVIEW_RECEIPT_PATH` is set or `RALPH_MODE=1`:
-- **Do NOT** run `rp-cli` directly (no chat/codemap/slice/help).
-- **Must** use `flowctl rp` wrappers (`builder`, `prompt-get`, `select-*`, `chat-send`).
-- **Must** resolve a **numeric** RepoPrompt window id via `flowctl rp pick-window --repo-root "$REPO_ROOT"` and validate it before running builder. If missing/invalid, output `<promise>RETRY</promise>` and stop.
-- **Never** call `flowctl rp builder` without `--window` **and** `--summary`. Builder does not accept epic IDs or window names.
-- **Must** write receipt via **bash heredoc** (no Write tool) after review returns (any verdict).
-- If you violate any rule: output `<promise>RETRY</promise>` and stop.
-Reason: Ralph ignores stdout; only receipts prove the review ran.
-
-## Hard Rule (rp mode)
-
-If `--mode=rp`, you must route the review through `flowctl rp chat-send`. **Do not** write the review yourself.  
-If chat-send does not run (missing rp-cli, no window, builder/chat failure), output `<promise>RETRY</promise>` and stop.
-If you start writing a review yourself, stop and output `<promise>RETRY</promise>`.
-If `REVIEW_RECEIPT_PATH` is set, you **must** write a receipt JSON file **after chat returns (any verdict)**. This is mandatory when the env var is present.
-Do **not** call `rp-cli` directly. Use flowctl rp wrappers only.
-Create `/tmp/review-prompt.md` via bash heredoc (avoid Write tool).
-
-**Required sequence (rp mode):**
-```bash
-FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-W="$($FLOWCTL rp pick-window --repo-root "$REPO_ROOT")"
-if [[ -z "$W" || ! "$W" =~ ^[0-9]+$ ]]; then
-  echo "<promise>RETRY</promise>"
-  exit 0
-fi
-$FLOWCTL rp ensure-workspace --window "$W" --repo-root "$REPO_ROOT"
-T="$($FLOWCTL rp builder --window "$W" --summary "Review a plan to <summary>")"
-$FLOWCTL rp prompt-get --window "$W" --tab "$T"
-$FLOWCTL rp select-get --window "$W" --tab "$T"
-$FLOWCTL rp select-add --window "$W" --tab "$T" <plan-file>
-cat > /tmp/review-prompt.md << 'EOF'
-<COMBINED_PROMPT>
-EOF
-$FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/review-prompt.md --new-chat --chat-name "Plan Review: <EPIC_ID>"
-```
-Only the RepoPrompt response is the review.
-If `REVIEW_RECEIPT_PATH` is set, **always** write the receipt after chat returns (any verdict):
-```bash
-if [[ -n "${REVIEW_RECEIPT_PATH:-}" ]]; then
-  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  mkdir -p "$(dirname "$REVIEW_RECEIPT_PATH")"
-  cat > "$REVIEW_RECEIPT_PATH" <<EOF
-{"type":"plan_review","id":"<EPIC_ID>","mode":"rp","timestamp":"$ts","chat":"<chat-id-if-known>"}
-EOF
-  echo "REVIEW_RECEIPT_WRITTEN: $REVIEW_RECEIPT_PATH"
-fi
-```
+- Use `flowctl rp` wrappers only (no direct `rp-cli`)
+- Must write receipt after chat returns (any verdict)
+- Any failure → output `<promise>RETRY</promise>` and stop
 
 ## Input
 
 Arguments: #$ARGUMENTS
-Format: `<flow-epic-id> [additional context or focus areas]`
+Format: `<flow-epic-id> [focus areas]`
 
-Accepts:
-- Flow epic ID: `fn-N`
-
-Example: `/flow-next:plan-review fn-1 focus on security and error handling`
+Example: `/flow-next:plan-review fn-1 focus on security`
 
 ## Setup
 
 ```bash
 FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ```
 
-## FIRST: Determine Review Mode
+## Workflow
 
-Check: `which rp-cli >/dev/null 2>&1`
-If NOT available:
-- If mode=rp: output `<promise>RETRY</promise>` and stop.
-- Otherwise: inform user rp-cli is required for this skill.
+### Step 1: Get Plan Content
 
-### Option Parsing (skip questions if found in arguments)
-
-Parse the arguments for these patterns. If found, use them and skip the question:
-
-**Review mode**:
-- `--mode=rp` or `--rp` or "rp chat" or "repoprompt" → RepoPrompt chat (via `flowctl rp chat-send`)
-- `--mode=export` or `--export` or "export" or "external llm" → export for external LLM
-
-### If options NOT found
-
-**If review mode was already chosen earlier in this conversation** (e.g., user answered "2a" or "2b" during `/flow-next:plan` or `/flow-next:work` setup):
-→ Use that mode, don't ask again.
-
-**If invoked directly without prior context**, output this text (do NOT use AskUserQuestion tool):
-
-```
-Both modes use RepoPrompt for context building (builder + file selection). Codemaps are optional in non-Ralph mode only.
-The difference is where the review happens:
-
-Review mode:
-a) RepoPrompt chat (default) — review via `flowctl rp chat-send`
-b) Export for external LLM — export context file for ChatGPT, Claude web, etc.
-
-(Reply: "a", "b", "export", or just tell me)
-```
-
-Wait for user response. Parse naturally.
-
-## Get Plan Content
-
-For Flow epic ID:
 ```bash
 $FLOWCTL show <id> --json
 $FLOWCTL cat <id>
 ```
 
-Build a compact task table from the show output (ids, deps, statuses).
-When updating the plan/spec, use `flowctl epic set-plan` (there is no `set-spec` command).
+Build a compact task table from show output (ids, deps, statuses).
 
-## Critical Requirement (Hard Gate)
+### Step 2: Atomic Setup (MUST RUN)
 
-**DO NOT REVIEW THE PLAN YOURSELF** — you are a coordinator, not the reviewer.
+Run this single command - it handles window selection, workspace, and builder:
 
-If `--mode=rp`:
-1. Run `flowctl rp pick-window` to select a valid window ID.
-2. Run `flowctl rp builder` to build context and capture tab.
-3. Run `flowctl rp chat-send` to execute the review.
-4. Extract the **verdict tag** from the RepoPrompt response.
+```bash
+eval "$($FLOWCTL rp setup-review --repo-root "$REPO_ROOT" --summary "Review plan for <EPIC_ID>: <1-2 sentence summary>")"
+```
 
-If you cannot complete **all** steps above (rp-cli missing, no window, builder/chat fails):
-- Output `<promise>RETRY</promise>` and stop.
-- **Do not** set plan_review_status.
+This outputs `W=<window> T=<tab>`. The `eval` captures both variables.
 
-Only set plan_review_status after chat returns a verdict tag. Use this command only:
+If setup-review fails, output `<promise>RETRY</promise>` and stop.
+
+### Step 3: Augment Selection
+
+```bash
+# Check what builder selected
+$FLOWCTL rp select-get --window "$W" --tab "$T"
+
+# Add the plan spec file
+$FLOWCTL rp select-add --window "$W" --tab "$T" .flow/specs/<epic-id>.md
+
+# Add any supporting docs (PRD, architecture)
+$FLOWCTL rp select-add --window "$W" --tab "$T" <path-to-docs>
+```
+
+### Step 4: Build Review Prompt
+
+Get builder's handoff prompt:
+```bash
+$FLOWCTL rp prompt-get --window "$W" --tab "$T"
+```
+
+Create combined prompt via heredoc:
+```bash
+cat > /tmp/review-prompt.md << 'EOF'
+[BUILDER'S HANDOFF PROMPT]
+
+---
+
+## Plan Under Review
+[PASTE flowctl show OUTPUT]
+
+## Review Focus
+[USER'S FOCUS AREAS FROM ARGUMENTS]
+
+## Review Criteria
+
+Conduct a John Carmack-level review. Evaluate against:
+
+### 1. Simplicity & Minimalism
+- Simplest possible solution?
+- Unnecessary abstraction layers?
+
+### 2. DRY & Code Reuse
+- Duplicated logic?
+- Could leverage existing patterns?
+
+### 3. Architecture & Design
+- Data flow makes sense?
+- Clear boundaries/responsibilities?
+
+### 4. Edge Cases & Error Handling
+- Unhandled failure modes?
+- Race conditions?
+
+### 5. Security
+- Injection vulnerabilities?
+- Auth/authz gaps?
+
+## Output Format
+
+For each issue:
+1. **Severity**: Critical / Major / Minor / Nitpick
+2. **Location**: Where in the plan
+3. **Problem**: What's wrong
+4. **Suggestion**: How to fix
+
+End with:
+- Overall: Ship / Needs Work / Major Rethink
+- Final verdict tag: `<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`
+EOF
+```
+
+### Step 5: Execute Review
+
+```bash
+$FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/review-prompt.md --new-chat --chat-name "Plan Review: <EPIC_ID>"
+```
+
+**WAIT** for response (1-5+ minutes).
+
+### Step 6: Write Receipt (if REVIEW_RECEIPT_PATH set)
+
+```bash
+if [[ -n "${REVIEW_RECEIPT_PATH:-}" ]]; then
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  mkdir -p "$(dirname "$REVIEW_RECEIPT_PATH")"
+  cat > "$REVIEW_RECEIPT_PATH" <<EOF
+{"type":"plan_review","id":"<EPIC_ID>","mode":"rp","timestamp":"$ts"}
+EOF
+  echo "REVIEW_RECEIPT_WRITTEN: $REVIEW_RECEIPT_PATH"
+fi
+```
+
+### Step 7: Update Status
+
+Extract verdict from chat response, then:
 ```bash
 $FLOWCTL epic set-plan-review-status <EPIC_ID> --status ship --json
+# OR
 $FLOWCTL epic set-plan-review-status <EPIC_ID> --status needs_work --json
 ```
-Do **not** use `set-plan-review` or `update` (they do not exist).
 
-## Workflow
+If no verdict tag in response, output `<promise>RETRY</promise>` and stop.
 
-Read [workflow.md](workflow.md) and follow each phase in order. Phases include window selection, context building, and review execution.
+## Fix Loop
 
-## RepoPrompt wrappers
+If verdict is NEEDS_WORK:
+1. Parse issues by severity
+2. Fix Critical → Major → Minor in plan
+3. Update plan: `$FLOWCTL epic set-plan <id> --file /tmp/updated-plan.md`
+4. Re-review via chat-send (no need to re-run builder)
 
-Do not use rp-cli directly. Use `flowctl rp` wrappers only. See [rp-cli-reference.md](rp-cli-reference.md).
+## Reference
+
+See [workflow.md](workflow.md) for detailed phases.
+See [rp-cli-reference.md](rp-cli-reference.md) for wrapper commands.

@@ -1865,6 +1865,122 @@ def cmd_rp_prompt_export(args: argparse.Namespace) -> None:
     print(res.stdout, end="")
 
 
+def cmd_rp_setup_review(args: argparse.Namespace) -> None:
+    """Atomic setup: pick-window + ensure-workspace + builder.
+
+    Returns W=<window> T=<tab> on success, exits non-zero on failure.
+    Writes state file for ralph-guard to verify pick-window ran.
+    """
+    import hashlib
+
+    repo_root = os.path.realpath(args.repo_root)
+    summary = args.summary
+
+    # Step 1: pick-window
+    roots = normalize_repo_root(repo_root)
+    result = run_rp_cli(["--raw-json", "-e", "windows"])
+    windows = parse_windows(result.stdout or "")
+
+    win_id: Optional[int] = None
+
+    # Single window with no root paths - use it
+    if len(windows) == 1 and not extract_root_paths(windows[0]):
+        win_id = extract_window_id(windows[0])
+
+    # Otherwise match by root
+    if win_id is None:
+        for win in windows:
+            wid = extract_window_id(win)
+            if wid is None:
+                continue
+            for path in extract_root_paths(win):
+                if path in roots:
+                    win_id = wid
+                    break
+            if win_id is not None:
+                break
+
+    if win_id is None:
+        error_exit("No RepoPrompt window matches repo root", use_json=False, code=2)
+
+    # Write state file for ralph-guard verification
+    repo_hash = hashlib.sha256(repo_root.encode()).hexdigest()[:16]
+    state_file = Path(f"/tmp/.ralph-pick-window-{repo_hash}")
+    state_file.write_text(f"{win_id}\n{repo_root}\n")
+
+    # Step 2: ensure-workspace
+    ws_name = os.path.basename(repo_root)
+
+    list_cmd = [
+        "--raw-json",
+        "-w",
+        str(win_id),
+        "-e",
+        f"call manage_workspaces {json.dumps({'action': 'list'})}",
+    ]
+    list_res = run_rp_cli(list_cmd)
+    try:
+        data = json.loads(list_res.stdout)
+    except json.JSONDecodeError as e:
+        error_exit(f"workspace list JSON parse failed: {e}", use_json=False, code=2)
+
+    def extract_ws_names(obj: Any) -> set[str]:
+        names: set[str] = set()
+        if isinstance(obj, dict):
+            if "workspaces" in obj:
+                obj = obj["workspaces"]
+            elif "result" in obj:
+                obj = obj["result"]
+        if isinstance(obj, list):
+            for item in obj:
+                if isinstance(item, str):
+                    names.add(item)
+                elif isinstance(item, dict):
+                    for key in ("name", "workspace", "title"):
+                        if key in item:
+                            names.add(str(item[key]))
+        return names
+
+    names = extract_ws_names(data)
+
+    if ws_name not in names:
+        create_cmd = [
+            "-w",
+            str(win_id),
+            "-e",
+            f"call manage_workspaces {json.dumps({'action': 'create', 'name': ws_name, 'folder_path': repo_root})}",
+        ]
+        run_rp_cli(create_cmd)
+
+    switch_cmd = [
+        "-w",
+        str(win_id),
+        "-e",
+        f"call manage_workspaces {json.dumps({'action': 'switch', 'workspace': ws_name, 'window_id': win_id})}",
+    ]
+    run_rp_cli(switch_cmd)
+
+    # Step 3: builder
+    builder_cmd = [
+        "-w",
+        str(win_id),
+        "-e",
+        f"builder {json.dumps(summary)}",
+    ]
+    builder_res = run_rp_cli(builder_cmd)
+    output = (builder_res.stdout or "") + ("\n" + builder_res.stderr if builder_res.stderr else "")
+    tab = parse_builder_tab(output)
+
+    if not tab:
+        error_exit("Builder did not return a tab id", use_json=False, code=2)
+
+    # Output
+    if args.json:
+        print(json.dumps({"window": win_id, "tab": tab, "repo_root": repo_root}))
+    else:
+        print(f"W={win_id} T={tab}")
+
+
 def cmd_validate(args: argparse.Namespace) -> None:
     """Validate epic structure or all epics."""
     if not ensure_flow_exists():
@@ -2194,6 +2310,12 @@ def main() -> None:
     p_rp_export.add_argument("--tab", required=True, help="Tab id or name")
     p_rp_export.add_argument("--out", required=True, help="Output file")
     p_rp_export.set_defaults(func=cmd_rp_prompt_export)
+
+    p_rp_setup = rp_sub.add_parser("setup-review", help="Atomic: pick-window + workspace + builder")
+    p_rp_setup.add_argument("--repo-root", required=True, help="Repo root path")
+    p_rp_setup.add_argument("--summary", required=True, help="Builder summary")
+    p_rp_setup.add_argument("--json", action="store_true", help="JSON output")
+    p_rp_setup.set_defaults(func=cmd_rp_setup_review)
 
     args = parser.parse_args()
     args.func(args)
