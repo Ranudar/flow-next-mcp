@@ -929,6 +929,98 @@ def cmd_tasks(args: argparse.Namespace) -> None:
                 print(f"  [{t['status']}] {t['id']}: {t['title']}{deps}")
 
 
+def cmd_list(args: argparse.Namespace) -> None:
+    """List all epics and their tasks."""
+    if not ensure_flow_exists():
+        error_exit(".flow/ does not exist. Run 'flowctl init' first.", use_json=args.json)
+
+    flow_dir = get_flow_dir()
+    epics_dir = flow_dir / EPICS_DIR
+    tasks_dir = flow_dir / TASKS_DIR
+
+    # Load all epics
+    epics = []
+    if epics_dir.exists():
+        for epic_file in sorted(epics_dir.glob("fn-*.json")):
+            epic_data = normalize_epic(
+                load_json_or_exit(epic_file, f"Epic {epic_file.stem}", use_json=args.json)
+            )
+            epics.append(epic_data)
+
+    # Sort epics by number
+    def epic_sort_key(e):
+        epic_num, _ = parse_id(e["id"])
+        return epic_num if epic_num is not None else 0
+    epics.sort(key=epic_sort_key)
+
+    # Load all tasks grouped by epic
+    tasks_by_epic = {}
+    all_tasks = []
+    if tasks_dir.exists():
+        for task_file in sorted(tasks_dir.glob("fn-*.json")):
+            stem = task_file.stem
+            if "." not in stem:
+                continue
+            task_data = normalize_task(
+                load_json_or_exit(task_file, f"Task {stem}", use_json=args.json)
+            )
+            epic_id = task_data["epic"]
+            if epic_id not in tasks_by_epic:
+                tasks_by_epic[epic_id] = []
+            tasks_by_epic[epic_id].append(task_data)
+            all_tasks.append({
+                "id": task_data["id"],
+                "epic": task_data["epic"],
+                "title": task_data["title"],
+                "status": task_data["status"],
+                "priority": task_data.get("priority"),
+                "depends_on": task_data["depends_on"]
+            })
+
+    # Sort tasks within each epic
+    for epic_id in tasks_by_epic:
+        tasks_by_epic[epic_id].sort(key=lambda t: parse_id(t["id"])[1] or 0)
+
+    if args.json:
+        epics_out = []
+        for e in epics:
+            task_list = tasks_by_epic.get(e["id"], [])
+            done_count = sum(1 for t in task_list if t["status"] == "done")
+            epics_out.append({
+                "id": e["id"],
+                "title": e["title"],
+                "status": e["status"],
+                "tasks": len(task_list),
+                "done": done_count
+            })
+        json_output({
+            "success": True,
+            "epics": epics_out,
+            "tasks": all_tasks,
+            "epic_count": len(epics),
+            "task_count": len(all_tasks)
+        })
+    else:
+        if not epics:
+            print("No epics or tasks found.")
+            return
+
+        total_tasks = len(all_tasks)
+        total_done = sum(1 for t in all_tasks if t["status"] == "done")
+        print(f"Flow Status: {len(epics)} epics, {total_tasks} tasks ({total_done} done)\n")
+
+        for e in epics:
+            task_list = tasks_by_epic.get(e["id"], [])
+            done_count = sum(1 for t in task_list if t["status"] == "done")
+            progress = f"{done_count}/{len(task_list)}" if task_list else "0/0"
+            print(f"[{e['status']}] {e['id']}: {e['title']} ({progress} done)")
+
+            for t in task_list:
+                deps = f" (deps: {', '.join(t['depends_on'])})" if t['depends_on'] else ""
+                print(f"    [{t['status']}] {t['id']}: {t['title']}{deps}")
+            print()
+
+
 def cmd_cat(args: argparse.Namespace) -> None:
     """Print markdown spec for epic or task."""
     if not ensure_flow_exists():
@@ -2261,6 +2353,11 @@ def main() -> None:
     p_tasks.add_argument("--status", choices=["todo", "in_progress", "blocked", "done"], help="Filter by status")
     p_tasks.add_argument("--json", action="store_true", help="JSON output")
     p_tasks.set_defaults(func=cmd_tasks)
+
+    # list
+    p_list = subparsers.add_parser("list", help="List all epics and tasks")
+    p_list.add_argument("--json", action="store_true", help="JSON output")
+    p_list.set_defaults(func=cmd_list)
 
     # cat
     p_cat = subparsers.add_parser("cat", help="Print spec markdown")

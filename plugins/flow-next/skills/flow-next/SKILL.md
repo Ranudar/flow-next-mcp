@@ -32,6 +32,9 @@ $FLOWCTL detect --json
 # Initialize (if needed)
 $FLOWCTL init --json
 
+# List everything (epics + tasks grouped)
+$FLOWCTL list --json
+
 # List all epics
 $FLOWCTL epics --json
 

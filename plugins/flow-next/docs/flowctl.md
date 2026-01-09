@@ -7,7 +7,7 @@ CLI for `.flow/` task tracking. Agents must use flowctl for all writes.
 ## Available Commands
 
 ```
-init, detect, epic, task, dep, show, epics, tasks, cat, ready, next, start, done, block, validate, prep-chat, rp
+init, detect, epic, task, dep, show, epics, tasks, list, cat, ready, next, start, done, block, validate, prep-chat, rp
 ```
 
 ## Multi-User Safety
@@ -197,6 +197,33 @@ Status options: `todo`, `in_progress`, `blocked`, `done`
 Output:
 ```json
 {"success": true, "tasks": [{"id": "fn-1.1", "epic": "fn-1", "title": "...", "status": "todo", "priority": null, "depends_on": []}], "count": 1}
+```
+
+### list
+
+List all epics with their tasks grouped together.
+
+```bash
+flowctl list [--json]
+```
+
+Human-readable output:
+```
+Flow Status: 2 epics, 5 tasks (2 done)
+
+[open] fn-1: Add auth system (1/3 done)
+    [done] fn-1.1: Create user model
+    [in_progress] fn-1.2: Add login endpoint
+    [todo] fn-1.3: Add logout endpoint
+
+[open] fn-2: Add caching (1/2 done)
+    [done] fn-2.1: Setup Redis
+    [todo] fn-2.2: Cache API responses
+```
+
+JSON output:
+```json
+{"success": true, "epics": [...], "tasks": [...], "epic_count": 2, "task_count": 5}
 ```
 
 ### cat

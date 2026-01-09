@@ -31,6 +31,7 @@ Task tracking for AI agents. All state lives in `.flow/`.
 
 ```bash
 # List
+.flow/bin/flowctl list               # All epics + tasks grouped
 .flow/bin/flowctl epics              # All epics with progress
 .flow/bin/flowctl tasks              # All tasks
 .flow/bin/flowctl tasks --epic fn-1  # Tasks for epic

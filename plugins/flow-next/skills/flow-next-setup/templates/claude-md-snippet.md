@@ -5,6 +5,7 @@ This project uses Flow-Next for task tracking. Use `.flow/bin/flowctl` instead o
 
 **Quick commands:**
 ```bash
+.flow/bin/flowctl list                # List all epics + tasks
 .flow/bin/flowctl epics               # List all epics
 .flow/bin/flowctl tasks --epic fn-N   # List tasks for epic
 .flow/bin/flowctl ready --epic fn-N   # What's ready

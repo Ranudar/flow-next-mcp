@@ -2,6 +2,11 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.3.14] - 2026-01-09
+
+### Added
+- `flowctl list` command - shows all epics with tasks grouped, human-readable + JSON
+
 ## [flow-next 0.3.13] - 2026-01-09
 
 ### Added
