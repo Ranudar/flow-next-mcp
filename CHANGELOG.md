@@ -2,6 +2,13 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.3.10] - 2026-01-09
+
+### Fixed
+- Clarified `/flow-next:setup` idempotency for existing `.flow/` directories
+  - Safe to re-run; preserves existing epics/tasks
+  - Clear version comparison logic for updates
+
 ## [flow-next 0.3.9] - 2026-01-09
 
 ### Added
