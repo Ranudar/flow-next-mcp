@@ -112,7 +112,7 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 
 ### Ralph (Autonomous Mode)
 
-> **⚠️ Warning**: Autonomous code generation is powerful but requires care. Start with `scripts/ralph/ralph_once.sh` to observe a single iteration. Consider running in a [sandbox](https://docs.anthropic.com/en/docs/claude-code/security#running-in-a-sandbox) for extra isolation.
+> **⚠️ Warning**: Autonomous code generation is powerful but requires care. Start with `scripts/ralph/ralph_once.sh` to observe a single iteration. Consider running in a [Docker sandbox](https://docs.docker.com/ai/sandboxes/claude-code/) for extra isolation.
 
 **Setup (one-time, inside Claude):**
 ```bash
