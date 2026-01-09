@@ -164,4 +164,4 @@ PY
 echo -e "${GREEN}✓${NC} task done"
 echo -e "${GREEN}✓${NC} ralph e2e complete"
 echo "Run logs: $TEST_DIR/repo/scripts/ralph/runs"
-echo "Claude logs: /Users/gordon/.claude/projects"
+echo "Claude logs: $HOME/.claude/projects"

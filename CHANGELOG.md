@@ -2,6 +2,41 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.3.0] - 2026-01-09
+
+### Added
+- **Guard hooks for Ralph**: Plugin hooks enforce workflow rules deterministically when `FLOW_RALPH=1`:
+  - Blocks `--json` flag on chat-send (suppresses review text)
+  - Blocks `--new-chat` on re-reviews (preserves reviewer context)
+  - Blocks impl receipt writes unless `flowctl done` was called for that task
+  - Blocks receipts missing required `id` field
+  - Warns on informal approvals (LGTM) without proper verdict tags
+  - Only active in Ralph mode; zero impact for non-Ralph users
+- **Autonomous mode system prompt**: Ralph now injects stern warnings via `--append-system-prompt`:
+  - "Execute commands exactly as shown"
+  - "Never claim success without proof"
+  - "Be precise, not creative"
+- **Ralph screenshot** in README showing the autonomous loop UI
+- **Contributing docs**: Warning about uninstalling marketplace plugins before local development
+
+### Changed
+- **flowctl done tracking**: Hook regex now correctly captures task IDs (not flags like `--help`)
+- **Response pattern matching**: Added "completed" pattern for flowctl done output detection
+- **Receipt id validation**: Prompts now emphasize `"id"` field is required with CRITICAL warnings
+- **Skill invocation enforcement**: Phases.md strengthens `/flow-next:impl-review` requirement
+- **Review workflows**: Updated for `setup-review` atomic flow (pick-window + builder in one step)
+- **Test script fixes**: jsonl finder now checks file exists/readable, uses `--no-messages` with rg
+- **Hardcoded paths**: Test scripts now use `$HOME` instead of absolute paths
+
+### Fixed
+- Claude claiming "task done" without actually running `flowctl done`
+- Receipt writes missing `id` field causing verification failures
+- `flowctl done` tracking capturing `--help` instead of task IDs
+- jsonl finder returning stale/inaccessible files
+
+### Tested
+- E2E v15: Perfect run - 5 iterations, 0 retries, all receipts valid
+
 ## [flow-next 0.2.8] - 2026-01-08
 
 ### Changed
