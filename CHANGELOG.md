@@ -2,6 +2,18 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.3.13] - 2026-01-09
+
+### Added
+- `flowctl epics` command - list all epics with task counts/progress
+- `flowctl tasks` command - list tasks with `--epic` and `--status` filters
+
+### Changed
+- Removed misleading `list`/`ls` aliases from `show` command
+- Updated all docs to reference new `epics`/`tasks` commands
+- Added cross-references between human docs (flowctl.md) and agent docs (usage.md)
+- File structure in docs now shows optional `/flow-next:setup` files
+
 ## [flow-next 0.3.12] - 2026-01-09
 
 ### Changed

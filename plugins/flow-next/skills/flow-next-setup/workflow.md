@@ -2,22 +2,31 @@
 
 Follow these steps in order. This workflow is **idempotent** - safe to re-run.
 
-## Step 1: Initialize .flow/ (if needed)
+## Step 0: Resolve plugin path
 
-```bash
-FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
-$FLOWCTL detect --json
-```
+The plugin root is the parent of this skill's directory. From this SKILL.md location, go up to find `scripts/` and `.claude-plugin/`.
 
-- If `.flow/` exists: continue (don't reinitialize - preserves existing epics/tasks)
-- If `.flow/` doesn't exist: run `$FLOWCTL init --json`
+Example: if this file is at `~/.claude/plugins/cache/.../flow-next/0.3.12/skills/flow-next-setup/workflow.md`, then plugin root is `~/.claude/plugins/cache/.../flow-next/0.3.12/`.
+
+Store this as `PLUGIN_ROOT` for use in later steps.
+
+## Step 1: Check .flow/ exists
+
+Check if `.flow/` directory exists (use Bash `ls .flow/` or check for `.flow/meta.json`).
+
+- If `.flow/` exists: continue
+- If `.flow/` doesn't exist: create it with `mkdir -p .flow` and create minimal meta.json:
+  ```json
+  {"schema_version": 2, "next_epic": 1}
+  ```
 
 ## Step 2: Check existing setup
 
 Read `.flow/meta.json` and check for `setup_version` field.
 
+Also read `${PLUGIN_ROOT}/.claude-plugin/plugin.json` to get current plugin version.
+
 **If `setup_version` exists (already set up):**
-- Compare to current plugin version (from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`)
 - If **same version**: tell user "Already set up with v<VERSION>. Re-run to update docs only? (y/n)"
   - If yes: skip to Step 6 (docs)
   - If no: done
@@ -33,19 +42,21 @@ mkdir -p .flow/bin
 
 ## Step 4: Copy files
 
-Copy scripts and usage guide (overwrites existing - safe for updates):
+**IMPORTANT: Do NOT read flowctl.py - it's too large. Just copy it.**
+
+Copy using Bash `cp` with absolute paths:
 
 ```bash
-cp "${CLAUDE_PLUGIN_ROOT}/scripts/flowctl" .flow/bin/flowctl
-cp "${CLAUDE_PLUGIN_ROOT}/scripts/flowctl.py" .flow/bin/flowctl.py
+cp "${PLUGIN_ROOT}/scripts/flowctl" .flow/bin/flowctl
+cp "${PLUGIN_ROOT}/scripts/flowctl.py" .flow/bin/flowctl.py
 chmod +x .flow/bin/flowctl
 ```
 
-Also copy usage guide from [templates/usage.md](templates/usage.md) to `.flow/usage.md`.
+Then read [templates/usage.md](templates/usage.md) and write it to `.flow/usage.md`.
 
 ## Step 5: Update meta.json
 
-Read current `.flow/meta.json`, add/update these fields (preserve all others like `schema_version`, `next_epic`):
+Read current `.flow/meta.json`, add/update these fields (preserve all others):
 
 ```json
 {
@@ -53,8 +64,6 @@ Read current `.flow/meta.json`, add/update these fields (preserve all others lik
   "setup_date": "<ISO_DATE>"
 }
 ```
-
-Get plugin version from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`.
 
 ## Step 6: Ask about documentation
 

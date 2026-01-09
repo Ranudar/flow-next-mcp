@@ -30,6 +30,12 @@ Task tracking for AI agents. All state lives in `.flow/`.
 ## Common Commands
 
 ```bash
+# List
+.flow/bin/flowctl epics              # All epics with progress
+.flow/bin/flowctl tasks              # All tasks
+.flow/bin/flowctl tasks --epic fn-1  # Tasks for epic
+.flow/bin/flowctl tasks --status todo # Filter by status
+
 # View
 .flow/bin/flowctl show fn-1          # Epic with all tasks
 .flow/bin/flowctl show fn-1.2        # Single task
@@ -51,10 +57,11 @@ Task tracking for AI agents. All state lives in `.flow/`.
 
 ## Workflow
 
-1. `.flow/bin/flowctl ready --epic fn-N` - find available tasks
-2. `.flow/bin/flowctl start fn-N.M` - claim task
-3. Implement the task
-4. `.flow/bin/flowctl done fn-N.M --summary-file ... --evidence-json ...` - complete
+1. `.flow/bin/flowctl epics` - list all epics
+2. `.flow/bin/flowctl ready --epic fn-N` - find available tasks
+3. `.flow/bin/flowctl start fn-N.M` - claim task
+4. Implement the task
+5. `.flow/bin/flowctl done fn-N.M --summary-file ... --evidence-json ...` - complete
 
 ## Evidence JSON Format
 
@@ -64,5 +71,5 @@ Task tracking for AI agents. All state lives in `.flow/`.
 
 ## More Info
 
-- Full docs: https://github.com/gmickel/gmickel-claude-marketplace/tree/main/plugins/flow-next
+- Human docs: https://github.com/gmickel/gmickel-claude-marketplace/blob/main/plugins/flow-next/docs/flowctl.md
 - CLI reference: `.flow/bin/flowctl --help`

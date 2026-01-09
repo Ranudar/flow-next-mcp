@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/Version-0.3.12-green)](../../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.3.13-green)](../../CHANGELOG.md)
 [![Status](https://img.shields.io/badge/Status-Experimental-orange)]()
 
 **Plan first, work second. Zero external dependencies.**
@@ -107,6 +107,7 @@ For power users who want CLI access or use non-Claude-Code environments (Codex, 
 
 This:
 - Copies `flowctl` to `.flow/bin/` for command-line use
+- Creates `.flow/usage.md` with full CLI reference
 - Adds flow-next instructions to CLAUDE.md or AGENTS.md
 - Tracks setup version for updates
 
@@ -115,8 +116,9 @@ This:
 After setup, use flowctl from terminal:
 ```bash
 export PATH=".flow/bin:$PATH"
-flowctl show fn-1
-flowctl ready --epic fn-1
+flowctl epics                # List all epics
+flowctl tasks --epic fn-1    # List tasks for epic
+flowctl ready --epic fn-1    # What's ready to work on
 ```
 
 ---

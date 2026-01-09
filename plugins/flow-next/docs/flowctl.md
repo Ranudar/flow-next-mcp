@@ -2,13 +2,13 @@
 
 CLI for `.flow/` task tracking. Agents must use flowctl for all writes.
 
+> **Note:** This is the full human reference. Agents should read `.flow/usage.md` (created by `/flow-next:setup`).
+
 ## Available Commands
 
 ```
-init, detect, epic, task, dep, show, cat, ready, next, start, done, block, validate, prep-chat, rp
+init, detect, epic, task, dep, show, epics, tasks, cat, ready, next, start, done, block, validate, prep-chat, rp
 ```
-
-Aliases: `list` → `show`, `ls` → `show`
 
 ## Multi-User Safety
 
@@ -30,7 +30,11 @@ Works out of the box for parallel branches. No setup required.
 ├── specs/fn-N.md      # Epic spec (markdown)
 ├── tasks/fn-N.M.json  # Task state
 ├── tasks/fn-N.M.md    # Task spec (markdown)
-└── memory/            # Agent memory (reserved)
+├── memory/            # Agent memory (reserved)
+├── bin/               # (optional) Local flowctl install via /flow-next:setup
+│   ├── flowctl
+│   └── flowctl.py
+└── usage.md           # (optional) CLI reference via /flow-next:setup
 ```
 
 Flowctl accepts schema v1 and v2; new fields are optional and defaulted.
@@ -161,6 +165,39 @@ flowctl show fn-1.2 [--json]   # Task only
 ```
 
 Epic output includes `tasks` array with id/title/status/priority/depends_on.
+
+### epics
+
+List all epics.
+
+```bash
+flowctl epics [--json]
+```
+
+Output:
+```json
+{"success": true, "epics": [{"id": "fn-1", "title": "...", "status": "open", "tasks": 5, "done": 2}], "count": 1}
+```
+
+Human-readable output shows progress: `[open] fn-1: Title (2/5 tasks done)`
+
+### tasks
+
+List tasks, optionally filtered.
+
+```bash
+flowctl tasks [--json]                    # All tasks
+flowctl tasks --epic fn-1 [--json]        # Tasks for specific epic
+flowctl tasks --status todo [--json]      # Filter by status
+flowctl tasks --epic fn-1 --status done   # Combine filters
+```
+
+Status options: `todo`, `in_progress`, `blocked`, `done`
+
+Output:
+```json
+{"success": true, "tasks": [{"id": "fn-1.1", "epic": "fn-1", "title": "...", "status": "todo", "priority": null, "depends_on": []}], "count": 1}
+```
 
 ### cat
 

@@ -32,6 +32,14 @@ $FLOWCTL detect --json
 # Initialize (if needed)
 $FLOWCTL init --json
 
+# List all epics
+$FLOWCTL epics --json
+
+# List all tasks (or filter by epic/status)
+$FLOWCTL tasks --json
+$FLOWCTL tasks --epic fn-1 --json
+$FLOWCTL tasks --status todo --json
+
 # View epic with all tasks
 $FLOWCTL show fn-1 --json
 $FLOWCTL cat fn-1              # Spec markdown
@@ -74,12 +82,9 @@ $FLOWCTL validate --all --json
 1. Find relevant epic:
    ```bash
    # List all epics
-   ls .flow/epics/
+   $FLOWCTL epics --json
 
-   # Search by keyword in titles
-   grep -l "keyword" .flow/epics/*.json
-
-   # Or show an epic to check its scope
+   # Or show a specific epic to check its scope
    $FLOWCTL show fn-1 --json
    ```
 
@@ -113,10 +118,13 @@ $FLOWCTL validate --all --json
 
 ```bash
 # All epics
-ls .flow/epics/
+$FLOWCTL epics --json
 
-# Specific epic with tasks
-$FLOWCTL show fn-1 --json
+# All tasks
+$FLOWCTL tasks --json
+
+# Tasks for specific epic
+$FLOWCTL tasks --epic fn-1 --json
 
 # Ready tasks for an epic
 $FLOWCTL ready --epic fn-1 --json

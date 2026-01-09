@@ -826,6 +826,109 @@ def cmd_show(args: argparse.Namespace) -> None:
         error_exit(f"Invalid ID: {args.id}. Expected format: fn-N (epic) or fn-N.M (task)", use_json=args.json)
 
 
+def cmd_epics(args: argparse.Namespace) -> None:
+    """List all epics."""
+    if not ensure_flow_exists():
+        error_exit(".flow/ does not exist. Run 'flowctl init' first.", use_json=args.json)
+
+    flow_dir = get_flow_dir()
+    epics_dir = flow_dir / EPICS_DIR
+
+    epics = []
+    if epics_dir.exists():
+        for epic_file in sorted(epics_dir.glob("fn-*.json")):
+            epic_data = normalize_epic(
+                load_json_or_exit(epic_file, f"Epic {epic_file.stem}", use_json=args.json)
+            )
+            # Count tasks
+            tasks_dir = flow_dir / TASKS_DIR
+            task_count = 0
+            done_count = 0
+            if tasks_dir.exists():
+                for task_file in tasks_dir.glob(f"{epic_data['id']}.*.json"):
+                    task_data = load_json_or_exit(task_file, f"Task {task_file.stem}", use_json=args.json)
+                    task_count += 1
+                    if task_data.get("status") == "done":
+                        done_count += 1
+
+            epics.append({
+                "id": epic_data["id"],
+                "title": epic_data["title"],
+                "status": epic_data["status"],
+                "tasks": task_count,
+                "done": done_count
+            })
+
+    # Sort by epic number
+    def epic_sort_key(e):
+        epic_num, _ = parse_id(e["id"])
+        return epic_num if epic_num is not None else 0
+    epics.sort(key=epic_sort_key)
+
+    if args.json:
+        json_output({"success": True, "epics": epics, "count": len(epics)})
+    else:
+        if not epics:
+            print("No epics found.")
+        else:
+            print(f"Epics ({len(epics)}):\n")
+            for e in epics:
+                progress = f"{e['done']}/{e['tasks']}" if e['tasks'] > 0 else "0/0"
+                print(f"  [{e['status']}] {e['id']}: {e['title']} ({progress} tasks done)")
+
+
+def cmd_tasks(args: argparse.Namespace) -> None:
+    """List tasks."""
+    if not ensure_flow_exists():
+        error_exit(".flow/ does not exist. Run 'flowctl init' first.", use_json=args.json)
+
+    flow_dir = get_flow_dir()
+    tasks_dir = flow_dir / TASKS_DIR
+
+    tasks = []
+    if tasks_dir.exists():
+        pattern = f"{args.epic}.*.json" if args.epic else "fn-*.json"
+        for task_file in sorted(tasks_dir.glob(pattern)):
+            # Skip if it's not a task file (must have . in the name before .json)
+            stem = task_file.stem
+            if "." not in stem:
+                continue
+            task_data = normalize_task(
+                load_json_or_exit(task_file, f"Task {stem}", use_json=args.json)
+            )
+            # Filter by status if requested
+            if args.status and task_data["status"] != args.status:
+                continue
+            tasks.append({
+                "id": task_data["id"],
+                "epic": task_data["epic"],
+                "title": task_data["title"],
+                "status": task_data["status"],
+                "priority": task_data.get("priority"),
+                "depends_on": task_data["depends_on"]
+            })
+
+    # Sort tasks by epic number then task number
+    def task_sort_key(t):
+        epic_num, task_num = parse_id(t["id"])
+        return (epic_num if epic_num is not None else 0, task_num if task_num is not None else 0)
+    tasks.sort(key=task_sort_key)
+
+    if args.json:
+        json_output({"success": True, "tasks": tasks, "count": len(tasks)})
+    else:
+        if not tasks:
+            scope = f" for epic {args.epic}" if args.epic else ""
+            status_filter = f" with status '{args.status}'" if args.status else ""
+            print(f"No tasks found{scope}{status_filter}.")
+        else:
+            scope = f" for {args.epic}" if args.epic else ""
+            print(f"Tasks{scope} ({len(tasks)}):\n")
+            for t in tasks:
+                deps = f" (deps: {', '.join(t['depends_on'])})" if t['depends_on'] else ""
+                print(f"  [{t['status']}] {t['id']}: {t['title']}{deps}")
+
+
 def cmd_cat(args: argparse.Namespace) -> None:
     """Print markdown spec for epic or task."""
     if not ensure_flow_exists():
@@ -2141,11 +2244,23 @@ def main() -> None:
     p_dep_add.add_argument("--json", action="store_true", help="JSON output")
     p_dep_add.set_defaults(func=cmd_dep_add)
 
-    # show (aliases: list, ls)
-    p_show = subparsers.add_parser("show", aliases=["list", "ls"], help="Show epic or task")
+    # show
+    p_show = subparsers.add_parser("show", help="Show epic or task")
     p_show.add_argument("id", help="Epic (fn-N) or task (fn-N.M) ID")
     p_show.add_argument("--json", action="store_true", help="JSON output")
     p_show.set_defaults(func=cmd_show)
+
+    # epics
+    p_epics = subparsers.add_parser("epics", help="List all epics")
+    p_epics.add_argument("--json", action="store_true", help="JSON output")
+    p_epics.set_defaults(func=cmd_epics)
+
+    # tasks
+    p_tasks = subparsers.add_parser("tasks", help="List tasks")
+    p_tasks.add_argument("--epic", help="Filter by epic ID (fn-N)")
+    p_tasks.add_argument("--status", choices=["todo", "in_progress", "blocked", "done"], help="Filter by status")
+    p_tasks.add_argument("--json", action="store_true", help="JSON output")
+    p_tasks.set_defaults(func=cmd_tasks)
 
     # cat
     p_cat = subparsers.add_parser("cat", help="Print spec markdown")
