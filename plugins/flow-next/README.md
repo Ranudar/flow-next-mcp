@@ -136,7 +136,7 @@ scripts/ralph/ralph.sh
 
 Ralph writes run artifacts under `scripts/ralph/runs/`, including review receipts used for gating.
 
-> **⚠️ Warning**: Autonomous code generation is powerful but requires care. Start with `ralph_once.sh` to observe a single iteration. Consider running in a [Docker sandbox](https://docs.docker.com/ai/sandboxes/claude-code/) for extra isolation.
+> **⚠️ Warning**: Ralph defaults to `YOLO=1` (skips permission prompts). Start with `ralph_once.sh` to observe a single iteration. Consider running in a [Docker sandbox](https://docs.docker.com/ai/sandboxes/claude-code/) for isolation.
 
 📖 **[Ralph deep dive](docs/ralph.md)**
 
