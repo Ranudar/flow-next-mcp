@@ -47,6 +47,8 @@ This marketplace ships plugins that fix these problems.
 
 > **Experimental.** Give it a spin. [Report issues.](https://github.com/gmickel/gmickel-claude-marketplace/issues)
 
+🌐 **Prefer a visual overview?** See the [Flow-Next app page](https://mickel.tech/apps/flow-next) for diagrams and examples.
+
 **Plan first, work second. Zero external dependencies.**
 
 ```bash
