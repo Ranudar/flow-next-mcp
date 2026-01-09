@@ -5,12 +5,12 @@ Use `flowctl rp` wrappers only.
 ## Primary Command (Ralph mode)
 
 ```bash
-# Atomic setup: pick-window + ensure-workspace + builder
+# Atomic setup: pick-window + builder
 eval "$($FLOWCTL rp setup-review --repo-root "$REPO_ROOT" --summary "...")"
 # Returns: W=<window> T=<tab>
 ```
 
-This is the **only** way to initialize a review session in Ralph mode. Individual `pick-window`, `ensure-workspace`, and `builder` calls are blocked.
+This is the **only** way to initialize a review session. Do not call `pick-window` or `builder` individually.
 
 ## Post-Setup Commands
 
@@ -37,4 +37,18 @@ flowctl rp prompt-export --window "$W" --tab "$T" --out ~/Desktop/export.md
 1. **Always use setup-review first** - handles window selection atomically
 2. **Always pass --window and --tab** - required for all post-setup commands
 3. **--window must be numeric** - comes from setup-review output
-4. **Use heredoc for prompts** - write to file, pass via --message-file
+4. **Use --message-file (not --message)** - write prompt to file first, then pass path
+
+## Common Mistakes
+
+- `--message "text"` → WRONG, use `--message-file /path/to/file`
+- `setup-review <epic-id>` → WRONG, use `setup-review --repo-root ... --summary ...`
+- `select-add --paths ...` → WRONG, use `select-add --window "$W" --tab "$T" <path>`
+- `chat-send --json` → WRONG, suppresses review text; if you see `{"chat": null}` you used --json incorrectly
+
+## Re-Review Rule (CRITICAL)
+
+First review: `chat-send ... --new-chat --chat-name "..."`
+Re-reviews: `chat-send ... --message-file /tmp/re-review.md` (NO --new-chat)
+
+**Why**: Reviewer needs context from previous feedback. New chat = lost context = reviewer repeats same issues.

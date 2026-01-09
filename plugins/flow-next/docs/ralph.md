@@ -101,7 +101,7 @@ Ralph uses the plan/impl review skills, which:
 - send chat via `flowctl rp chat-send`
 - never call `rp-cli` directly in Ralph mode
 - write receipts if `REVIEW_RECEIPT_PATH` is set
-These rules are enforced by skill-scoped hooks (no global impact).
+These rules are enforced by plugin hooks (see below).
 
 **RepoPrompt window selection** is automatic by repo root via `flowctl rp pick-window`.
 
@@ -123,10 +123,11 @@ Common knobs:
 - `REQUIRE_PLAN_REVIEW=1|0`
 - `BRANCH_MODE=new|current|worktree`
 - `MAX_ITERATIONS=25`
-- `MAX_TURNS=50`
+- `MAX_TURNS=` (optional; empty = no limit, Claude stops via promise tags)
 - `MAX_ATTEMPTS_PER_TASK=5`
 - `YOLO=1` (passes `--dangerously-skip-permissions`)
 - `EPICS=fn-1,fn-2` (optional scope limiter)
+- `RALPH_UI=0` (disable colored/emoji output; default 1)
 
 ---
 
@@ -142,6 +143,37 @@ Common knobs:
 
 **Auto-blocked tasks**
 - After `MAX_ATTEMPTS_PER_TASK`, Ralph writes `block-<task>.md` and marks task blocked.
+
+---
+
+## Guard Hooks
+
+Ralph includes plugin hooks that enforce workflow rules deterministically. Without them, Claude Code tends to drift from skill instructions (using `--json` flags, creating new chats instead of staying in same chat, skipping receipts).
+
+**Only active when `FLOW_RALPH=1`** — exits silently otherwise, so non-Ralph users see zero context pollution.
+
+### What the hooks enforce
+
+- **No `--json` on chat-send** — suppresses review text
+- **No `--new-chat` on re-reviews** — first review creates chat, subsequent stay in same chat
+- **Receipt must exist before Stop** — blocks Claude from stopping without writing receipt
+- **Required flags on setup-review/select-add** — ensures proper window/tab targeting
+
+### Location
+
+```
+plugins/flow-next/
+  hooks/hooks.json          # hook config
+  scripts/hooks/ralph-guard.py  # guard logic
+```
+
+### Disabling hooks
+
+To disable hooks temporarily, unset `FLOW_RALPH` or rename/delete `hooks/hooks.json`.
+
+To remove permanently:
+1. Delete `plugins/flow-next/hooks/` directory
+2. Remove `"hooks": "hooks/hooks.json"` from `plugins/flow-next/.claude-plugin/plugin.json`
 
 ---
 

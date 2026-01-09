@@ -24,22 +24,32 @@ Ralph mode rules (must follow):
      - If REQUIRE_PLAN_REVIEW=1: output `<promise>RETRY</promise>` and stop.
      - Else: set ship and stop:
        `scripts/ralph/flowctl epic set-plan-review-status {{EPIC_ID}} --status ship --json`
-   - If PLAN_REVIEW=rp, after review returns (any verdict), write receipt JSON to:
-     `{{REVIEW_RECEIPT_PATH}}` with **required fields**:
-     `{"type":"plan_review","id":"{{EPIC_ID}}","mode":"rp","timestamp":"..."}`
 
-3) Require the reviewer to end with exactly one verdict tag:
-   `<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`
+3) The skill will loop internally until `<verdict>SHIP</verdict>`:
+   - First review uses `--new-chat`
+   - If NEEDS_WORK: skill fixes plan, re-reviews in SAME chat (no --new-chat)
+   - Repeats until SHIP
+   - Only returns to Ralph after SHIP or MAJOR_RETHINK
 
-4) If verdict is SHIP:
+4) IMMEDIATELY after SHIP verdict, write receipt:
+   ```bash
+   mkdir -p "$(dirname '{{REVIEW_RECEIPT_PATH}}')"
+   ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+   cat > '{{REVIEW_RECEIPT_PATH}}' <<EOF
+   {"type":"plan_review","id":"{{EPIC_ID}}","mode":"rp","timestamp":"$ts"}
+   EOF
+   ```
+   **CRITICAL: Copy EXACTLY. The `"id":"{{EPIC_ID}}"` field is REQUIRED.**
+   Missing id = verification fails = forced retry.
+
+5) After SHIP:
    - `scripts/ralph/flowctl epic set-plan-review-status {{EPIC_ID}} --status ship --json`
-   - stop
+   - stop (do NOT output promise tag)
 
-5) If verdict is not SHIP:
-   - fix the plan/spec/tasks using flowctl setters
+6) If MAJOR_RETHINK (rare):
    - `scripts/ralph/flowctl epic set-plan-review-status {{EPIC_ID}} --status needs_work --json`
-   - output `<promise>RETRY</promise>` and stop
+   - output `<promise>FAIL</promise>` and stop
 
-6) On hard failure, output `<promise>FAIL</promise>` and stop.
+7) On hard failure, output `<promise>FAIL</promise>` and stop.
 
 Do NOT output `<promise>COMPLETE</promise>` in this prompt.

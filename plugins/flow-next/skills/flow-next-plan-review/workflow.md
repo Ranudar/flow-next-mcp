@@ -13,7 +13,7 @@ set -e
 FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
-# Atomic: pick-window + ensure-workspace + builder
+# Atomic: pick-window + builder
 eval "$($FLOWCTL rp setup-review --repo-root "$REPO_ROOT" --summary "Review plan for <EPIC_ID>: <summary>")"
 
 # Verify we have W and T
@@ -100,8 +100,10 @@ For each issue:
 - **Problem**: What's wrong
 - **Suggestion**: How to fix
 
-End with verdict tag:
+**REQUIRED**: You MUST end your response with exactly one verdict tag. This is mandatory:
 `<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`
+
+Do NOT skip this tag. The automation depends on it.
 EOF
 ```
 
@@ -147,31 +149,40 @@ If no verdict tag, output `<promise>RETRY</promise>` and stop.
 
 ## Fix Loop
 
+**CRITICAL: You MUST fix the plan BEFORE re-reviewing. Never re-review without making changes.**
+
 If verdict is NEEDS_WORK:
 
-1. **Parse issues** - Extract by severity
-2. **Fix in order** - Critical → Major → Minor
-3. **Update plan**:
+1. **Parse issues** - Extract ALL issues by severity (Critical → Major → Minor)
+2. **Fix the plan** - Address each issue. Write updated plan to temp file.
+3. **Update plan in flowctl** (MANDATORY before re-review):
    ```bash
-   $FLOWCTL epic set-plan <EPIC_ID> --file /tmp/updated-plan.md
+   $FLOWCTL epic set-plan <EPIC_ID> --file /tmp/updated-plan.md --json
    ```
-4. **Re-review** (no need for setup-review again):
+   **If you skip this step and re-review with same content, reviewer will return NEEDS_WORK again.**
+
+4. **Re-review with fix summary** (only AFTER step 3):
    ```bash
    cat > /tmp/re-review.md << 'EOF'
    ## Fixes Applied
-   [List each fix with explanation]
+   - [Fix 1]: [what changed]
+   - [Fix 2]: [what changed]
+   ...
 
-   Please re-review.
+   Please re-review the updated plan.
    EOF
 
    $FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/re-review.md
    ```
 5. **Repeat** until Ship
 
+**Anti-pattern**: Re-reviewing without calling `epic set-plan` first. This wastes reviewer time and loops forever.
+
 ---
 
 ## Anti-patterns
 
+- **Calling builder directly** - Must use `setup-review` which wraps it
 - **Skipping setup-review** - Window selection MUST happen via this command
 - **Hard-coding window IDs** - Never write `--window 1`
 - **Reviewing yourself** - You coordinate; RepoPrompt reviews

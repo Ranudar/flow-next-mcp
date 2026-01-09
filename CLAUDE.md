@@ -71,13 +71,13 @@ plugins/flow-next/scripts/ralph_smoke_test.sh
 
 RP smoke (requires RepoPrompt window open on `${TEST_DIR}/repo`):
 ```bash
-FLOW_RALPH_PIN_SESSION_ID=1 RP_SMOKE=1 TEST_DIR=/tmp/flow-next-ralph-smoke-rpN KEEP_TEST_DIR=1 \
+RP_SMOKE=1 TEST_DIR=/tmp/flow-next-ralph-smoke-rpN KEEP_TEST_DIR=1 \
   plugins/flow-next/scripts/ralph_smoke_rp.sh
 ```
 
 Full RP e2e (requires RepoPrompt window open on `${TEST_DIR}/repo`):
 ```bash
-FLOW_RALPH_PIN_SESSION_ID=1 TEST_DIR=/tmp/flow-next-ralph-e2e-rpN KEEP_TEST_DIR=1 \
+TEST_DIR=/tmp/flow-next-ralph-e2e-rpN KEEP_TEST_DIR=1 \
   plugins/flow-next/scripts/ralph_e2e_rp_test.sh
 ```
 
@@ -90,7 +90,6 @@ RP gotchas (must follow):
 Debug envs (optional, Ralph only):
 ```bash
 FLOW_RALPH_CLAUDE_MODEL=claude-opus-4-5-20251101
-FLOW_RALPH_PIN_SESSION_ID=1
 FLOW_RALPH_CLAUDE_DEBUG=hooks
 FLOW_RALPH_CLAUDE_VERBOSE=1
 FLOW_RALPH_CLAUDE_PERMISSION_MODE=bypassPermissions
@@ -132,6 +131,18 @@ Logs:
 **Manual badge locations (if not using bump script):**
 - `README.md` (Flow-vX.X.X badge)
 - `plugins/flow/README.md` (Version-X.X.X badge)
+
+## Contributing / Development
+
+Before running tests or developing plugins locally:
+
+```bash
+# Uninstall marketplace plugins to avoid conflicts with local dev versions
+claude plugins uninstall flow-next
+claude plugins uninstall flow
+```
+
+Global installs take precedence over `--plugin-dir`, causing tests to use stale cached versions instead of your local changes.
 
 ## Repo metadata
 - Author: Gordon Mickel (gordon@mickel.tech)

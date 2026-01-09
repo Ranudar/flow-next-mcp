@@ -135,11 +135,13 @@ Ralph writes run artifacts under `scripts/ralph/runs/`, including review receipt
 
 Autonomous coding agents are taking the industry by storm—loop until done, commit, repeat. Most solutions gate progress by tests and linting alone. Ralph goes further.
 
-**Multi-model review gates**: Ralph uses [RepoPrompt](https://repoprompt.com) to send plan and implementation reviews to a *different* model (we recommend GPT-5.2 High). A second set of eyes catches blind spots that self-review misses. The reviewing model sees full file context via RepoPrompt's builder, not just diffs.
+**Multi-model review gates**: Ralph uses [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) to send plan and implementation reviews to a *different* model (we recommend GPT-5.2 High). A second set of eyes catches blind spots that self-review misses. The reviewing model sees full file context via RepoPrompt's builder, not just diffs.
 
 **Review loops until Ship**: Reviews don't just flag issues—they block progress until resolved. Ralph runs fix → re-review cycles until the reviewer returns `<verdict>SHIP</verdict>`. No "LGTM with nits" that get ignored.
 
 **Receipt-based gating**: Reviews must produce a receipt JSON file proving they ran. No receipt = no progress. This prevents drift where Claude skips the review step and marks things done anyway.
+
+**Guard hooks**: Plugin hooks enforce workflow rules deterministically—blocking `--json` flags, preventing new chats on re-reviews, requiring receipts before stop. Only active when `FLOW_RALPH=1`; zero impact for non-Ralph users. See [Guard Hooks](docs/ralph.md#guard-hooks).
 
 **Atomic window selection**: The `setup-review` command handles RepoPrompt window matching atomically. Claude can't skip steps or invent window IDs—the entire sequence runs as one unit or fails.
 

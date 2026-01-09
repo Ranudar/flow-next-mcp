@@ -1389,11 +1389,18 @@ def cmd_done(args: argparse.Namespace) -> None:
     if not isinstance(evidence, dict):
         error_exit("Evidence JSON must be an object with keys: commits/tests/prs", use_json=args.json)
 
-    # Format evidence as markdown (coerce to strings for safety)
+    # Format evidence as markdown (coerce to strings, handle string-vs-array)
+    def to_list(val: Any) -> list:
+        if val is None:
+            return []
+        if isinstance(val, str):
+            return [val] if val else []
+        return list(val)
+
     evidence_md = []
-    commits = [str(x) for x in evidence.get("commits", [])]
-    tests = [str(x) for x in evidence.get("tests", [])]
-    prs = [str(x) for x in evidence.get("prs", [])]
+    commits = [str(x) for x in to_list(evidence.get("commits"))]
+    tests = [str(x) for x in to_list(evidence.get("tests"))]
+    prs = [str(x) for x in to_list(evidence.get("prs"))]
     evidence_md.append(f"- Commits: {', '.join(commits)}" if commits else "- Commits:")
     evidence_md.append(f"- Tests: {', '.join(tests)}" if tests else "- Tests:")
     evidence_md.append(f"- PRs: {', '.join(prs)}" if prs else "- PRs:")

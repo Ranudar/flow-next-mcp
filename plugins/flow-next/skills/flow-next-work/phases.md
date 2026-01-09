@@ -112,7 +112,16 @@ After step 5, run the smoke command from epic spec's "Quick commands" section.
      ```
    - Re-run `$FLOWCTL ready --epic <epic-id> --json` to see updated order
 
-4. **Complete task**:
+4. **Commit implementation** (code changes only):
+   ```bash
+   git add -A   # never list files; include .flow/ and scripts/ralph/ if present
+   git status --short
+   git commit -m "<type>: <short summary of what was done>"
+   COMMIT_HASH="$(git rev-parse HEAD)"
+   echo "Commit: $COMMIT_HASH"
+   ```
+
+5. **Complete task** (records done status + evidence):
    Write done summary to temp file (required format):
    ```
    - What changed (1-3 bullets)
@@ -121,9 +130,9 @@ After step 5, run the smoke command from epic spec's "Quick commands" section.
    - Follow-ups (optional, max 2 bullets)
    ```
 
-   Write evidence to temp JSON file (commits may be empty):
+   Write evidence to temp JSON file **with the commit hash from step 4**:
    ```json
-   {"commits":[],"tests":["<test command>"],"prs":[]}
+   {"commits":["<COMMIT_HASH>"],"tests":["npm test"],"prs":[]}
    ```
 
    Then:
@@ -137,21 +146,20 @@ After step 5, run the smoke command from epic spec's "Quick commands" section.
    ```
    If status is not `done`, stop and re-run `flowctl done` before proceeding.
 
-5. **Commit changes**:
+6. **Amend commit** to include .flow/ updates:
    ```bash
-   git add -A   # never list files; include .flow/ and scripts/ralph/ if present
-   git status --short
-   git commit -m "<short summary of what was done>"
+   git add -A
+   git commit --amend --no-edit
    ```
 
-6. **Verify task completion**:
+7. **Verify task completion**:
    ```bash
    $FLOWCTL validate --epic <epic-id> --json
    git status
    ```
-   Ensure working tree is clean except intentional changes.
+   Ensure working tree is clean.
 
-7. **Loop**: Return to Phase 3 for next task.
+8. **Loop**: Return to Phase 3 for next task.
 
 ## Phase 5: Quality
 
@@ -186,14 +194,26 @@ Then push + open PR if user wants.
 
 ## Phase 7: Review (if chosen at start)
 
-If user chose "Yes" to review in setup questions:
-1. Invoke `/flow-next:impl-review` to review the changes
-2. If review returns "Needs Work" or "Major Rethink":
+If user chose "Yes" to review in setup questions or `--review=rp` was passed:
+
+**CRITICAL: You MUST invoke the `/flow-next:impl-review` skill. Do NOT improvise your own review format.**
+
+The impl-review skill:
+- Coordinates with RepoPrompt (setup-review, select-add, chat-send)
+- Uses the correct prompt template requiring `<verdict>SHIP|NEEDS_WORK|MAJOR_RETHINK</verdict>`
+- Handles the fix loop internally
+
+Steps:
+1. Invoke `/flow-next:impl-review` (this loads the skill with its workflow.md)
+2. If review returns NEEDS_WORK or MAJOR_RETHINK:
    - **Immediately fix the issues** (do NOT ask for confirmation — user already consented)
    - Commit fixes
    - Re-run tests/Quick commands
    - Re-run `/flow-next:impl-review`
-3. Repeat until review returns "Ship"
+3. Repeat until review returns SHIP
+
+**Anti-pattern**: Sending your own review prompts to RepoPrompt without invoking the skill.
+The skill has the correct format; improvised prompts ask for "LGTM" which breaks automation.
 
 **No human gates here** — the review-fix-review loop is fully automated.
 

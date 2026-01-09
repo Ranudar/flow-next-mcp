@@ -79,7 +79,9 @@ PY
 }
 
 latest_jsonl() {
-  ls -t "$HOME/.claude/projects"/*.jsonl 2>/dev/null | head -n 1 || true
+  # Search in project subdirectories, exclude agent logs
+  find "$HOME/.claude/projects" -maxdepth 2 -name "*.jsonl" ! -name "agent-*.jsonl" -type f -print 2>/dev/null | \
+    xargs ls -t 2>/dev/null | head -n 1 || true
 }
 
 new_session_id() {
@@ -89,12 +91,6 @@ print(uuid.uuid4())
 PY
 }
 
-pin_session_id() {
-  if [[ "${FLOW_RALPH_PIN_SESSION_ID:-0}" == "1" && -z "${FLOW_RALPH_CLAUDE_SESSION_ID:-}" ]]; then
-    FLOW_RALPH_CLAUDE_SESSION_ID="$(new_session_id)"
-    export FLOW_RALPH_CLAUDE_SESSION_ID
-  fi
-}
 
 find_jsonl() {
   if [[ -n "${FLOW_RALPH_CLAUDE_SESSION_ID:-}" ]]; then
@@ -116,8 +112,6 @@ trap cleanup EXIT
 [[ "${RP_SMOKE:-0}" == "1" ]] || fail "set RP_SMOKE=1 to run"
 command -v "$CLAUDE_BIN" >/dev/null 2>&1 || fail "claude not found (set CLAUDE_BIN if needed)"
 command -v rp-cli >/dev/null 2>&1 || fail "rp-cli not found (required for rp review)"
-
-pin_session_id
 
 echo -e "${YELLOW}=== ralph smoke (rp) ===${NC}"
 echo "Test dir: $TEST_DIR"
@@ -173,7 +167,7 @@ text = text.replace("{{PLAN_REVIEW}}", "rp").replace("{{WORK_REVIEW}}", "rp")
 text = re.sub(r"^REQUIRE_PLAN_REVIEW=.*$", "REQUIRE_PLAN_REVIEW=1", text, flags=re.M)
 text = re.sub(r"^BRANCH_MODE=.*$", "BRANCH_MODE=new", text, flags=re.M)
 text = re.sub(r"^MAX_ITERATIONS=.*$", "MAX_ITERATIONS=4", text, flags=re.M)
-text = re.sub(r"^MAX_TURNS=.*$", "MAX_TURNS=30", text, flags=re.M)
+# MAX_TURNS not limited - let Claude finish naturally via promise tags
 text = re.sub(r"^MAX_ATTEMPTS_PER_TASK=.*$", "MAX_ATTEMPTS_PER_TASK=1", text, flags=re.M)
 text = re.sub(r"^YOLO=.*$", "YOLO=1", text, flags=re.M)
 text = re.sub(r"^EPICS=.*$", "EPICS=fn-1", text, flags=re.M)
@@ -233,11 +227,46 @@ EOF
 scripts/ralph/flowctl task create --epic fn-1 --title "Add docs" --acceptance-file "$TEST_DIR/accept.md" --json >/dev/null
 
 mkdir -p "$TEST_DIR/bin"
+PLUGINS_DIR="$(dirname "$PLUGIN_ROOT")"
 cat > "$TEST_DIR/bin/claude" <<EOF
 #!/usr/bin/env bash
-exec "$CLAUDE_BIN" --plugin-dir "$PLUGIN_ROOT" "\$@"
+exec "$CLAUDE_BIN" --plugin-dir "$PLUGINS_DIR" "\$@"
 EOF
 chmod +x "$TEST_DIR/bin/claude"
+
+# Workaround for plugin hooks bug (#14410): --plugin-dir hooks don't execute.
+# Copy hooks to project scope so they run properly.
+HOOKS_SRC="$PLUGIN_ROOT/scripts/hooks"
+if [[ -d "$HOOKS_SRC" ]]; then
+  mkdir -p ".claude/hooks"
+  cp -r "$HOOKS_SRC"/* ".claude/hooks/"
+  chmod +x ".claude/hooks/"*.py 2>/dev/null || true
+  cat > ".claude/settings.local.json" <<'HOOKSJSON'
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ralph-guard.py", "timeout": 5}]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ralph-guard.py", "timeout": 5}]
+      }
+    ],
+    "Stop": [
+      {"hooks": [{"type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ralph-guard.py", "timeout": 5}]}
+    ],
+    "SubagentStop": [
+      {"hooks": [{"type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/ralph-guard.py", "timeout": 5}]}
+    ]
+  }
+}
+HOOKSJSON
+  echo -e "${GREEN}✓${NC} Hooks installed to .claude/hooks/ (workaround for #14410)"
+fi
 
 # CREATE mode: set up repo and exit (user opens RP, then re-runs without CREATE)
 if [[ "${CREATE:-0}" == "1" ]]; then
@@ -246,23 +275,19 @@ if [[ "${CREATE:-0}" == "1" ]]; then
   echo "Next steps:"
   echo "  1. Open RepoPrompt on: $TEST_DIR/repo"
   echo "  2. Re-run without CREATE:"
-  echo "     FLOW_RALPH_PIN_SESSION_ID=1 RP_SMOKE=1 TEST_DIR=$TEST_DIR KEEP_TEST_DIR=1 $0"
+  echo "     RP_SMOKE=1 TEST_DIR=$TEST_DIR KEEP_TEST_DIR=1 $0"
   exit 0
 fi
 
 REPO_ROOT="$(pwd)"
-W="$($FLOWCTL rp pick-window --repo-root "$REPO_ROOT")"
-[[ -n "$W" ]] || fail "no rp-cli window for $REPO_ROOT"
-ALT_ROOT="$(swap_tmp_root "$REPO_ROOT")"
-W_ALT="$($FLOWCTL rp pick-window --repo-root "$ALT_ROOT")"
-[[ -n "$W_ALT" ]] || fail "path normalization failed for $ALT_ROOT"
 
-$FLOWCTL rp ensure-workspace --window "$W" --repo-root "$REPO_ROOT"
+# Use atomic setup-review (picks window + runs builder)
 preflight_msg="$TEST_DIR/preflight.md"
 cat > "$preflight_msg" <<'EOF'
 Smoke preflight: confirm chat pipeline.
 EOF
-T="$(retry_cmd "rp builder" 180 2 "$FLOWCTL" rp builder --window "$W" --summary "Smoke preflight")"
+eval "$(retry_cmd "rp setup-review" 180 2 "$FLOWCTL" rp setup-review --repo-root "$REPO_ROOT" --summary "Smoke preflight")"
+[[ -n "$W" && -n "$T" ]] || fail "setup-review failed: W=$W T=$T"
 retry_cmd "rp chat-send" 180 2 "$FLOWCTL" rp chat-send --window "$W" --tab "$T" --message-file "$preflight_msg" --new-chat --chat-name "Smoke Preflight" >/dev/null
 
 echo -e "${YELLOW}--- running ralph (rp) ---${NC}"
