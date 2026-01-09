@@ -112,7 +112,7 @@ Agents forget, drift, and skip edge cases. Flow-Next fixes the process: task gra
 
 Instead of relying on external CLIs and config file edits, Flow-Next bundles a fully-featured task system in a single Python script. No npm packages. No daemons. No CLAUDE.md modifications. Try it in 30 seconds. Uninstall by deleting `.flow/` (and `scripts/ralph/` if enabled).
 
-### Ralph (Autonomous Mode)
+## Ralph (Autonomous Mode)
 
 > **⚠️ Warning**: Ralph defaults to `YOLO=1` (skips permission prompts). Start with `ralph_once.sh` to observe a single iteration. Consider running in a [Docker sandbox](https://docs.docker.com/ai/sandboxes/claude-code/) for isolation.
 
