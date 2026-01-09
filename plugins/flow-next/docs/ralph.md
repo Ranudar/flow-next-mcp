@@ -151,11 +151,11 @@ Edit `scripts/ralph/config.env`:
 
 ### Permissions
 
-| Variable | Effect |
-|----------|--------|
-| `YOLO=1` | Passes `--dangerously-skip-permissions` to Claude |
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `YOLO` | `1` | Passes `--dangerously-skip-permissions` to Claude |
 
-Note: `-p` mode is headless but still prompts for file/command permissions. `YOLO=1` is required for truly unattended runs.
+Note: `-p` mode is headless but still prompts for file/command permissions. `YOLO=1` (the default) is required for truly unattended runs. Set `YOLO=0` for interactive testing.
 
 ### Display
 

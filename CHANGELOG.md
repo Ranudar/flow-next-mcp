@@ -2,7 +2,7 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
-## [flow-next 0.3.0] - Unreleased
+## [flow-next 0.3.0] - 2026-01-09
 
 ### Ralph: Autonomous Coding with Multi-Model Review Gates
 

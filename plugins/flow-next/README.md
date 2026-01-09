@@ -272,7 +272,7 @@ Tasks declare their blockers. `flowctl ready` shows what can start. Nothing exec
 
 ## Commands
 
-Five commands, complete workflow:
+Six commands, complete workflow:
 
 | Command | What It Does |
 |---------|--------------|
