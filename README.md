@@ -140,7 +140,7 @@ Most agents gate by tests alone. Ralph adds production-grade quality gates:
 
 - **Multi-model reviews**: Uses [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) to send code to a *different* model. Two models catch what one misses.
 - **Review loops until SHIP**: Reviews block progress until `<verdict>SHIP</verdict>`. Fix → re-review cycles continue until approved.
-- **Receipt-based gating**: Every review must produce a receipt JSON proving it ran. No receipt = no progress. Treats agent as untrusted actor; receipts are proof-of-work.
+- **Receipt-based gating**: Every review must produce a receipt JSON proving it ran. No receipt = no progress. At-least-once delivery with idempotent retry—treats agent as untrusted actor; receipts are proof-of-work.
 
 <details>
 <summary><strong>📸 Ralph in action</strong> (click to expand)</summary>
