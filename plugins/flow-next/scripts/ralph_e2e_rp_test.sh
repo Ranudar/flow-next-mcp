@@ -367,4 +367,4 @@ fi
 
 echo -e "${GREEN}✓${NC} task done"
 echo -e "${GREEN}✓${NC} ralph e2e rp complete"
-echo "Claude logs: /Users/gordon/.claude/projects"
+echo "Claude logs: $HOME/.claude/projects"
