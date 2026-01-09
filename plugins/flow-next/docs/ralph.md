@@ -237,6 +237,20 @@ scripts/ralph/ralph_once.sh
 
 Runs one loop iteration, then exits. Good for verifying setup.
 
+### Sandbox mode (recommended for unattended runs)
+
+Run Ralph inside Docker sandbox for extra isolation:
+
+```bash
+docker run -it --rm \
+  -v "$(pwd)":/workspace \
+  -w /workspace \
+  ghcr.io/anthropics/claude-code:latest \
+  scripts/ralph/ralph.sh
+```
+
+See [Claude Code sandbox docs](https://docs.anthropic.com/en/docs/claude-code/security#running-in-a-sandbox) for details.
+
 ### Verbose logging
 
 ```bash
