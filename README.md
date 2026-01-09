@@ -152,7 +152,7 @@ Most agents gate by tests alone. Ralph adds production-grade quality gates:
 | **Re-anchoring** | Before EVERY task, re-reads epic/task specs + git state. No drift. |
 | **Multi-user safe** | Scan-based IDs. Soft claims via assignee. Actor auto-detect. |
 | **Zero deps** | Bundled `flowctl.py`. No external CLI. Just Python 3. |
-| **Non-invasive** | No hooks, daemons, or CLAUDE.md edits. Delete `.flow/` (and `scripts/ralph/` if enabled) to uninstall. |
+| **Non-invasive** | No daemons or CLAUDE.md edits. Delete `.flow/` (and `scripts/ralph/` if enabled) to uninstall. |
 | **CI-ready** | `flowctl validate --all` exits 1 on errors. Drop into pre-commit or GitHub Actions. |
 | **One file per task** | Merge-friendly. Conflict surface is minimal. |
 | **Automated reviews** | Require [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (rp-cli). Without it, reviews are skipped. |
