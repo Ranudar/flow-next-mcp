@@ -68,7 +68,7 @@ Flow-Next gives agents structured task graphs, forces re-anchoring before every 
 Instead of relying on external CLIs and config file edits, Flow-Next bundles a fully-featured task system in a single Python script:
 
 - **Works in 30 seconds.** Install the plugin, run a command. No setup.
-- **Non-invasive.** No CLAUDE.md edits. No daemons. (Ralph mode uses optional hooks.)
+- **Non-invasive.** No CLAUDE.md edits. No daemons. (Ralph uses plugin hooks for enforcement.)
 - **Clean uninstall.** Delete `.flow/` (and `scripts/ralph/` if enabled).
 - **Multi-user safe.** Teams work parallel branches without coordination servers.
 
@@ -246,7 +246,7 @@ Everything is bundled:
 - No daemons
 - No CLAUDE.md edits
 - Delete `.flow/` to uninstall; if you enabled Ralph, also delete `scripts/ralph/`
-- Ralph mode uses optional plugin hooks for workflow enforcement (zero impact when disabled)
+- Ralph uses plugin hooks for workflow enforcement (only active when `FLOW_RALPH=1`)
 
 ### CI-ready
 
