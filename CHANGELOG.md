@@ -2,7 +2,7 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
-## [flow-next 0.3.1] - 2026-01-09
+## [flow-next 0.3.2] - 2026-01-09
 
 ### Ralph: Autonomous Coding with Multi-Model Review Gates
 
@@ -36,7 +36,7 @@ See the [Ralph documentation](plugins/flow-next/docs/ralph.md) for the full guid
 
 ---
 
-### Internal changes (0.2.1 → 0.3.1)
+### Internal changes (0.2.1 → 0.3.2)
 
 <details>
 <summary>Click to expand development history</summary>
@@ -430,7 +430,7 @@ Builder is AI-powered—its strength is discovering related patterns, architectu
 - Validated against bd v0.38.0
 - CLI behavior documented in plan (ID formats, parent linking, scoped ready)
 
-## [0.3.1] - 2024-12-27
+## [0.3.2] - 2024-12-27
 
 ### Added
 - `/flow:plan-review` command: Carmack-level plan review via rp-cli context builder + chat
