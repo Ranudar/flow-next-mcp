@@ -2,103 +2,90 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
-## [flow-next 0.3.0] - 2026-01-09
+## [flow-next 0.3.0] - Unreleased
 
-### Added
-- **Guard hooks for Ralph**: Plugin hooks enforce workflow rules deterministically when `FLOW_RALPH=1`:
-  - Blocks `--json` flag on chat-send (suppresses review text)
-  - Blocks `--new-chat` on re-reviews (preserves reviewer context)
-  - Blocks impl receipt writes unless `flowctl done` was called for that task
-  - Blocks receipts missing required `id` field
-  - Warns on informal approvals (LGTM) without proper verdict tags
-  - Only active in Ralph mode; zero impact for non-Ralph users
-- **Autonomous mode system prompt**: Ralph now injects stern warnings via `--append-system-prompt`:
-  - "Execute commands exactly as shown"
-  - "Never claim success without proof"
-  - "Be precise, not creative"
-- **Ralph screenshot** in README showing the autonomous loop UI
-- **Contributing docs**: Warning about uninstalling marketplace plugins before local development
+### Ralph: Autonomous Coding with Multi-Model Review Gates
 
-### Changed
-- **flowctl done tracking**: Hook regex now correctly captures task IDs (not flags like `--help`)
-- **Response pattern matching**: Added "completed" pattern for flowctl done output detection
-- **Receipt id validation**: Prompts now emphasize `"id"` field is required with CRITICAL warnings
-- **Skill invocation enforcement**: Phases.md strengthens `/flow-next:impl-review` requirement
-- **Review workflows**: Updated for `setup-review` atomic flow (pick-window + builder in one step)
-- **Test script fixes**: jsonl finder now checks file exists/readable, uses `--no-messages` with rg
-- **Hardcoded paths**: Test scripts now use `$HOME` instead of absolute paths
+This release introduces **Ralph**, a production-ready autonomous coding loop that goes beyond simple "code until tests pass" agents. Ralph implements **multi-model review gates** using [RepoPrompt](https://repoprompt.com) to send your plans and implementations to a different AI model for review.
 
-### Fixed
-- Claude claiming "task done" without actually running `flowctl done`
-- Receipt writes missing `id` field causing verification failures
-- `flowctl done` tracking capturing `--help` instead of task IDs
-- jsonl finder returning stale/inaccessible files
+**Why Ralph is different:**
 
-### Tested
-- E2E v15: Perfect run - 5 iterations, 0 retries, all receipts valid
+- **Two-model review**: Your code is reviewed by a separate model (we recommend GPT-5.2 High), catching blind spots that self-review misses
+- **Review loops until SHIP**: No "LGTM with nits" that get ignored—reviews block progress until the reviewer returns `<verdict>SHIP</verdict>`
+- **Receipt-based gating**: Every review must produce a receipt proving it ran. No receipt = no progress. This prevents the agent from skipping steps
+- **Guard hooks**: Deterministic enforcement of workflow rules—the agent can't drift from the prescribed flow
 
-## [flow-next 0.2.8] - 2026-01-08
+**Getting started:**
 
-### Changed
+```bash
+/flow-next:ralph-init    # Set up Ralph in your repo
+scripts/ralph/ralph.sh   # Run the autonomous loop
+```
+
+See the [Ralph documentation](plugins/flow-next/docs/ralph.md) for the full guide.
+
+### Technical Details
+
+**Guard hooks** (only active when `FLOW_RALPH=1`):
+- Block impl receipts unless `flowctl done` was called
+- Block receipts missing required `id` field
+- Warn on informal approvals without verdict tags
+- Zero impact for non-Ralph users
+
+**Autonomous mode system prompt** ensures the agent follows instructions precisely when running unattended.
+
+---
+
+### Internal changes (0.2.1 → 0.3.0)
+
+<details>
+<summary>Click to expand development history</summary>
+
+#### 0.2.8 - Unreleased
 - Enforce numeric RepoPrompt window selection + validation before builder
 - Clarify builder requires `--window` + `--summary`; no names/ids
 - Update plan/impl review rp-cli references + workflow guidance
 
-## [flow-next 0.2.7] - 2026-01-08
-
-### Changed
+#### 0.2.7 - Unreleased
 - Add epic `branch_name` field + `flowctl epic set-branch` command
 - Ralph now writes run-local `progress.txt` per iteration
 - Plan guidance enforces one-iteration task sizing and sets epic branch_name
 - Work flow requires tests/Quick commands green before impl review
-- Smoke tests cover branch_name + progress.txt
 
-## [flow-next 0.2.6] - 2026-01-08
-
-### Changed
+#### 0.2.6 - Unreleased
 - Add flowctl rp wrappers; remove direct rp-cli usage in review workflows
 - Add skill-scoped Ralph hooks (guard + receipt + optional verbose log)
 - Update review skills/commands/docs to use wrappers + Claude Code 2.1.0+ note
 
-
-## [flow-next 0.2.5] - 2026-01-07
-
-### Changed
+#### 0.2.5 - Unreleased
 - Align rp-cli refs + option text to `call chat_send` (no rp-cli chat)
 - Ralph work prompt no longer double-calls impl review; receipts always any verdict
 - Window switch uses git root + explicit -w; add jq + tab rebind guidance
 - Docs clarify receipt gating + Ralph mode bans rp-cli chat/codemap/slice
-- Add drift warning preamble to plan/work/plan-review/impl-review skills
 
-## [flow-next 0.2.4] - 2026-01-07
-
-### Changed
+#### 0.2.4 - Unreleased
 - Added Ralph-mode rule blocks to plan/impl review + work skills
 - Ralph prompts now restate anti-drift rules
 - Ralph sets `RALPH_MODE=1` for stricter skill behavior
 
-## [flow-next 0.2.3] - 2026-01-07
-
-### Changed
+#### 0.2.3 - Unreleased
 - /flow-next:work now hard-requires flowctl done + task status check before commit
 - Work workflow requires git add -A (no file lists) to include .flow + ralph artifacts
 - Review skills now RETRY if rp-cli chat/codemap/slice are used (enforce call chat_send)
 - Ralph forces retry if task status is not done after work iteration
 
-## [flow-next 0.2.2] - 2026-01-07
-
-### Changed
+#### 0.2.2 - Unreleased
 - Plan/impl review skills now mandate receipt write when `REVIEW_RECEIPT_PATH` is set
 - Plan-review guidance now pins correct flowctl command for status updates
 - Ralph loop logs per-iteration status, mode, receipt checks
 - Flow-next docs add Ralph deep dive and receipt notes
 
-## [flow-next 0.2.1] - 2026-01-07
-
-### Changed
-- Plan/impl review workflows now auto-select RepoPrompt window by repo root (fallback to first window)
+#### 0.2.1 - Unreleased
+- Plan/impl review workflows now auto-select RepoPrompt window by repo root
 - Review workflows write receipts only when `REVIEW_RECEIPT_PATH` is set
 - `plan-review` and `impl-review` command stubs trimmed to route to skills
+
+</details>
 
 ## [flow-next 0.2.0] - 2026-01-07
 
