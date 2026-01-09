@@ -23,7 +23,7 @@ $FLOWCTL <command>
 
 ## Input
 
-Full request: #$ARGUMENTS
+Full request: $ARGUMENTS
 
 Accepts:
 - Feature/bug description in natural language

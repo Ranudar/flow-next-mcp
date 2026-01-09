@@ -38,7 +38,7 @@ $FLOWCTL rp <command>
 
 ## Input
 
-Arguments: #$ARGUMENTS
+Arguments: $ARGUMENTS
 Format: `<flow-epic-id> [focus areas]`
 
 ## Workflow

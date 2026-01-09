@@ -20,7 +20,7 @@ $FLOWCTL <command>
 
 ## Input
 
-Full request: #$ARGUMENTS
+Full request: $ARGUMENTS
 
 Accepts:
 - **Flow epic ID** `fn-N`: Fetch with `flowctl show`, write back with `flowctl epic set-plan`

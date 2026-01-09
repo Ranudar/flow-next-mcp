@@ -1,6 +1,6 @@
 {
   "name": "flow-next",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Flow workflow backed by .flow/ with optional Ralph autonomous mode",
   "author": {
     "name": "Gordon Mickel",

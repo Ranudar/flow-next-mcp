@@ -35,7 +35,7 @@ If `REVIEW_RECEIPT_PATH` is set or `FLOW_RALPH=1`:
 
 ## Input
 
-Full request: #$ARGUMENTS
+Full request: $ARGUMENTS
 
 Accepts:
 - Flow epic ID `fn-N` to work through all tasks

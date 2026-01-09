@@ -38,7 +38,7 @@ $FLOWCTL rp <command>
 
 ## Input
 
-Arguments: #$ARGUMENTS
+Arguments: $ARGUMENTS
 Format: `[focus areas or task ID]`
 
 Reviews all changes on **current branch** vs main/master.
