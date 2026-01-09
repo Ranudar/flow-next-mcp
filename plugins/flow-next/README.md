@@ -68,7 +68,7 @@ Flow-Next gives agents structured task graphs, forces re-anchoring before every 
 Instead of relying on external CLIs and config file edits, Flow-Next bundles a fully-featured task system in a single Python script:
 
 - **Works in 30 seconds.** Install the plugin, run a command. No setup.
-- **Non-invasive.** No CLAUDE.md edits. No hooks. No daemons.
+- **Non-invasive.** No CLAUDE.md edits. No daemons. (Ralph mode uses optional hooks.)
 - **Clean uninstall.** Delete `.flow/` (and `scripts/ralph/` if enabled).
 - **Multi-user safe.** Teams work parallel branches without coordination servers.
 
@@ -118,16 +118,25 @@ That's it. Flow-Next handles research, task ordering, reviews, and audit trails.
 ## Ralph (Autonomous Mode)
 
 Ralph is the repo-local autonomous loop that plans and works through tasks end-to-end.
-Requires Claude Code **2.1.0+** (skill-scoped hooks).
 
+**Setup (one-time, inside Claude):**
 ```bash
-/flow-next:ralph-init     # scaffold scripts/ralph/
-scripts/ralph/ralph.sh    # run the loop
+/flow-next:ralph-init
+```
+
+Or from terminal without entering Claude:
+```bash
+claude -p "/flow-next:ralph-init"
+```
+
+**Run (outside Claude):**
+```bash
+scripts/ralph/ralph.sh
 ```
 
 Ralph writes run artifacts under `scripts/ralph/runs/`, including review receipts used for gating.
 
-> **⚠️ Warning**: Autonomous code generation is powerful but requires care. I've tested Ralph extensively on my own production projects, but you should understand the gating mechanisms before running unattended. Start with `ralph_once.sh` to observe behavior step-by-step.
+> **⚠️ Warning**: Autonomous code generation is powerful but requires care. Start with `ralph_once.sh` to observe a single iteration. Consider running in a [Docker sandbox](https://docs.docker.com/ai/sandboxes/claude-code/) for extra isolation.
 
 📖 **[Ralph deep dive](docs/ralph.md)**
 
@@ -234,10 +243,10 @@ Everything is bundled:
 
 ### Non-invasive
 
-- No hooks
 - No daemons
 - No CLAUDE.md edits
 - Delete `.flow/` to uninstall; if you enabled Ralph, also delete `scripts/ralph/`
+- Ralph mode uses optional plugin hooks for workflow enforcement (zero impact when disabled)
 
 ### CI-ready
 
