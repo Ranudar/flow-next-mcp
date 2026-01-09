@@ -242,14 +242,14 @@ Runs one loop iteration, then exits. Good for verifying setup.
 Run Ralph inside Docker sandbox for extra isolation:
 
 ```bash
-docker run -it --rm \
-  -v "$(pwd)":/workspace \
-  -w /workspace \
-  ghcr.io/anthropics/claude-code:latest \
-  scripts/ralph/ralph.sh
+# From your project directory
+docker sandbox run claude "scripts/ralph/ralph.sh"
+
+# Or specify workspace explicitly
+docker sandbox run -w ~/my-project claude "scripts/ralph/ralph.sh"
 ```
 
-See [Claude Code sandbox docs](https://docs.anthropic.com/en/docs/claude-code/security#running-in-a-sandbox) for details.
+See [Docker sandbox docs](https://docs.docker.com/ai/sandboxes/claude-code/) for details.
 
 ### Verbose logging
 
