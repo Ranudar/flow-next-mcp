@@ -120,7 +120,7 @@ Instead of relying on external CLIs and config file edits, Flow-Next bundles a f
 | **Non-invasive** | No hooks, daemons, or CLAUDE.md edits. Delete `.flow/` (and `scripts/ralph/` if enabled) to uninstall. |
 | **CI-ready** | `flowctl validate --all` exits 1 on errors. Drop into pre-commit or GitHub Actions. |
 | **One file per task** | Merge-friendly. Conflict surface is minimal. |
-| **Automated reviews** | Require [RepoPrompt](https://repoprompt.com) (rp-cli). Without it, reviews are skipped. |
+| **Automated reviews** | Require [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (rp-cli). Without it, reviews are skipped. |
 | **Dependency graphs** | Tasks declare blockers. Nothing starts until dependencies resolve. |
 
 ### Commands
@@ -157,19 +157,25 @@ All commands accept flags to bypass interactive questions:
 
 ### Ralph (Autonomous Mode)
 
-> **⚠️ Warning**: Autonomous code generation is powerful but requires care. I've tested Ralph extensively on my own production projects, but you should understand the gating mechanisms before running unattended.
+> **⚠️ Warning**: Autonomous code generation is powerful but requires care. I've tested Ralph extensively on my own production projects, but you should understand the gating mechanisms before running unattended. Start with `scripts/ralph/ralph_once.sh` to observe a single iteration before going fully autonomous.
 
 **How Ralph differs from other autonomous agents:**
 
 Autonomous coding agents are everywhere—loop until done, commit, repeat. Most gate by tests and linting alone. Ralph goes further.
 
-- **Multi-model review gates**: Ralph uses [RepoPrompt](https://repoprompt.com) to send plan and implementation reviews to a *different* model (we recommend GPT-5.2 High). A second set of eyes catches blind spots that self-review misses.
+- **Multi-model review gates**: Ralph uses [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) to send plan and implementation reviews to a *different* model (we recommend GPT-5.2 High). A second set of eyes catches blind spots that self-review misses.
 
 - **Review loops until Ship**: Reviews don't just flag issues—they block progress until resolved. Fix → re-review cycles continue until the reviewer returns `<verdict>SHIP</verdict>`.
 
-- **Receipt-based gating**: Reviews must produce a receipt JSON proving they ran. No receipt = no progress. Prevents drift where the agent skips reviews.
+- **Receipt-based gating**: Reviews must produce a receipt JSON proving they ran. No receipt = no progress. Ralph implements at-least-once delivery with idempotent retry—missing receipt triggers retry, duplicate receipts are harmless. This is the same acknowledgment protocol used in distributed systems to guarantee exactly-once semantics. Treats the agent as an untrusted actor; receipts are proof-of-work.
 
 The result: code reviewed by two models, tested, linted, and iteratively refined.
+
+<details>
+<summary><strong>📸 Ralph in action</strong> (click to expand)</summary>
+<br>
+<img src="assets/ralph.png" alt="Ralph Autonomous Loop" width="600"/>
+</details>
 
 📖 **[Ralph deep dive](plugins/flow-next/docs/ralph.md)**
 
@@ -225,7 +231,7 @@ Then install whichever plugin you want:
 
 ### Integrations
 
-- **[RepoPrompt](https://repoprompt.com)** for token-efficient codebase exploration + cross-model reviews
+- **[RepoPrompt](https://repoprompt.com/?atp=KJbuL4)** for token-efficient codebase exploration + cross-model reviews
 - **[Beads](https://github.com/steveyegge/beads)** for dependency-aware issue tracking (auto-detected)
 
 📖 **[Full documentation](plugins/flow/README.md)** · **[Changelog](CHANGELOG.md)**
@@ -243,6 +249,17 @@ Then install whichever plugin you want:
 ---
 
 ## Contributing
+
+**Before developing locally**, uninstall marketplace plugins to avoid conflicts:
+
+```bash
+claude plugins uninstall flow-next
+claude plugins uninstall flow
+```
+
+Global installs shadow `--plugin-dir`, causing tests to use stale cached versions.
+
+**To add a plugin:**
 
 1. Create `plugins/<name>/` with `.claude-plugin/plugin.json`
 2. Add commands/agents/skills under that plugin root

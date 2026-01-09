@@ -132,9 +132,10 @@ scripts/ralph/flowctl task create --epic fn-1 --title "Add add() helper" --accep
 scripts/ralph/flowctl task create --epic fn-2 --title "Add tiny note" --acceptance-file "$TEST_DIR/accept.md" --json >/dev/null
 
 mkdir -p "$TEST_DIR/bin"
+PLUGINS_DIR="$(dirname "$PLUGIN_ROOT")"
 cat > "$TEST_DIR/bin/claude" <<EOF
 #!/usr/bin/env bash
-exec "$CLAUDE_BIN" --plugin-dir "$PLUGIN_ROOT" "\$@"
+exec "$CLAUDE_BIN" --plugin-dir "$PLUGINS_DIR" "\$@"
 EOF
 chmod +x "$TEST_DIR/bin/claude"
 

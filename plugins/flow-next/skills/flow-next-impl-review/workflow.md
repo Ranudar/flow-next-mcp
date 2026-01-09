@@ -13,7 +13,7 @@ set -e
 FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
-# Atomic: pick-window + ensure-workspace + builder
+# Atomic: pick-window + builder
 eval "$($FLOWCTL rp setup-review --repo-root "$REPO_ROOT" --summary "Review implementation of <summary> on current branch")"
 
 # Verify we have W and T
@@ -115,8 +115,10 @@ For each issue:
 - **Problem**: What's wrong
 - **Suggestion**: How to fix
 
-End with verdict tag:
+**REQUIRED**: You MUST end your response with exactly one verdict tag. This is mandatory:
 `<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`
+
+Do NOT skip this tag. The automation depends on it.
 EOF
 ```
 
@@ -151,28 +153,42 @@ If no verdict tag in response, output `<promise>RETRY</promise>` and stop.
 
 ## Fix Loop
 
+**CRITICAL: You MUST fix the code BEFORE re-reviewing. Never re-review without making changes.**
+
 If verdict is NEEDS_WORK:
 
-1. **Parse issues** - Extract by severity
-2. **Fix in order** - Critical → Major → Minor
-3. **Run tests/lints** after each batch
-4. **Re-review** (no need for setup-review again):
+1. **Parse issues** - Extract ALL issues by severity (Critical → Major → Minor)
+2. **Fix the code** - Address each issue in order
+3. **Run tests/lints** - Verify fixes don't break anything
+4. **Commit fixes** (MANDATORY before re-review):
+   ```bash
+   git add -A
+   git commit -m "fix: address review feedback"
+   ```
+   **If you skip this and re-review without committing changes, reviewer will return NEEDS_WORK again.**
+
+5. **Re-review with fix summary** (only AFTER step 4):
    ```bash
    cat > /tmp/re-review.md << 'EOF'
    ## Fixes Applied
-   [List each fix with file:line and explanation]
+   - [Fix 1]: [file:line] [what changed]
+   - [Fix 2]: [file:line] [what changed]
+   ...
 
    Please re-review.
    EOF
 
    $FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/re-review.md
    ```
-5. **Repeat** until Ship
+6. **Repeat** until Ship
+
+**Anti-pattern**: Re-reviewing without committing fixes. This wastes reviewer time and loops forever.
 
 ---
 
 ## Anti-patterns
 
+- **Calling builder directly** - Must use `setup-review` which wraps it
 - **Skipping setup-review** - Window selection MUST happen via this command
 - **Hard-coding window IDs** - Never write `--window 1`
 - **Reviewing yourself** - You coordinate; RepoPrompt reviews

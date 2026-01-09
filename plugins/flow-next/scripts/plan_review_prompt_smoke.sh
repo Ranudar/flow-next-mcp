@@ -136,12 +136,14 @@ Receipt path: $RECEIPT_PATH
 Open RepoPrompt window on:
   $TEST_DIR/repo
 
+PLUGINS_DIR: $(dirname "$PLUGIN_ROOT")
+
 Interactive run (ensure plugin available):
   cd "$TEST_DIR/repo"
-  FLOW_RALPH=1 REVIEW_RECEIPT_PATH="$RECEIPT_PATH" $CLAUDE_BIN --plugin-dir "$PLUGIN_ROOT"
+  FLOW_RALPH=1 REVIEW_RECEIPT_PATH="$RECEIPT_PATH" $CLAUDE_BIN --plugin-dir "$(dirname "$PLUGIN_ROOT")"
   Then paste: \`cat $PROMPT_OUT\`
 
 Auto (headless) run (ensure plugin available):
   cd "$TEST_DIR/repo"
-  FLOW_RALPH=1 REVIEW_RECEIPT_PATH="$RECEIPT_PATH" $CLAUDE_BIN --plugin-dir "$PLUGIN_ROOT" -p "\$(cat $PROMPT_OUT)"
+  FLOW_RALPH=1 REVIEW_RECEIPT_PATH="$RECEIPT_PATH" $CLAUDE_BIN --plugin-dir "$(dirname "$PLUGIN_ROOT")" -p "\$(cat $PROMPT_OUT)"
 EOF

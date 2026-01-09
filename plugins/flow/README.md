@@ -34,7 +34,7 @@ Most agent failures aren't about model capability—they're about process:
 | Ignoring existing code | Explicit pattern reuse—agents find what already exists |
 | Drifting from plan | Plan re-read before every task in the execute loop |
 | Missing edge cases | Gap analyst identifies missing flows before implementation |
-| Shallow self-review | Cross-model review via [RepoPrompt](https://repoprompt.com) catches what same-model review misses |
+| Shallow self-review | Cross-model review via [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) catches what same-model review misses |
 
 Flow doesn't make Claude smarter. It makes the workflow disciplined enough that capability translates to results.
 
@@ -105,7 +105,7 @@ Interview asks 40+ deep questions about technical details, edge cases, testing s
 
 ## Cross-Model Review
 
-When [RepoPrompt](https://repoprompt.com) rp-cli is detected, both `/flow:plan` and `/flow:work` ask upfront:
+When [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) rp-cli is detected, both `/flow:plan` and `/flow:work` ask upfront:
 
 ```
 Review — Run Carmack-level review after?

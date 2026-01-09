@@ -16,5 +16,6 @@
     "execution",
     "automation",
     "ai"
-  ]
+  ],
+  "hooks": "hooks/hooks.json"
 }
