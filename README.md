@@ -14,6 +14,8 @@
 
 </div>
 
+> 🤖 **New in v0.3.0**: [Ralph mode](#ralph-autonomous-mode) — autonomous overnight coding with multi-model review gates.
+
 ---
 
 ## The Problem
