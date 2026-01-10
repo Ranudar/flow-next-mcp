@@ -70,6 +70,15 @@ flowctl config set memory.enabled true
 # or manually edit .flow/config.json
 ```
 
+## Backwards Compatibility
+
+Memory is **opt-in** and disabled by default. This ensures:
+
+- Existing plan/work/review workflows unchanged when disabled
+- Ralph prompts and receipt flow untouched
+- No subagents spawn, no hooks fire when disabled
+- Zero overhead for users who don't enable memory
+
 ## Integration with existing patterns
 
 ### flowctl init
