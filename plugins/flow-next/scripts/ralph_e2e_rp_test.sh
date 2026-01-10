@@ -189,21 +189,21 @@ cat > "$TEST_DIR/epic.md" <<'EOF'
 # fn-1 Tiny lib
 
 ## Overview
-Add a tiny add() helper and document it.
+Add a production-quality add() helper with proper validation and documentation.
 
 ## Function Contract
 - Signature: `add(a: number, b: number): number`
 - Named export only from `src/index.ts`
-- Standard JS addition semantics (NaN/Infinity follow JS)
+- MUST validate inputs at runtime (throw TypeError if not numbers)
+- Standard JS addition semantics for valid numbers (NaN/Infinity follow JS)
 
 ## Current State
 - `src/index.ts` does not yet export `add()`
 - README is a placeholder
 
 ## Scope
-- `src/index.ts`: add `add()` and a brief JSDoc (params + return)
-- `README.md`: add a TypeScript usage snippet and a one-line note that it
-  requires a TS-aware runtime/tooling (ts-node/tsx/bundler)
+- `src/index.ts`: add `add()` with runtime validation and full JSDoc
+- `README.md`: add usage snippet with error handling example
 
 ## Approach
 Edit src/index.ts and README.md only. Repo is source-only (no build step).
@@ -213,18 +213,21 @@ Edit src/index.ts and README.md only. Repo is source-only (no build step).
 
 ## Acceptance
 - [ ] `add(a: number, b: number): number` exported as named export
-- [ ] `add()` has brief JSDoc (params + return)
+- [ ] Runtime validation: throw `TypeError` if either argument is not a number
+- [ ] JSDoc MUST include:
+  - @param tags for both parameters
+  - @returns tag
+  - @throws tag documenting TypeError
+  - @example tag with working code
 - [ ] README includes:
-  - usage snippet:
-    ```ts
-    import { add } from "./src/index.ts";
-    console.log(add(1, 2)); // 3
-    ```
+  - usage snippet showing successful call
+  - error handling example with try/catch
   - note that this is TypeScript source and requires TS tooling to run
 - [ ] `npm test` passes (smoke only)
 
 ## Risks
 - README import path is TypeScript source; call out runtime requirements
+- Easy to forget @throws in JSDoc (common pitfall)
 
 ## References
 - None
