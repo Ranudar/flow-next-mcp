@@ -14,7 +14,7 @@
 
 </div>
 
-> 🤖 **New in v0.3.7**: [Ralph mode](#ralph-autonomous-mode) — autonomous overnight coding with multi-model review gates.
+> 🤖 **New in v0.3.17**: [Memory system](plugins/flow-next/README.md#memory-system-opt-in) — opt-in persistent learning from NEEDS_WORK feedback.
 
 ---
 
