@@ -17,7 +17,6 @@ import os
 import re
 import subprocess
 import sys
-from datetime import datetime
 from pathlib import Path
 
 
@@ -101,202 +100,6 @@ def is_memory_enabled() -> bool:
         config = json.loads(config_path.read_text())
         return config.get("memory", {}).get("enabled", False)
     except (json.JSONDecodeError, Exception):
-        return False
-
-
-def extract_feedback(response_text: str) -> dict:
-    """Parse NEEDS_WORK/MAJOR_RETHINK response into structured feedback.
-
-    Returns dict with: verdict, issues (list of {issue, fix, context})
-    """
-    feedback = {
-        "verdict": None,
-        "issues": []
-    }
-
-    # Extract verdict
-    verdict_match = re.search(r"<verdict>(NEEDS_WORK|MAJOR_RETHINK)</verdict>", response_text)
-    if verdict_match:
-        feedback["verdict"] = verdict_match.group(1)
-
-    # Extract issues - look for common patterns in review feedback
-    # Pattern 1: **Issue**: ... **Fix**: ...
-    issue_fix_pairs = re.findall(
-        r"\*\*(?:Issue|Problem|Bug|Error)[:\s]*\*\*\s*([^\n*]+).*?"
-        r"\*\*(?:Fix|Solution|Suggestion)[:\s]*\*\*\s*([^\n*]+)",
-        response_text, re.IGNORECASE | re.DOTALL
-    )
-    for issue, fix in issue_fix_pairs:
-        feedback["issues"].append({
-            "issue": issue.strip(),
-            "fix": fix.strip(),
-            "context": ""
-        })
-
-    # Pattern 2: Numbered list items with issues
-    # e.g., "1. Missing X - should do Y"
-    numbered_items = re.findall(
-        r"^\s*\d+\.\s+(.+?)(?:\s*[-–—]\s*(.+))?$",
-        response_text, re.MULTILINE
-    )
-    for item in numbered_items:
-        issue_text = item[0].strip()
-        fix_text = item[1].strip() if item[1] else ""
-        # Skip if too short or generic
-        if len(issue_text) > 20 and issue_text not in [i["issue"] for i in feedback["issues"]]:
-            feedback["issues"].append({
-                "issue": issue_text,
-                "fix": fix_text,
-                "context": ""
-            })
-
-    # Pattern 3: Look for bullet points with actionable items
-    bullet_items = re.findall(
-        r"^\s*[-•]\s+(.+)$",
-        response_text, re.MULTILINE
-    )
-    for item in bullet_items:
-        item_text = item.strip()
-        # Only add if it looks like a specific issue (not generic advice)
-        if (len(item_text) > 30 and
-            any(kw in item_text.lower() for kw in ["should", "must", "need", "missing", "wrong", "incorrect", "use"]) and
-            item_text not in [i["issue"] for i in feedback["issues"]]):
-            feedback["issues"].append({
-                "issue": item_text,
-                "fix": "",
-                "context": ""
-            })
-
-    return feedback
-
-
-def is_learnable(issue: dict) -> bool:
-    """Filter to actionable patterns that models tend to miss.
-
-    Returns True if the issue is worth capturing (framework patterns, API quirks, etc.)
-    Returns False for one-off typos, obvious bugs, or generic advice.
-    """
-    issue_text = issue.get("issue", "").lower()
-    fix_text = issue.get("fix", "").lower()
-    combined = issue_text + " " + fix_text
-
-    # Reject: Too short to be meaningful
-    if len(issue_text) < 15:
-        return False
-
-    # Reject: Generic/vague (no specific actionable fix)
-    vague_patterns = [
-        r"^improve",
-        r"^consider",
-        r"^maybe",
-        r"^could be better",
-        r"^minor",
-        r"^typo",
-        r"^spelling",
-        r"^formatting",
-        r"^style",
-    ]
-    for pattern in vague_patterns:
-        if re.search(pattern, issue_text):
-            return False
-
-    # Accept: Framework/library patterns
-    framework_keywords = [
-        "react", "vue", "angular", "next", "nuxt", "svelte",
-        "node", "express", "fastapi", "django", "flask",
-        "typescript", "python", "rust", "go", "java",
-        "import", "export", "module", "package",
-        "hook", "middleware", "component", "directive",
-    ]
-    if any(kw in combined for kw in framework_keywords):
-        return True
-
-    # Accept: API/command patterns
-    api_keywords = [
-        "api", "endpoint", "route", "request", "response",
-        "flowctl", "rp-cli", "command", "flag", "option",
-        "config", "setting", "env", "environment",
-    ]
-    if any(kw in combined for kw in api_keywords):
-        return True
-
-    # Accept: Pattern/convention mentions
-    convention_keywords = [
-        "convention", "pattern", "structure", "must use",
-        "should use", "always", "never", "required",
-        "format", "schema", "validate",
-    ]
-    if any(kw in combined for kw in convention_keywords):
-        return True
-
-    # Accept: Specific error types
-    error_keywords = [
-        "error", "exception", "failure", "missing",
-        "undefined", "null", "not found", "invalid",
-    ]
-    if any(kw in combined for kw in error_keywords) and len(fix_text) > 10:
-        return True
-
-    # Default: Reject (better to be selective)
-    return False
-
-
-def classify_issue(issue: dict) -> str:
-    """Classify issue into category for memory entry."""
-    combined = (issue.get("issue", "") + " " + issue.get("fix", "")).lower()
-
-    if any(kw in combined for kw in ["react", "vue", "angular", "next", "svelte", "component", "hook"]):
-        return "framework"
-    if any(kw in combined for kw in ["api", "endpoint", "flowctl", "rp-cli", "command", "flag"]):
-        return "api"
-    if any(kw in combined for kw in ["convention", "pattern", "always", "never", "must"]):
-        return "convention"
-    if any(kw in combined for kw in ["edge", "case", "empty", "null", "undefined"]):
-        return "edge-case"
-
-    return "general"
-
-
-def get_current_task_id() -> str:
-    """Get current task ID from Ralph's environment.
-
-    Returns task ID from FLOW_CURRENT_TASK env var, or 'unknown' if not set.
-    Note: In Ralph mode, the harness sets this env var. No fallback query
-    since .flow/bin/flowctl may not exist (setup is optional).
-    """
-    return os.environ.get("FLOW_CURRENT_TASK", "unknown")
-
-
-def append_to_pitfalls(issue: dict, task_id: str, category: str) -> bool:
-    """Append a learnable issue to .flow/memory/pitfalls.md.
-
-    Returns True if successfully appended, False otherwise.
-    """
-    repo_root = get_repo_root()
-    pitfalls_path = repo_root / ".flow" / "memory" / "pitfalls.md"
-
-    # Ensure memory dir exists
-    if not pitfalls_path.parent.exists():
-        return False
-
-    # Format the entry
-    today = datetime.utcnow().strftime("%Y-%m-%d")
-    entry = f"""
-## {today} {task_id} impl-review [{category}]
-**Issue**: {issue.get("issue", "").strip()}
-**Fix**: {issue.get("fix", "").strip() or "(see context)"}
-**Context**: {issue.get("context", "").strip() or "From NEEDS_WORK review feedback"}
-"""
-
-    # Append to file
-    try:
-        with pitfalls_path.open("a", encoding="utf-8") as f:
-            f.write(entry)
-        return True
-    except Exception as e:
-        # Log error but don't fail the hook
-        with Path("/tmp/ralph-guard-debug.log").open("a") as f:
-            f.write(f"  -> Memory append failed: {e}\n")
         return False
 
 
@@ -490,24 +293,21 @@ def handle_post_tool_use(data: dict) -> None:
                     }
                 })
 
-        # Capture learnings from NEEDS_WORK/MAJOR_RETHINK to memory
+        # Prompt Claude to capture learnings from NEEDS_WORK/MAJOR_RETHINK
         elif verdict_match.group(1) in ("NEEDS_WORK", "MAJOR_RETHINK"):
             if is_memory_enabled():
-                try:
-                    feedback = extract_feedback(response_text)
-                    task_id = get_current_task_id()
-                    captured = 0
-                    for issue in feedback.get("issues", []):
-                        if is_learnable(issue):
-                            category = classify_issue(issue)
-                            if append_to_pitfalls(issue, task_id, category):
-                                captured += 1
-                    # Log for debugging
-                    with Path("/tmp/ralph-guard-debug.log").open("a") as f:
-                        f.write(f"  -> Memory: captured {captured}/{len(feedback.get('issues', []))} issues from {feedback.get('verdict')} review\n")
-                except Exception as e:
-                    with Path("/tmp/ralph-guard-debug.log").open("a") as f:
-                        f.write(f"  -> Memory capture error: {e}\n")
+                output_json({
+                    "hookSpecificOutput": {
+                        "hookEventName": "PostToolUse",
+                        "additionalContext": (
+                            "MEMORY: Review returned NEEDS_WORK. After fixing, consider if any lessons are "
+                            "GENERALIZABLE (apply beyond this task). If so, capture with:\n"
+                            "  flowctl memory add --type <type> \"<one-line lesson>\"\n"
+                            "Types: pitfall (gotchas/mistakes), convention (patterns to follow), decision (architectural choices)\n"
+                            "Skip: task-specific fixes, typos, style issues, or 'fine as-is' explanations."
+                        )
+                    }
+                })
 
     elif "chat-send" in command and "Chat Send" in response_text:
         # chat-send returned but no verdict tag found
