@@ -56,16 +56,21 @@ This marketplace ships plugins that fix these problems.
 **Plan first, work second. Zero external dependencies.**
 
 ```bash
+# 1. Install
 /plugin marketplace add https://github.com/gmickel/gmickel-claude-marketplace
 /plugin install flow-next
 
+# 2. Setup (recommended - adds CLI access + project docs)
+/flow-next:setup
+
+# 3. Use
 /flow-next:plan Add a contact form with validation
 /flow-next:work fn-1
 ```
 
-Start with a short spec (prompt or file). If fuzzy, run `/flow-next:interview` first.
+Setup is technically optional but recommended - it adds CLI access via `flowctl` and project docs that help other AI tools understand your flow.
 
-Agents that finish what they start.
+**Agents that finish what they start.**
 
 ```mermaid
 flowchart TD
@@ -214,14 +219,15 @@ All commands accept flags to bypass interactive questions:
 ## Install
 
 ```bash
+# Add marketplace
 /plugin marketplace add https://github.com/gmickel/gmickel-claude-marketplace
-```
 
-Then install whichever plugin you want:
-
-```bash
+# Install plugin
 /plugin install flow-next    # Recommended: zero deps, simpler
-/plugin install flow         # If you use Beads or want plan files
+# or: /plugin install flow   # If you use Beads or want plan files
+
+# Setup (recommended for flow-next)
+/flow-next:setup             # Adds CLI access + project docs
 ```
 
 ---

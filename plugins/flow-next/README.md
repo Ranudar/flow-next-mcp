@@ -105,70 +105,67 @@ Two models catch what one misses.
 
 ---
 
-## Install
+## Quick Start
+
+### 1. Install
 
 ```bash
+# Add marketplace
 /plugin marketplace add https://github.com/gmickel/gmickel-claude-marketplace
+
+# Install flow-next
 /plugin install flow-next
 ```
 
-Try it in ~30 seconds. Uninstall with `rm -rf .flow/` (and `rm -rf scripts/ralph/` if enabled).
-
-## Uninstall
-
-Standard Flow-Next:
-```bash
-rm -rf .flow/
-```
-
-If you enabled Ralph:
-```bash
-rm -rf scripts/ralph/
-```
-
-## Optional: Local Setup
-
-For power users who want CLI access or use non-Claude-Code environments (Codex, Cursor, etc.):
+### 2. Setup (Recommended)
 
 ```bash
 /flow-next:setup
 ```
 
-This:
-- Copies `flowctl` to `.flow/bin/` for command-line use
+This is technically optional but **highly recommended**. Great for power users and non-Claude-Code environments (Codex, Cursor, etc.). It:
+- Copies `flowctl` to `.flow/bin/` for direct CLI access
+- Adds flow-next instructions to CLAUDE.md/AGENTS.md (helps other AI tools understand your project)
 - Creates `.flow/usage.md` with full CLI reference
-- Adds flow-next instructions to CLAUDE.md or AGENTS.md
 - Tracks setup version for updates
 
-**Idempotent** - safe to re-run. Detects plugin updates and refreshes local scripts automatically.
+**Idempotent** - safe to re-run. Detects plugin updates and refreshes scripts automatically.
 
-**Fully optional** - standard plugin usage works without this.
-
-After setup, use flowctl from terminal:
+After setup:
 ```bash
 export PATH=".flow/bin:$PATH"
+flowctl --help
 flowctl epics                # List all epics
 flowctl tasks --epic fn-1    # List tasks for epic
 flowctl ready --epic fn-1    # What's ready to work on
 ```
 
----
-
-## Quick Start
+### 3. Use
 
 ```bash
-# 1. Plan: research, create epic with tasks
+# Plan: research, create epic with tasks
 /flow-next:plan Add a contact form with validation
 
-# 2. Work: execute tasks in dependency order
+# Work: execute tasks in dependency order
 /flow-next:work fn-1
 ```
 
-This creates an epic (fn-N) even for small requests, then breaks it into tasks.
+That's it. Flow-Next handles research, task ordering, reviews, and audit trails.
 
 Start with a short spec (prompt or file). If fuzzy, run `/flow-next:interview` first.
 
-That's it. Flow-Next handles research, task ordering, reviews, and audit trails.
+### 4. Autonomous Mode (Optional)
+
+Want to run overnight? See [Ralph Mode](#ralph-autonomous-mode).
+
+---
+
+## Uninstall
+
+```bash
+rm -rf .flow/               # Core flow state
+rm -rf scripts/ralph/       # Ralph (if enabled)
+```
 
 ---
 

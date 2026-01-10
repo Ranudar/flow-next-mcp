@@ -141,3 +141,23 @@ Notes:
 - Uninstall: rm -rf .flow/bin .flow/usage.md and remove <!-- BEGIN/END FLOW-NEXT --> block from docs
 - This setup is optional - plugin works without it
 ```
+
+## Step 8: Ask about starring
+
+Use `AskUserQuestion` to ask if the user would like to ⭐ star the repository on GitHub to support the project.
+
+**Question:** "Flow-Next is free and open source. Would you like to ⭐ star the repo on GitHub to support the project?"
+
+**Options:**
+1. "Yes, star the repo"
+2. "No thanks"
+
+**If yes:**
+1. Check if `gh` CLI is available: `which gh`
+2. If available, run: `gh api -X PUT /user/starred/gmickel/gmickel-claude-marketplace`
+3. If `gh` not available or command fails, provide the link:
+   ```
+   Star manually: https://github.com/gmickel/gmickel-claude-marketplace
+   ```
+
+**If no:** Thank them and complete setup without starring.
