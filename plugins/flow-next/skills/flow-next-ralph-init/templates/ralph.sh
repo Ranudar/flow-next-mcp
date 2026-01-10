@@ -706,6 +706,20 @@ Violations break automation and leave the user with incomplete work. Be precise,
       force_retry=1
     fi
   fi
+
+  # Extract verdict early so we can display before task_done
+  verdict="$(printf '%s' "$claude_out" | extract_tag verdict)"
+  promise="$(printf '%s' "$claude_out" | extract_tag promise)"
+
+  # Fallback: try to get verdict from receipt if not in output
+  if [[ -z "$verdict" && -n "$REVIEW_RECEIPT_PATH" && -f "$REVIEW_RECEIPT_PATH" ]]; then
+    receipt_verdict="$(json_get verdict "$(<"$REVIEW_RECEIPT_PATH")" 2>/dev/null || true)"
+    [[ -n "$receipt_verdict" ]] && verdict="$receipt_verdict"
+  fi
+
+  # Show verdict before task completion
+  ui_verdict "$verdict"
+
   if [[ "$status" == "work" ]]; then
     task_json="$("$FLOWCTL" show "$task_id" --json 2>/dev/null || true)"
     task_status="$(json_get status "$task_json")"
@@ -717,11 +731,6 @@ Violations break automation and leave the user with incomplete work. Be precise,
       ui_task_done "$task_id"
     fi
   fi
-
-
-  verdict="$(printf '%s' "$claude_out" | extract_tag verdict)"
-  promise="$(printf '%s' "$claude_out" | extract_tag promise)"
-  ui_verdict "$verdict"
   append_progress "$verdict" "$promise" "$plan_review_status" "$task_status"
 
   if echo "$claude_out" | grep -q "<promise>COMPLETE</promise>"; then
