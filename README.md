@@ -14,7 +14,7 @@
 
 </div>
 
-> 🤖 **New in v0.3.17**: [Memory system](plugins/flow-next/README.md#memory-system-opt-in) — opt-in persistent learning from NEEDS_WORK feedback.
+> 🤖 **New**: [Ralph mode](#ralph-autonomous-mode) — ship features while you sleep. Multi-model review gates + [persistent memory](plugins/flow-next/README.md#memory-system-opt-in) that learns from mistakes.
 
 ---
 
