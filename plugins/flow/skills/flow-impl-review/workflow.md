@@ -280,12 +280,12 @@ rp-cli -w W -e 'call chat_send {"message": "<COMBINED_PROMPT>", "mode": "chat", 
 
 ⚠️ **WAIT FOR RESPONSE**: Chat takes 1-5+ minutes. Do NOT re-send or follow up until it returns.
 
-**Follow-up/re-review command** - MUST use `call chat_send` with `selected_paths` to ensure files remain visible:
+**Follow-up/re-review command**:
 ```bash
-rp-cli -w W -e 'call chat_send {"message": "<FOLLOW_UP_MESSAGE>", "mode": "chat", "selected_paths": ["<FILE1>", "<FILE2>"]}'
+rp-cli -w W -e 'call chat_send {"message": "<FOLLOW_UP_MESSAGE>", "mode": "chat"}'
 ```
 
-⚠️ **CRITICAL**: Chat follow-ups do NOT automatically see the selection. You MUST pass `selected_paths` with the same files from your initial selection, or the reviewer loses file context.
+Note: Files are automatically refreshed on each message - no `selected_paths` needed for follow-ups.
 
 ---
 
@@ -343,9 +343,9 @@ After receiving feedback, return here to implement fixes.
 
 ## Iteration
 
-Continue the chat to drill deeper if needed (remember to include `selected_paths`):
+Continue the chat to drill deeper if needed:
 ```bash
-rp-cli -w W -e 'call chat_send {"message": "Elaborate on the [SPECIFIC CONCERN]. Show me exactly what you would change in [FILE].", "mode": "chat", "selected_paths": ["<FILE1>", "<FILE2>"]}'
+rp-cli -w W -e 'call chat_send {"message": "Elaborate on the [SPECIFIC CONCERN]. Show me exactly what you would change in [FILE].", "mode": "chat"}'
 ```
 
 ---
@@ -399,17 +399,17 @@ rp-cli -w W -e 'call chat_send {"message": "Elaborate on the [SPECIFIC CONCERN].
 ## Trade-offs / Decisions
 - [Any architectural decisions or trade-offs made]
 
-Please re-review.
+Please re-review. Verify the actual code changes, not just this summary.
 ```
 
-**Use raw JSON for multi-line messages** - include `selected_paths` to maintain file context:
+**Use raw JSON for multi-line messages**:
 ```bash
-rp-cli -w W -e 'call chat_send {"message": "<RE_REVIEW_MESSAGE>", "mode": "chat", "selected_paths": ["<FILE1>", "<FILE2>"]}'
+rp-cli -w W -e 'call chat_send {"message": "<RE_REVIEW_MESSAGE>", "mode": "chat"}'
 ```
 
 ⚠️ **JSON escaping**: Use `\n` for newlines, `\"` for quotes inside the message string.
 
-⚠️ **CRITICAL**: Always include `selected_paths` with the files from your initial selection. Without this, the reviewer cannot see file contents in follow-up messages.
+⚠️ **CRITICAL**: The reviewer sees updated file contents automatically, but may over-trust your fix summary. Ensure fixes are actually committed so the reviewer can verify the actual code, not just your description.
 
 5. **Repeat**: Continue until review passes (Ship)
 

@@ -12,27 +12,39 @@
     {
       "name": "flow",
       "description": "Two-step planning + execution workflow with optional Beads integration. Includes 6 subagents, 5 commands, 7 skills.",
-      "version": "0.8.3",
+      "version": "0.8.4",
       "author": {
         "name": "Gordon Mickel",
         "email": "gordon@mickel.tech",
         "url": "https://mickel.tech"
       },
       "homepage": "https://mickel.tech/apps/flow",
-      "tags": ["claude-code", "plugin", "workflow", "planning", "execution"],
+      "tags": [
+        "claude-code",
+        "plugin",
+        "workflow",
+        "planning",
+        "execution"
+      ],
       "source": "./plugins/flow"
     },
     {
       "name": "flow-next",
       "description": "Zero-dependency planning + execution with .flow/ task tracking and Ralph autonomous mode (multi-model review gates). Includes 6 subagents, 7 commands, 11 skills.",
-      "version": "0.3.16",
+      "version": "0.3.17",
       "author": {
         "name": "Gordon Mickel",
         "email": "gordon@mickel.tech",
         "url": "https://mickel.tech"
       },
       "homepage": "https://mickel.tech/apps/flow-next",
-      "tags": ["claude-code", "plugin", "workflow", "planning", "execution"],
+      "tags": [
+        "claude-code",
+        "plugin",
+        "workflow",
+        "planning",
+        "execution"
+      ],
       "source": "./plugins/flow-next"
     }
   ]

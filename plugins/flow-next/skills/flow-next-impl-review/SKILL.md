@@ -132,7 +132,7 @@ If verdict is NEEDS_WORK, loop internally until SHIP:
    ## Fixes Applied
    [List each fix with file:line and explanation]
 
-   Please re-review and provide verdict.
+   Please re-review. Verify the actual code changes, not just this summary.
    EOF
 
    $FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/re-review.md

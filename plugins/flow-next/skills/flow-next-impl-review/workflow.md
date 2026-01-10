@@ -177,7 +177,7 @@ If verdict is NEEDS_WORK:
    - [Fix 2]: [file:line] [what changed]
    ...
 
-   Please re-review.
+   Please re-review. Verify the actual code changes, not just this summary.
    EOF
 
    $FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/re-review.md

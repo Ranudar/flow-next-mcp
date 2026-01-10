@@ -2,6 +2,24 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.3.17] - 2026-01-10
+
+### Added
+- Memory system for persistent learning (opt-in via `flowctl config set memory.enabled true`)
+- `flowctl config get/set` commands for project settings
+- `flowctl memory init/add/list/search` commands for memory management
+- `memory-scout` subagent for retrieving relevant memories during plan/work
+- Auto-capture of review feedback to pitfalls.md (Ralph mode only)
+
+### Fixed
+- Re-review prompt now instructs reviewer to verify actual code, not just trust summary
+
+## [flow 0.8.4] - 2026-01-10
+
+### Fixed
+- Removed incorrect `selected_paths` requirement for re-reviews (files auto-refresh)
+- Re-review prompt now instructs reviewer to verify actual code, not just trust summary
+
 ## [flow-next 0.3.16] - 2026-01-10
 
 ### Changed
