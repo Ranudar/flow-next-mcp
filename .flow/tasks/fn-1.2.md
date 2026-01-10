@@ -23,9 +23,21 @@ Filter criteria (`is_learnable`):
 - [ ] Handles missing memory dir gracefully
 
 ## Done summary
-TBD
+- Added memory capture in ralph-guard.py PostToolUse handler
+- extract_feedback() parses NEEDS_WORK reviews into structured issues
+- is_learnable() filters to actionable patterns (framework, API, convention)
+- classify_issue() categorizes entries for memory format
+- append_to_pitfalls() writes entries to .flow/memory/pitfalls.md
 
+Why:
+- Captures high-signal learnings from reviewer feedback
+- Only activates when memory.enabled is true
+
+Verification:
+- Python syntax check passed
+- Unit test of extract_feedback and is_learnable passed
+- flowctl validate --all passes
 ## Evidence
-- Commits:
-- Tests:
+- Commits: 1471f8ca7bb4373bd576e057a8aefc1283e22ff3
+- Tests: python3 -m py_compile, unit test of memory functions
 - PRs:
