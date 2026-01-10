@@ -182,6 +182,16 @@ cfg.write_text(text)
 PY
 
 scripts/ralph/flowctl init --json >/dev/null
+
+# Mirror /flow-next:setup - add .flow/bin/ + usage.md + CLAUDE.md
+mkdir -p .flow/bin
+cp "$PLUGIN_ROOT/scripts/flowctl" .flow/bin/flowctl
+cp "$PLUGIN_ROOT/scripts/flowctl.py" .flow/bin/flowctl.py
+chmod +x .flow/bin/flowctl
+cp "$PLUGIN_ROOT/skills/flow-next-setup/templates/usage.md" .flow/usage.md
+cat "$PLUGIN_ROOT/skills/flow-next-setup/templates/claude-md-snippet.md" > CLAUDE.md
+echo -e "${GREEN}✓${NC} Setup mirrored (.flow/bin/, usage.md, CLAUDE.md)"
+
 scripts/ralph/flowctl epic create --title "Tiny lib" --json >/dev/null
 scripts/ralph/flowctl epic create --title "Tiny follow-up" --json >/dev/null
 
