@@ -745,6 +745,194 @@ def cmd_memory_init(args: argparse.Namespace) -> None:
             print(f"Memory already initialized at {memory_dir}")
 
 
+def require_memory_enabled(args) -> Path:
+    """Check memory is enabled and return memory dir. Exits on error."""
+    if not ensure_flow_exists():
+        error_exit(".flow/ does not exist. Run 'flowctl init' first.", use_json=args.json)
+
+    if not get_config("memory.enabled", False):
+        if args.json:
+            json_output({
+                "error": "Memory not enabled. Run: flowctl config set memory.enabled true"
+            }, success=False)
+        else:
+            print("Error: Memory not enabled.")
+            print("Enable with: flowctl config set memory.enabled true")
+        sys.exit(1)
+
+    memory_dir = get_flow_dir() / MEMORY_DIR
+    if not memory_dir.exists():
+        if args.json:
+            json_output({
+                "error": "Memory not initialized. Run: flowctl memory init"
+            }, success=False)
+        else:
+            print("Error: Memory not initialized.")
+            print("Run: flowctl memory init")
+        sys.exit(1)
+
+    return memory_dir
+
+
+def cmd_memory_add(args: argparse.Namespace) -> None:
+    """Add a memory entry manually."""
+    memory_dir = require_memory_enabled(args)
+
+    # Map type to file
+    type_map = {
+        "pitfall": "pitfalls.md",
+        "pitfalls": "pitfalls.md",
+        "convention": "conventions.md",
+        "conventions": "conventions.md",
+        "decision": "decisions.md",
+        "decisions": "decisions.md",
+    }
+
+    filename = type_map.get(args.type.lower())
+    if not filename:
+        error_exit(
+            f"Invalid type '{args.type}'. Use: pitfall, convention, or decision",
+            use_json=args.json
+        )
+
+    filepath = memory_dir / filename
+    if not filepath.exists():
+        error_exit(
+            f"Memory file {filename} not found. Run: flowctl memory init",
+            use_json=args.json
+        )
+
+    # Format entry
+    from datetime import datetime
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+
+    # Normalize type name
+    type_name = args.type.lower().rstrip("s")  # pitfalls -> pitfall
+
+    entry = f"""
+## {today} manual [{type_name}]
+{args.content}
+"""
+
+    # Append to file
+    with filepath.open("a", encoding="utf-8") as f:
+        f.write(entry)
+
+    if args.json:
+        json_output({
+            "type": type_name,
+            "file": filename,
+            "message": f"Added {type_name} entry"
+        })
+    else:
+        print(f"Added {type_name} entry to {filename}")
+
+
+def cmd_memory_read(args: argparse.Namespace) -> None:
+    """Read memory entries."""
+    memory_dir = require_memory_enabled(args)
+
+    # Determine which files to read
+    if args.type:
+        type_map = {
+            "pitfall": "pitfalls.md",
+            "pitfalls": "pitfalls.md",
+            "convention": "conventions.md",
+            "conventions": "conventions.md",
+            "decision": "decisions.md",
+            "decisions": "decisions.md",
+        }
+        filename = type_map.get(args.type.lower())
+        if not filename:
+            error_exit(
+                f"Invalid type '{args.type}'. Use: pitfalls, conventions, or decisions",
+                use_json=args.json
+            )
+        files = [filename]
+    else:
+        files = ["pitfalls.md", "conventions.md", "decisions.md"]
+
+    content = {}
+    for filename in files:
+        filepath = memory_dir / filename
+        if filepath.exists():
+            content[filename] = filepath.read_text(encoding="utf-8")
+        else:
+            content[filename] = ""
+
+    if args.json:
+        json_output({"files": content})
+    else:
+        for filename, text in content.items():
+            if text.strip():
+                print(f"=== {filename} ===")
+                print(text)
+                print()
+
+
+def cmd_memory_list(args: argparse.Namespace) -> None:
+    """List memory entry counts."""
+    memory_dir = require_memory_enabled(args)
+
+    counts = {}
+    for filename in ["pitfalls.md", "conventions.md", "decisions.md"]:
+        filepath = memory_dir / filename
+        if filepath.exists():
+            text = filepath.read_text(encoding="utf-8")
+            # Count ## entries (each entry starts with ## date)
+            entries = len(re.findall(r"^## \d{4}-\d{2}-\d{2}", text, re.MULTILINE))
+            counts[filename] = entries
+        else:
+            counts[filename] = 0
+
+    if args.json:
+        json_output({"counts": counts, "total": sum(counts.values())})
+    else:
+        total = 0
+        for filename, count in counts.items():
+            print(f"  {filename}: {count} entries")
+            total += count
+        print(f"  Total: {total} entries")
+
+
+def cmd_memory_search(args: argparse.Namespace) -> None:
+    """Search memory entries."""
+    memory_dir = require_memory_enabled(args)
+
+    pattern = args.pattern
+    matches = []
+
+    for filename in ["pitfalls.md", "conventions.md", "decisions.md"]:
+        filepath = memory_dir / filename
+        if not filepath.exists():
+            continue
+
+        text = filepath.read_text(encoding="utf-8")
+        # Split into entries
+        entries = re.split(r"(?=^## \d{4}-\d{2}-\d{2})", text, flags=re.MULTILINE)
+
+        for entry in entries:
+            if not entry.strip():
+                continue
+            if re.search(pattern, entry, re.IGNORECASE):
+                matches.append({
+                    "file": filename,
+                    "entry": entry.strip()
+                })
+
+    if args.json:
+        json_output({"pattern": pattern, "matches": matches, "count": len(matches)})
+    else:
+        if matches:
+            for m in matches:
+                print(f"=== {m['file']} ===")
+                print(m['entry'])
+                print()
+            print(f"Found {len(matches)} matches")
+        else:
+            print(f"No matches for '{pattern}'")
+
+
 def cmd_epic_create(args: argparse.Namespace) -> None:
     """Create a new epic."""
     if not ensure_flow_exists():
@@ -2451,6 +2639,26 @@ def main() -> None:
     p_memory_init = memory_sub.add_parser("init", help="Initialize memory templates")
     p_memory_init.add_argument("--json", action="store_true", help="JSON output")
     p_memory_init.set_defaults(func=cmd_memory_init)
+
+    p_memory_add = memory_sub.add_parser("add", help="Add memory entry")
+    p_memory_add.add_argument("--type", required=True, help="Type: pitfall, convention, or decision")
+    p_memory_add.add_argument("content", help="Entry content")
+    p_memory_add.add_argument("--json", action="store_true", help="JSON output")
+    p_memory_add.set_defaults(func=cmd_memory_add)
+
+    p_memory_read = memory_sub.add_parser("read", help="Read memory entries")
+    p_memory_read.add_argument("--type", help="Filter by type: pitfalls, conventions, or decisions")
+    p_memory_read.add_argument("--json", action="store_true", help="JSON output")
+    p_memory_read.set_defaults(func=cmd_memory_read)
+
+    p_memory_list = memory_sub.add_parser("list", help="List memory entry counts")
+    p_memory_list.add_argument("--json", action="store_true", help="JSON output")
+    p_memory_list.set_defaults(func=cmd_memory_list)
+
+    p_memory_search = memory_sub.add_parser("search", help="Search memory entries")
+    p_memory_search.add_argument("pattern", help="Search pattern (regex)")
+    p_memory_search.add_argument("--json", action="store_true", help="JSON output")
+    p_memory_search.set_defaults(func=cmd_memory_search)
 
     # epic create
     p_epic = subparsers.add_parser("epic", help="Epic commands")

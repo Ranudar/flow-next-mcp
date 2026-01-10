@@ -23,9 +23,21 @@ All commands check `memory.enabled` config first.
 - [ ] All commands error gracefully when memory disabled
 
 ## Done summary
-TBD
+- Added `flowctl memory add --type <type> "<content>"`
+- Added `flowctl memory read [--type <type>]`
+- Added `flowctl memory list` for entry counts
+- Added `flowctl memory search "<pattern>"` for grep across files
+- All commands gate on memory.enabled config
 
+Why:
+- Complements auto-capture with manual entry capability
+- Enables retrieval and search of stored learnings
+
+Verification:
+- Python syntax check passed
+- Manual testing of all commands passed
+- flowctl validate --all passes
 ## Evidence
-- Commits:
-- Tests:
+- Commits: a29de8e3c5bac283701d7bd4487d6b8b33dfc58d
+- Tests: flowctl validate --all, manual testing of memory commands
 - PRs:
