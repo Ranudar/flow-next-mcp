@@ -2,6 +2,12 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.4.2] - 2026-01-11
+
+### Fixed
+- `flowctl done` now stores evidence in task JSON metadata (was only in markdown spec)
+- Evidence accessible via `flowctl show <task> --json | jq '.evidence'`
+
 ## [flow-next 0.4.1] - 2026-01-11
 
 ### Added

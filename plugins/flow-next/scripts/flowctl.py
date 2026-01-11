@@ -2182,6 +2182,7 @@ def cmd_done(args: argparse.Namespace) -> None:
 
     task_data["status"] = "done"
     task_data["updated_at"] = now_iso()
+    task_data["evidence"] = evidence  # Store raw evidence dict for programmatic access
     atomic_write_json(task_json_path, task_data)
 
     # NOTE: We no longer update epic timestamp on task done.
