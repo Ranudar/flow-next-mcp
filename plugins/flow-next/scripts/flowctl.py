@@ -397,47 +397,109 @@ def get_changed_files(base_branch: str) -> list[str]:
 
 
 def extract_symbols_from_file(file_path: Path) -> list[str]:
-    """Extract exported/defined symbols from a file (functions, classes, consts)."""
-    if not file_path.exists():
-        return []
+    """Extract exported/defined symbols from a file (functions, classes, consts).
+
+    Returns empty list on any error - never crashes.
+    """
     try:
+        if not file_path.exists():
+            return []
         content = file_path.read_text(encoding="utf-8", errors="ignore")
+        if not content:
+            return []
+
+        symbols = []
+        ext = file_path.suffix.lower()
+
+        # Python: def/class definitions
+        if ext == ".py":
+            for match in re.finditer(
+                r"^(?:def|class)\s+(\w+)", content, re.MULTILINE
+            ):
+                symbols.append(match.group(1))
+            # Also catch exported __all__
+            all_match = re.search(r"__all__\s*=\s*\[([^\]]+)\]", content)
+            if all_match:
+                for s in re.findall(r"['\"](\w+)['\"]", all_match.group(1)):
+                    symbols.append(s)
+
+        # JS/TS: export function/class/const
+        elif ext in (".js", ".ts", ".jsx", ".tsx", ".mjs"):
+            for match in re.finditer(
+                r"export\s+(?:default\s+)?(?:function|class|const|let|var)\s+(\w+)",
+                content,
+            ):
+                symbols.append(match.group(1))
+            # Named exports: export { foo, bar }
+            for match in re.finditer(r"export\s*\{([^}]+)\}", content):
+                for s in re.findall(r"(\w+)", match.group(1)):
+                    symbols.append(s)
+
+        # Go: func/type definitions
+        elif ext == ".go":
+            for match in re.finditer(r"^func\s+(\w+)", content, re.MULTILINE):
+                symbols.append(match.group(1))
+            for match in re.finditer(r"^type\s+(\w+)", content, re.MULTILINE):
+                symbols.append(match.group(1))
+
+        # Rust: pub fn/struct/enum/trait, also private fn for references
+        elif ext == ".rs":
+            for match in re.finditer(
+                r"^(?:pub\s+)?fn\s+(\w+)", content, re.MULTILINE
+            ):
+                symbols.append(match.group(1))
+            for match in re.finditer(
+                r"^(?:pub\s+)?(?:struct|enum|trait|type)\s+(\w+)",
+                content,
+                re.MULTILINE,
+            ):
+                symbols.append(match.group(1))
+            # impl blocks: impl Name or impl Trait for Name
+            for match in re.finditer(
+                r"^impl(?:<[^>]+>)?\s+(\w+)", content, re.MULTILINE
+            ):
+                symbols.append(match.group(1))
+
+        # C/C++: function definitions, structs, typedefs, macros
+        elif ext in (".c", ".h", ".cpp", ".hpp", ".cc", ".cxx"):
+            # Function definitions: type name( at line start (simplified)
+            for match in re.finditer(
+                r"^[a-zA-Z_][\w\s\*]+\s+(\w+)\s*\([^;]*$", content, re.MULTILINE
+            ):
+                symbols.append(match.group(1))
+            # struct/enum/union definitions
+            for match in re.finditer(
+                r"^(?:typedef\s+)?(?:struct|enum|union)\s+(\w+)",
+                content,
+                re.MULTILINE,
+            ):
+                symbols.append(match.group(1))
+            # #define macros
+            for match in re.finditer(r"^#define\s+(\w+)", content, re.MULTILINE):
+                symbols.append(match.group(1))
+
+        # Java: class/interface/method definitions
+        elif ext == ".java":
+            for match in re.finditer(
+                r"^(?:public|private|protected)?\s*(?:static\s+)?"
+                r"(?:class|interface|enum)\s+(\w+)",
+                content,
+                re.MULTILINE,
+            ):
+                symbols.append(match.group(1))
+            # Method definitions
+            for match in re.finditer(
+                r"^\s*(?:public|private|protected)\s+(?:static\s+)?"
+                r"[\w<>\[\]]+\s+(\w+)\s*\(",
+                content,
+                re.MULTILINE,
+            ):
+                symbols.append(match.group(1))
+
+        return list(set(symbols))
     except Exception:
+        # Never crash on parse errors - just return empty
         return []
-
-    symbols = []
-    ext = file_path.suffix.lower()
-
-    # Python: def/class definitions
-    if ext == ".py":
-        for match in re.finditer(r"^(?:def|class)\s+(\w+)", content, re.MULTILINE):
-            symbols.append(match.group(1))
-        # Also catch exported __all__
-        all_match = re.search(r"__all__\s*=\s*\[([^\]]+)\]", content)
-        if all_match:
-            for s in re.findall(r"['\"](\w+)['\"]", all_match.group(1)):
-                symbols.append(s)
-
-    # JS/TS: export function/class/const
-    elif ext in (".js", ".ts", ".jsx", ".tsx", ".mjs"):
-        for match in re.finditer(
-            r"export\s+(?:default\s+)?(?:function|class|const|let|var)\s+(\w+)",
-            content,
-        ):
-            symbols.append(match.group(1))
-        # Named exports: export { foo, bar }
-        for match in re.finditer(r"export\s*\{([^}]+)\}", content):
-            for s in re.findall(r"(\w+)", match.group(1)):
-                symbols.append(s)
-
-    # Go: func/type definitions
-    elif ext == ".go":
-        for match in re.finditer(r"^func\s+(\w+)", content, re.MULTILINE):
-            symbols.append(match.group(1))
-        for match in re.finditer(r"^type\s+(\w+)", content, re.MULTILINE):
-            symbols.append(match.group(1))
-
-    return list(set(symbols))
 
 
 def find_references(
@@ -454,13 +516,27 @@ def find_references(
                 "-w",
                 symbol,
                 "--",
+                # Python
                 "*.py",
+                # JavaScript/TypeScript
                 "*.js",
                 "*.ts",
                 "*.tsx",
-                "*.go",
                 "*.jsx",
                 "*.mjs",
+                # Go
+                "*.go",
+                # Rust
+                "*.rs",
+                # C/C++
+                "*.c",
+                "*.h",
+                "*.cpp",
+                "*.hpp",
+                "*.cc",
+                "*.cxx",
+                # Java
+                "*.java",
             ],
             capture_output=True,
             text=True,
@@ -667,8 +743,30 @@ def build_review_prompt(
 
     Uses same Carmack-level criteria as RepoPrompt workflow to ensure parity.
     """
+    # Context gathering preamble - same for both review types
+    context_preamble = """## Context Gathering (do this first)
+
+Before reviewing, explore the codebase to understand the full impact:
+
+**Cross-boundary checks:**
+- Frontend change? Check the backend API it calls
+- Backend change? Check frontend consumers and other callers
+- Schema/type change? Find all usages across the codebase
+- Config change? Check what reads it
+
+**Related context:**
+- Similar features elsewhere (patterns to follow or break)
+- Tests covering this area (are they sufficient?)
+- Shared utilities/hooks this code should use
+- Error handling patterns in adjacent code
+
+The context_hints below are a starting point. Read additional files as needed -
+a thorough review requires understanding the system, not just the diff.
+
+"""
+
     if review_type == "impl":
-        instruction = """Conduct a John Carmack-level review of this implementation.
+        instruction = context_preamble + """Conduct a John Carmack-level review of this implementation.
 
 ## Review Criteria
 
@@ -697,7 +795,7 @@ Be critical. Find real issues.
 
 Do NOT skip this tag. The automation depends on it."""
     else:  # plan
-        instruction = """Conduct a John Carmack-level review of this plan.
+        instruction = context_preamble + """Conduct a John Carmack-level review of this plan.
 
 ## Review Criteria
 
