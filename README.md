@@ -18,7 +18,7 @@
 >
 > 🧠 **New in v0.3.17**: [Memory system](plugins/flow-next/README.md#memory-system-opt-in) — agents learn from NEEDS_WORK feedback. Stop repeating the same mistakes.
 >
-> 📡 **Coming soon**: [Codex CLI support](https://github.com/gmickel/gmickel-claude-marketplace/issues/5) — free, open-source alternative for multi-model reviews. No RepoPrompt required.
+> 📡 **Coming soon**: [Codex CLI support](https://github.com/gmickel/gmickel-claude-marketplace/issues/5) — multi-model reviews without RepoPrompt.
 
 ---
 
