@@ -378,27 +378,130 @@ PY
 echo -e "${GREEN}✓${NC} parse_receipt_path works"
 PASS=$((PASS + 1))
 
+echo -e "${YELLOW}--- codex e2e (requires codex + OPENAI_API_KEY) ---${NC}"
+# Check if codex is available and API key is set
+codex_available="$(scripts/flowctl codex check --json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('available', False))" 2>/dev/null || echo "False")"
+if [[ "$codex_available" == "True" && -n "${OPENAI_API_KEY:-}" ]]; then
+  # Create a simple epic + task for testing
+  scripts/flowctl epic create --title "Codex test epic" --json >/dev/null
+  scripts/flowctl task create --epic fn-3 --title "Test task" --json >/dev/null
+
+  # Write a simple spec
+  cat > .flow/specs/fn-3.md << 'EOF'
+# Codex Test Epic
+
+Simple test epic for smoke testing codex reviews.
+
+## Scope
+- Test that codex can review a plan
+- Test that codex can review an implementation
+EOF
+
+  cat > .flow/tasks/fn-3.1.md << 'EOF'
+# Test Task
+
+Add a simple hello world function.
+
+## Acceptance
+- Function returns "hello world"
+EOF
+
+  # Test plan-review e2e
+  set +e
+  plan_result="$(scripts/flowctl codex plan-review fn-3 --base main --receipt "$TEST_DIR/plan-receipt.json" --json 2>&1)"
+  plan_rc=$?
+  set -e
+
+  if [[ "$plan_rc" -eq 0 ]]; then
+    # Verify receipt was written with correct schema
+    if [[ -f "$TEST_DIR/plan-receipt.json" ]]; then
+      python3 - "$TEST_DIR/plan-receipt.json" <<'PY'
+import sys, json
+from pathlib import Path
+data = json.loads(Path(sys.argv[1]).read_text())
+assert data.get("type") == "plan_review", f"Expected type=plan_review, got {data.get('type')}"
+assert data.get("id") == "fn-3", f"Expected id=fn-3, got {data.get('id')}"
+assert data.get("mode") == "codex", f"Expected mode=codex, got {data.get('mode')}"
+assert "verdict" in data, "Missing verdict in receipt"
+assert "session_id" in data, "Missing session_id in receipt"
+PY
+      echo -e "${GREEN}✓${NC} codex plan-review e2e"
+      PASS=$((PASS + 1))
+    else
+      echo -e "${RED}✗${NC} codex plan-review e2e (no receipt)"
+      FAIL=$((FAIL + 1))
+    fi
+  else
+    echo -e "${RED}✗${NC} codex plan-review e2e (exit $plan_rc)"
+    FAIL=$((FAIL + 1))
+  fi
+
+  # Test impl-review e2e (create a simple change first)
+  cat > "$TEST_DIR/repo/src/hello.py" << 'EOF'
+def hello():
+    return "hello world"
+EOF
+  git -C "$TEST_DIR/repo" add src/hello.py
+  git -C "$TEST_DIR/repo" commit -m "Add hello function" >/dev/null
+
+  set +e
+  impl_result="$(scripts/flowctl codex impl-review fn-3.1 --base HEAD~1 --receipt "$TEST_DIR/impl-receipt.json" --json 2>&1)"
+  impl_rc=$?
+  set -e
+
+  if [[ "$impl_rc" -eq 0 ]]; then
+    # Verify receipt was written with correct schema
+    if [[ -f "$TEST_DIR/impl-receipt.json" ]]; then
+      python3 - "$TEST_DIR/impl-receipt.json" <<'PY'
+import sys, json
+from pathlib import Path
+data = json.loads(Path(sys.argv[1]).read_text())
+assert data.get("type") == "impl_review", f"Expected type=impl_review, got {data.get('type')}"
+assert data.get("id") == "fn-3.1", f"Expected id=fn-3.1, got {data.get('id')}"
+assert data.get("mode") == "codex", f"Expected mode=codex, got {data.get('mode')}"
+assert "verdict" in data, "Missing verdict in receipt"
+assert "session_id" in data, "Missing session_id in receipt"
+PY
+      echo -e "${GREEN}✓${NC} codex impl-review e2e"
+      PASS=$((PASS + 1))
+    else
+      echo -e "${RED}✗${NC} codex impl-review e2e (no receipt)"
+      FAIL=$((FAIL + 1))
+    fi
+  else
+    echo -e "${RED}✗${NC} codex impl-review e2e (exit $impl_rc)"
+    FAIL=$((FAIL + 1))
+  fi
+else
+  echo -e "${YELLOW}⊘${NC} codex e2e skipped (codex=$codex_available, OPENAI_API_KEY=${OPENAI_API_KEY:+set})"
+fi
+
 echo -e "${YELLOW}--- depends_on_epics gate ---${NC}"
 cd "$TEST_DIR/repo"  # Back to test repo
+# Use higher IDs to avoid conflicts with codex e2e tests
 scripts/flowctl epic create --title "Dep base" --json >/dev/null
-scripts/flowctl task create --epic fn-3 --title "Base task" --json >/dev/null
+dep_base_id="$(ls -1 .flow/epics/fn-*.json | tail -1 | sed 's/.*fn-\([0-9]*\).*/fn-\1/')"
+scripts/flowctl task create --epic "$dep_base_id" --title "Base task" --json >/dev/null
 scripts/flowctl epic create --title "Dep child" --json >/dev/null
-python3 - <<'PY'
-import json
+dep_child_id="$(ls -1 .flow/epics/fn-*.json | tail -1 | sed 's/.*fn-\([0-9]*\).*/fn-\1/')"
+python3 - "$dep_child_id" "$dep_base_id" <<'PY'
+import json, sys
 from pathlib import Path
-path = Path(".flow/epics/fn-4.json")
+child_id, base_id = sys.argv[1], sys.argv[2]
+path = Path(f".flow/epics/{child_id}.json")
 data = json.loads(path.read_text())
-data["depends_on_epics"] = ["fn-3"]
+data["depends_on_epics"] = [base_id]
 path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
 PY
-printf '{\"epics\":[\"fn-4\"]}\n' > "$TEST_DIR/epics.json"
+printf '{"epics":["%s"]}\n' "$dep_child_id" > "$TEST_DIR/epics.json"
 blocked_json="$(scripts/flowctl next --epics-file "$TEST_DIR/epics.json" --json)"
-python3 - <<'PY' "$blocked_json"
+python3 - "$dep_child_id" <<'PY' "$blocked_json"
 import json, sys
-data = json.loads(sys.argv[1])
+child_id = sys.argv[1]
+data = json.loads(sys.argv[2])
 assert data["status"] == "none"
 assert data["reason"] == "blocked_by_epic_deps"
-assert "fn-4" in data.get("blocked_epics", {})
+assert child_id in data.get("blocked_epics", {})
 PY
 echo -e "${GREEN}✓${NC} depends_on_epics blocks"
 PASS=$((PASS + 1))

@@ -317,10 +317,10 @@ Each epic and task gets its own JSON + markdown file pair. Merge conflicts are r
 ### Automated Reviews
 
 Reviews require one of:
-- [rp-cli](https://repoprompt.com/?atp=KJbuL4) ([RepoPrompt](https://repoprompt.com/?atp=KJbuL4)) — macOS GUI-based
+- [rp-cli](https://repoprompt.com/?atp=KJbuL4) ([RepoPrompt](https://repoprompt.com/?atp=KJbuL4)) — macOS GUI-based **← recommended**
 - OpenAI Codex CLI — cross-platform terminal-based
 
-Without either, review steps are skipped. Cross-model review catches blind spots.
+**We recommend RepoPrompt** when available. Its Builder provides full file context with intelligent selection. Codex is a good cross-platform alternative using context hints. Without either, review steps are skipped.
 
 ### Dependency Graphs
 

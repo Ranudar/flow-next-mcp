@@ -87,9 +87,11 @@ Ralph enforces quality through three mechanisms:
 Reviews use a second model to verify code. Two models catch what one misses.
 
 **Review backends:**
-- `rp` — [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (macOS only, GUI-based)
+- `rp` — [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (macOS only, GUI-based) **← recommended**
 - `codex` — OpenAI Codex CLI (cross-platform, terminal-based)
 - `none` — skip reviews (not recommended for production)
+
+**We recommend RepoPrompt** when available. Its Builder provides full file context with intelligent selection, while Codex uses heuristic context hints from changed files. Both use the same Carmack-level review criteria.
 
 - Plan reviews verify architecture and edge cases before coding starts
 - Impl reviews verify the implementation meets spec after each task
