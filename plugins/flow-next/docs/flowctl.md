@@ -405,20 +405,27 @@ OpenAI Codex CLI wrappers (cross-platform alternative to rp):
 flowctl codex check [--json]
 
 # Run implementation review via codex
-flowctl codex impl-review --id fn-1.3 --spec-file spec.md [--receipt-path /path/to/receipt.json] [--session-id <session>] [--json]
+flowctl codex impl-review <task-id> --base <branch> [--receipt <path>] [--json]
+# Example: flowctl codex impl-review fn-1.3 --base main --receipt /tmp/impl-fn-1.3.json
 
 # Run plan review via codex
-flowctl codex plan-review --id fn-1 --spec-file spec.md [--receipt-path /path/to/receipt.json] [--session-id <session>] [--json]
+flowctl codex plan-review <epic-id> --base <branch> [--receipt <path>] [--json]
+# Example: flowctl codex plan-review fn-1 --base main --receipt /tmp/plan-fn-1.json
 ```
 
 The codex commands:
 1. Gather context hints (changed files, symbols, references)
-2. Build a review prompt from the spec
-3. Run codex with `codex exec` (or `codex exec resume` for continuity)
+2. Build a review prompt from the task/epic spec
+3. Run codex with `codex exec` (or `codex exec resume` for session continuity)
 4. Parse verdict from output (`<verdict>SHIP|NEEDS_WORK|MAJOR_RETHINK</verdict>`)
-5. Write receipt JSON if `--receipt-path` provided
+5. Write receipt JSON if `--receipt` provided
 
-Session continuity: If `--session-id` provided, continues previous session. Receipt includes `thread_id` for future continuity.
+Receipt schema (Ralph-compatible):
+```json
+{"type":"impl_review","id":"fn-1.3","mode":"codex","verdict":"SHIP","session_id":"...","timestamp":"..."}
+```
+
+Session continuity: Receipt includes `session_id` (thread_id from codex). Next review reads existing receipt and resumes the session.
 
 ## Ralph Receipts
 

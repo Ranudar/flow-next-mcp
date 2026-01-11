@@ -140,6 +140,30 @@ def handle_pre_tool_use(data: dict) -> None:
                     "Remove --new-chat flag."
                 )
 
+    # Block direct codex calls (must use flowctl codex wrappers)
+    if re.search(r"\bcodex\b", command):
+        # Allow flowctl codex wrappers
+        is_wrapper = re.search(r"flowctl\s+codex|FLOWCTL.*codex", command)
+        if not is_wrapper:
+            # Block direct codex usage
+            if re.search(r"\bcodex\s+exec\b", command):
+                output_block(
+                    "BLOCKED: Do not call 'codex exec' directly. "
+                    "Use 'flowctl codex impl-review' or 'flowctl codex plan-review' "
+                    "to ensure proper receipt handling and session continuity."
+                )
+            if re.search(r"\bcodex\s+review\b", command):
+                output_block(
+                    "BLOCKED: Do not call 'codex review' directly. "
+                    "Use 'flowctl codex impl-review' or 'flowctl codex plan-review'."
+                )
+        # Block --last even through wrappers (breaks session continuity)
+        if re.search(r"--last\b", command):
+            output_block(
+                "BLOCKED: Do not use '--last' with codex. "
+                "Session continuity is managed via session_id in receipts."
+            )
+
     # Validate setup-review usage
     if "setup-review" in command:
         if not re.search(r"--repo-root", command):

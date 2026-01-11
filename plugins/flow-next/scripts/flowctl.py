@@ -3106,11 +3106,12 @@ def cmd_codex_impl_review(args: argparse.Namespace) -> None:
     # Parse verdict
     verdict = parse_codex_verdict(output)
 
-    # Write receipt if path provided
+    # Write receipt if path provided (Ralph-compatible schema)
     if receipt_path:
         receipt_data = {
+            "type": "impl_review",  # Required by Ralph
+            "id": task_id,  # Required by Ralph
             "mode": "codex",
-            "task": task_id,
             "base": base_branch,
             "verdict": verdict,
             "session_id": thread_id,
@@ -3124,7 +3125,8 @@ def cmd_codex_impl_review(args: argparse.Namespace) -> None:
     if args.json:
         json_output(
             {
-                "task": task_id,
+                "type": "impl_review",
+                "id": task_id,
                 "verdict": verdict,
                 "session_id": thread_id,
                 "mode": "codex",
@@ -3180,11 +3182,12 @@ def cmd_codex_plan_review(args: argparse.Namespace) -> None:
     # Parse verdict
     verdict = parse_codex_verdict(output)
 
-    # Write receipt if path provided
+    # Write receipt if path provided (Ralph-compatible schema)
     if receipt_path:
         receipt_data = {
+            "type": "plan_review",  # Required by Ralph
+            "id": epic_id,  # Required by Ralph
             "mode": "codex",
-            "epic": epic_id,
             "verdict": verdict,
             "session_id": thread_id,
             "timestamp": now_iso(),
@@ -3197,7 +3200,8 @@ def cmd_codex_plan_review(args: argparse.Namespace) -> None:
     if args.json:
         json_output(
             {
-                "epic": epic_id,
+                "type": "plan_review",
+                "id": epic_id,
                 "verdict": verdict,
                 "session_id": thread_id,
                 "mode": "codex",
