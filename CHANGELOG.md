@@ -2,6 +2,12 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.5.4] - 2026-01-11
+
+### Fixed
+- Remove hardcoded `model: claude-opus-4-5-20251101` from review skills (#9)
+- Skills now inherit session's default model, fixing 404 on limited API endpoints
+
 ## [flow-next 0.5.3] - 2026-01-11
 
 ### Fixed
