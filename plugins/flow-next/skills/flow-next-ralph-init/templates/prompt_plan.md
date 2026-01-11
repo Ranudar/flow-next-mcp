@@ -19,9 +19,9 @@ Ralph mode rules (must follow):
 - If any rule is violated, output `<promise>RETRY</promise>` and stop.
 
 2) Plan review gate:
-   - If PLAN_REVIEW=rp: run `/flow-next:plan-review {{EPIC_ID}} --mode=rp`
-   - If PLAN_REVIEW=codex: run `/flow-next:plan-review {{EPIC_ID}} --mode=codex`
-   - If PLAN_REVIEW=export: run `/flow-next:plan-review {{EPIC_ID}} --mode=export`
+   - If PLAN_REVIEW=rp: run `/flow-next:plan-review {{EPIC_ID}} --review=rp`
+   - If PLAN_REVIEW=codex: run `/flow-next:plan-review {{EPIC_ID}} --review=codex`
+   - If PLAN_REVIEW=export: run `/flow-next:plan-review {{EPIC_ID}} --review=export`
    - If PLAN_REVIEW=none:
      - If REQUIRE_PLAN_REVIEW=1: output `<promise>RETRY</promise>` and stop.
      - Else: set ship and stop:

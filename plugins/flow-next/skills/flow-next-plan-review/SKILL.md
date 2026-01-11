@@ -20,10 +20,23 @@ FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 ## Backend Selection
 
 **Priority** (first match wins):
-1. `FLOW_REVIEW_BACKEND` env var (`rp`, `codex`, `none`)
-2. `.flow/config.json` → `review.backend`
-3. Interactive prompt if both rp-cli and codex available (and not in Ralph mode)
-4. Default: whichever is available (rp preferred)
+1. `--review=rp|codex|export|none` argument
+2. `FLOW_REVIEW_BACKEND` env var (`rp`, `codex`, `none`)
+3. `.flow/config.json` → `review.backend`
+4. Interactive prompt if both rp-cli and codex available (and not in Ralph mode)
+5. Default: whichever is available (rp preferred)
+
+### Parse from arguments first
+
+Check $ARGUMENTS for:
+- `--review=rp` or `--review rp` → use rp
+- `--review=codex` or `--review codex` → use codex
+- `--review=export` or `--review export` → use export
+- `--review=none` or `--review none` → skip review
+
+If found, use that backend and skip all other detection.
+
+### Otherwise detect
 
 ```bash
 # Check available backends

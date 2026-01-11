@@ -347,8 +347,8 @@ brew install --cask repoprompt
 
 **Usage:**
 ```bash
-/flow-next:plan-review fn-1 --mode=rp
-/flow-next:impl-review --mode=rp
+/flow-next:plan-review fn-1 --review=rp
+/flow-next:impl-review --review=rp
 ```
 
 #### Codex (Cross-Platform Alternative)
@@ -373,8 +373,8 @@ codex auth
 
 **Usage:**
 ```bash
-/flow-next:plan-review fn-1 --mode=codex
-/flow-next:impl-review --mode=codex
+/flow-next:plan-review fn-1 --review=codex
+/flow-next:impl-review --review=codex
 
 # Or via flowctl directly
 flowctl codex plan-review fn-1 --base main
@@ -397,7 +397,7 @@ flowctl config set review.backend rp      # or codex, or none
 export FLOW_REVIEW_BACKEND=codex
 ```
 
-Priority: `FLOW_REVIEW_BACKEND` env > `.flow/config.json` > auto-detect.
+Priority: `--review=...` argument > `FLOW_REVIEW_BACKEND` env > `.flow/config.json` > auto-detect.
 
 #### Which to Choose?
 
@@ -476,8 +476,8 @@ All commands accept flags to skip questions:
 /flow-next:work fn-1 --branch=new --review=export
 
 # Reviews with flags
-/flow-next:plan-review fn-1 --mode=rp
-/flow-next:impl-review --mode=export
+/flow-next:plan-review fn-1 --review=rp
+/flow-next:impl-review --review=export
 ```
 
 Natural language also works:
@@ -489,10 +489,10 @@ Natural language also works:
 
 | Command | Available Flags |
 |---------|-----------------|
-| `/flow-next:plan` | `--research=rp\|grep`, `--review=rp\|export\|none`, `--no-review` |
-| `/flow-next:work` | `--branch=current\|new\|worktree`, `--review=rp\|export\|none`, `--no-review` |
-| `/flow-next:plan-review` | `--mode=rp\|export` |
-| `/flow-next:impl-review` | `--mode=rp\|export` |
+| `/flow-next:plan` | `--research=rp\|grep`, `--review=rp\|codex\|export\|none`, `--no-review` |
+| `/flow-next:work` | `--branch=current\|new\|worktree`, `--review=rp\|codex\|export\|none`, `--no-review` |
+| `/flow-next:plan-review` | `--review=rp\|codex\|export` |
+| `/flow-next:impl-review` | `--review=rp\|codex\|export` |
 
 ---
 
