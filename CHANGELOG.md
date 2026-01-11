@@ -2,6 +2,17 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.5.6] - 2026-01-11
+
+### Fixed
+- `ralph-init` now detects Codex CLI as fallback (was rp-cli only, defaulted to `none`)
+- `ralph-init` asks user to choose if both RepoPrompt and Codex available
+- Replace `--mode` with `--review` in all review prompts for consistency
+- Review skills (plan-review, impl-review) now parse `--review` argument
+
+### Changed
+- Backend selection priority: `--review` arg > env > config > auto-detect
+
 ## [flow-next 0.5.5] - 2026-01-11
 
 ### Fixed
