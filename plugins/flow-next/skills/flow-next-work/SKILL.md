@@ -53,10 +53,16 @@ If no input provided, ask for it.
 
 ## FIRST: Parse Options or Ask Questions
 
-Check available backends:
+Check available backends and configured preference:
 ```bash
 HAVE_RP=$(which rp-cli >/dev/null 2>&1 && echo 1 || echo 0)
 HAVE_CODEX=$(which codex >/dev/null 2>&1 && echo 1 || echo 0)
+
+# Check configured backend (priority: env > config)
+CONFIGURED_BACKEND="${FLOW_REVIEW_BACKEND:-}"
+if [[ -z "$CONFIGURED_BACKEND" ]]; then
+  CONFIGURED_BACKEND="$($FLOWCTL config get review.backend 2>/dev/null | jq -r '.value // empty')"
+fi
 ```
 
 ### Option Parsing (skip questions if found in arguments)
@@ -76,7 +82,16 @@ Parse the arguments for these patterns. If found, use them and skip correspondin
 
 ### If options NOT found in arguments
 
-Output questions based on available backends (do NOT use AskUserQuestion tool):
+**Skip review question if**: Ralph mode (`FLOW_RALPH=1`) OR backend already configured (`CONFIGURED_BACKEND` not empty). In these cases, only ask branch question:
+
+```
+Quick setup: Where to work?
+a) Current branch  b) New branch  c) Isolated worktree
+
+(Reply: "a", "current", or just tell me)
+```
+
+**Otherwise**, output questions based on available backends (do NOT use AskUserQuestion tool):
 
 **If both rp-cli AND codex available:**
 ```
@@ -142,7 +157,7 @@ Wait for response. Parse naturally — user may reply terse or ramble via voice.
 
 **Defaults when empty/ambiguous:**
 - Branch = `new`
-- Review = `codex` if available, else `rp` if available, else `none`
+- Review = configured backend if set, else `codex` if available, else `rp` if available, else `none`
 
 **Defaults when no review backend available:**
 - Branch = `new`

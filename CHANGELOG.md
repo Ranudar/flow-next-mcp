@@ -2,6 +2,12 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.5.3] - 2026-01-11
+
+### Fixed
+- plan/work skills skip review question when backend already configured or in Ralph mode
+- Checks `FLOW_REVIEW_BACKEND` env and `.flow/config.json` before prompting
+
 ## [flow-next 0.5.2] - 2026-01-11
 
 ### Fixed

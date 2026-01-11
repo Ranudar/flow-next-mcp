@@ -40,10 +40,16 @@ If empty, ask: "What should I plan? Give me the feature or bug in 1-5 sentences.
 
 ## FIRST: Parse Options or Ask Questions
 
-Check available backends:
+Check available backends and configured preference:
 ```bash
 HAVE_RP=$(which rp-cli >/dev/null 2>&1 && echo 1 || echo 0)
 HAVE_CODEX=$(which codex >/dev/null 2>&1 && echo 1 || echo 0)
+
+# Check configured backend (priority: env > config)
+CONFIGURED_BACKEND="${FLOW_REVIEW_BACKEND:-}"
+if [[ -z "$CONFIGURED_BACKEND" ]]; then
+  CONFIGURED_BACKEND="$($FLOWCTL config get review.backend 2>/dev/null | jq -r '.value // empty')"
+fi
 ```
 
 ### Option Parsing (skip questions if found in arguments)
@@ -62,7 +68,19 @@ Parse the arguments for these patterns. If found, use them and skip questions:
 
 ### If options NOT found in arguments
 
-Output questions based on available backends (do NOT use AskUserQuestion tool):
+**Skip review question if**: Ralph mode (`FLOW_RALPH=1`) OR backend already configured (`CONFIGURED_BACKEND` not empty). In these cases, only ask research question (if rp-cli available):
+
+```
+Quick setup: Use RepoPrompt for deeper context?
+a) Yes, context-scout (slower, thorough)
+b) No, repo-scout (faster)
+
+(Reply: "a", "b", or just tell me)
+```
+
+If rp-cli not available, skip questions entirely and use defaults.
+
+**Otherwise**, output questions based on available backends (do NOT use AskUserQuestion tool):
 
 **If both rp-cli AND codex available:**
 ```
@@ -113,7 +131,7 @@ Wait for response. Parse naturally — user may reply terse ("1a 2b") or ramble 
 
 **Defaults when empty/ambiguous:**
 - Research = `grep` (repo-scout)
-- Review = `codex` if available, else `rp` if available, else `none`
+- Review = configured backend if set, else `codex` if available, else `rp` if available, else `none`
 
 If neither rp-cli nor codex available: skip review questions, use repo-scout, no review.
 
