@@ -455,9 +455,9 @@ codex auth
 
 **Model configuration:**
 ```bash
-# Default: o3 (high-quality reasoning model)
-# Override via environment variable:
-export FLOW_CODEX_MODEL=o3  # or gpt-4.1, etc.
+# Default: gpt-5.2 with high reasoning effort (GPT 5.2 High)
+# Override model via environment variable:
+export FLOW_CODEX_MODEL=gpt-5.2
 ```
 
 **Commands:**

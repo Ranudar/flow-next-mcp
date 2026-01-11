@@ -234,7 +234,7 @@ flowctl codex plan-review ...  # Run plan review
 **Requirements:**
 - OpenAI Codex CLI installed and authenticated (`npm install -g @openai/codex && codex auth`)
 
-**Model:** Default is `o3`. Override with `FLOW_CODEX_MODEL` env var.
+**Model:** Default is `gpt-5.2` with high reasoning (GPT 5.2 High). Override with `FLOW_CODEX_MODEL` env var.
 
 **Advantages over rp:**
 - Cross-platform (Windows, Linux, macOS)

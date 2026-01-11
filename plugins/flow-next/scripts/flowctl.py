@@ -558,11 +558,11 @@ def run_codex_exec(
     """Run codex exec and return (output, thread_id).
 
     If session_id provided, tries to resume. Falls back to new session if resume fails.
-    Model: FLOW_CODEX_MODEL env > parameter > default (o3).
+    Model: FLOW_CODEX_MODEL env > parameter > default (gpt-5.2 + high reasoning).
     """
     codex = require_codex()
-    # Model priority: env > parameter > default
-    effective_model = os.environ.get("FLOW_CODEX_MODEL") or model or "o3"
+    # Model priority: env > parameter > default (gpt-5.2 + high reasoning = GPT 5.2 High)
+    effective_model = os.environ.get("FLOW_CODEX_MODEL") or model or "gpt-5.2"
 
     if session_id:
         # Try resume first (model already set in original session)
@@ -582,8 +582,14 @@ def run_codex_exec(
             # Resume failed - fall through to new session
             pass
 
-    # New session with model
-    cmd = [codex, "exec", "--model", effective_model, "--sandbox", sandbox, "--json", prompt]
+    # New session with model + high reasoning effort
+    cmd = [
+        codex, "exec",
+        "--model", effective_model,
+        "-c", "model_reasoning_effort=\"high\"",
+        "--sandbox", sandbox,
+        "--json", prompt
+    ]
     try:
         result = subprocess.run(
             cmd,
