@@ -26,6 +26,17 @@ This scaffolds `scripts/ralph/` with:
 - `config.env` — all settings
 - `runs/` — artifacts and logs
 
+### Step 1.5: Configure (edit config.env)
+
+Before running, set your review backends in `scripts/ralph/config.env`:
+
+```bash
+PLAN_REVIEW=codex   # or: rp, none
+WORK_REVIEW=codex   # or: rp, none
+```
+
+See [Configuration](#configuration) for all options.
+
 ### Step 2: Run (outside Claude)
 
 ```bash
