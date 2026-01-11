@@ -139,9 +139,11 @@ Edit `scripts/ralph/config.env`:
 |----------|--------|-------------|
 | `BRANCH_MODE` | `new`, `current`, `worktree` | How to handle git branches |
 
-- `new` — create feature branch per epic
+- `new` — create one branch for the entire Ralph run (`ralph-<run-id>`)
 - `current` — work on current branch
 - `worktree` — use git worktrees (advanced)
+
+With `BRANCH_MODE=new`, all epics work on the same run branch. Commits are prefixed with task IDs (e.g., `feat(fn-1.1): ...`) for easy identification. This enables cherry-picking or reverting individual epics post-run.
 
 ### Limits
 
@@ -183,7 +185,7 @@ scripts/ralph/runs/<run-id>/
   ├── iter-002.log
   ├── progress.txt          # Append-only run log
   ├── attempts.json         # Per-task retry counts
-  ├── branches.json         # Epic → branch mapping
+  ├── branches.json         # Run branch info (base_branch, run_branch)
   ├── receipts/
   │   ├── plan-fn-1.json    # Plan review receipt
   │   └── impl-fn-1.1.json  # Impl review receipt

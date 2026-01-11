@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/Version-0.3.21-green)](../../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.4.0-green)](../../CHANGELOG.md)
 [![Status](https://img.shields.io/badge/Status-Experimental-orange)]()
 
 **Plan first, work second. Zero external dependencies.**
@@ -445,7 +445,7 @@ What it automates (one unit per iteration, fresh context each time):
 - Selector chooses plan vs work unit (`flowctl next`)
 - Plan gate = plan review loop until Ship (if enabled)
 - Work gate = one task until pass (tests + validate + optional impl review)
- - Branch-per-epic: one branch per epic per run (no auto-merge)
+ - Single run branch: all epics work on one `ralph-<run-id>` branch (cherry-pick/revert friendly)
 
 Enable:
 ```bash

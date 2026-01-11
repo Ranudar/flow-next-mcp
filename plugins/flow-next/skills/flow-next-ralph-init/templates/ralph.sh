@@ -415,36 +415,7 @@ init_branches_file() {
   python3 - "$BRANCHES_FILE" "$base_branch" <<'PY'
 import json, sys
 path, base = sys.argv[1], sys.argv[2]
-data = {"base_branch": base, "epics": {}}
-with open(path, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=2, sort_keys=True)
-PY
-}
-
-get_branch_for_epic() {
-  python3 - "$BRANCHES_FILE" "$1" <<'PY'
-import json, sys
-path, epic = sys.argv[1], sys.argv[2]
-try:
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    print(data.get("epics", {}).get(epic, ""))
-except FileNotFoundError:
-    print("")
-PY
-}
-
-set_branch_for_epic() {
-  python3 - "$BRANCHES_FILE" "$1" "$2" <<'PY'
-import json, sys
-path, epic, branch = sys.argv[1], sys.argv[2], sys.argv[3]
-data = {"base_branch": "", "epics": {}}
-try:
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-except FileNotFoundError:
-    pass
-data.setdefault("epics", {})[epic] = branch
+data = {"base_branch": base, "run_branch": ""}
 with open(path, "w", encoding="utf-8") as f:
     json.dump(data, f, indent=2, sort_keys=True)
 PY
@@ -459,6 +430,34 @@ try:
     print(data.get("base_branch", ""))
 except FileNotFoundError:
     print("")
+PY
+}
+
+get_run_branch() {
+  python3 - "$BRANCHES_FILE" <<'PY'
+import json, sys
+try:
+    with open(sys.argv[1], encoding="utf-8") as f:
+        data = json.load(f)
+    print(data.get("run_branch", ""))
+except FileNotFoundError:
+    print("")
+PY
+}
+
+set_run_branch() {
+  python3 - "$BRANCHES_FILE" "$1" <<'PY'
+import json, sys
+path, branch = sys.argv[1], sys.argv[2]
+data = {"base_branch": "", "run_branch": ""}
+try:
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+except FileNotFoundError:
+    pass
+data["run_branch"] = branch
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2, sort_keys=True)
 PY
 }
 
@@ -534,28 +533,23 @@ sys.exit(0)
 PY
 }
 
-ensure_epic_branch() {
-  local epic_id="$1"
+# Create/switch to run branch (once at start, all epics work here)
+ensure_run_branch() {
   if [[ "$BRANCH_MODE" != "new" ]]; then
     return
   fi
   init_branches_file
   local branch
-  branch="$(get_branch_for_epic "$epic_id")"
-  if [[ -z "$branch" ]]; then
-    branch="${epic_id}-epic"
-    set_branch_for_epic "$epic_id" "$branch"
+  branch="$(get_run_branch)"
+  if [[ -n "$branch" ]]; then
+    # Already on run branch (resumed run)
+    git -C "$ROOT_DIR" checkout "$branch" >/dev/null 2>&1 || true
+    return
   fi
-  local base
-  base="$(get_base_branch)"
-  if [[ -n "$base" ]]; then
-    git -C "$ROOT_DIR" checkout "$base" >/dev/null 2>&1 || true
-  fi
-  if git -C "$ROOT_DIR" show-ref --verify --quiet "refs/heads/$branch"; then
-    git -C "$ROOT_DIR" checkout "$branch" >/dev/null 2>&1
-  else
-    git -C "$ROOT_DIR" checkout -b "$branch" >/dev/null 2>&1
-  fi
+  # Create new run branch from current position
+  branch="ralph-${RUN_ID}"
+  set_run_branch "$branch"
+  git -C "$ROOT_DIR" checkout -b "$branch" >/dev/null 2>&1
 }
 
 EPICS_FILE=""
@@ -566,6 +560,9 @@ fi
 
 ui_header
 ui_config
+
+# Create run branch once at start (all epics work on same branch)
+ensure_run_branch
 
 iter=1
 while (( iter <= MAX_ITERATIONS )); do
@@ -604,7 +601,6 @@ while (( iter <= MAX_ITERATIONS )); do
     prompt="$(render_template "$SCRIPT_DIR/prompt_plan.md")"
   elif [[ "$status" == "work" ]]; then
     epic_id="${task_id%%.*}"
-    ensure_epic_branch "$epic_id"
     export TASK_ID="$task_id"
     BRANCH_MODE_EFFECTIVE="$BRANCH_MODE"
     if [[ "$BRANCH_MODE" == "new" ]]; then

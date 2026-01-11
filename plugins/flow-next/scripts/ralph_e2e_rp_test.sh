@@ -337,8 +337,10 @@ runs.sort()
 run_dir = runs[0].name
 assert Path(f"scripts/ralph/runs/{run_dir}/progress.txt").exists()
 data = json.loads(Path(f"scripts/ralph/runs/{run_dir}/branches.json").read_text())
-assert "fn-1" in data.get("epics", {})
-assert "fn-2" in data.get("epics", {})
+# Check run branch format (single branch for all epics)
+assert "run_branch" in data, "branches.json should have run_branch"
+assert data["run_branch"].startswith("ralph-"), f"run_branch should start with 'ralph-': {data['run_branch']}"
+assert "base_branch" in data, "branches.json should have base_branch"
 receipts = Path(f"scripts/ralph/runs/{run_dir}/receipts")
 plan = json.loads(Path(receipts / "plan-fn-1.json").read_text())
 assert plan["type"] == "plan_review"

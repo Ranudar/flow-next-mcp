@@ -2,6 +2,16 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.4.0] - 2026-01-11
+
+### Changed
+- **BREAKING**: `BRANCH_MODE=new` now creates a single run branch (`ralph-<run-id>`) instead of per-epic branches
+- All epics work on the same run branch, making cherry-pick/revert of individual epics easy
+- branches.json format simplified: `{base_branch, run_branch}` instead of epic mappings
+
+### Fixed
+- Fixed duplicate plan reviews when working on multiple epics (stale `.flow/` state across branches)
+
 ## [flow-next 0.3.22] - 2026-01-11
 
 ### Fixed
