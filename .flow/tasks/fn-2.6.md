@@ -40,9 +40,8 @@ Update ralph-guard.py hooks to validate codex calls same as rp calls.
 - [ ] Existing `flowctl rp *` validation unchanged
 - [ ] State tracking works for codex mode
 ## Done summary
-TBD
-
+Updated ralph-guard.py to support codex backend: tracks codex review state, validates receipt writes for both backends, detects verdict from codex output.
 ## Evidence
-- Commits:
-- Tests:
+- Commits: a0c302a
+- Tests: smoke_test.sh
 - PRs:

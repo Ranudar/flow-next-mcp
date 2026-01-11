@@ -10,6 +10,10 @@ Enforces:
 - No --new-chat on re-reviews (loses reviewer context)
 - Receipt must be written after SHIP verdict
 - Validates flowctl command patterns
+
+Supports both review backends:
+- rp (RepoPrompt): tracks chat-send calls and receipt writes
+- codex: tracks flowctl codex impl-review/plan-review and verdict output
 """
 
 import json
@@ -38,6 +42,7 @@ def load_state(session_id: str) -> dict:
             state.setdefault("tab", None)
             state.setdefault("chat_send_succeeded", False)
             state.setdefault("flowctl_done_called", set())
+            state.setdefault("codex_review_succeeded", False)
             return state
         except (json.JSONDecodeError, KeyError, TypeError):
             pass
@@ -48,6 +53,7 @@ def load_state(session_id: str) -> dict:
         "tab": None,
         "chat_send_succeeded": False,  # Track if chat-send actually returned review text
         "flowctl_done_called": set(),   # Track tasks that had flowctl done called
+        "codex_review_succeeded": False,  # Track if codex review returned verdict
     }
 
 
@@ -184,11 +190,11 @@ def handle_pre_tool_use(data: dict) -> None:
         )
         if is_receipt_write:
             state = load_state(session_id)
-            if not state.get("chat_send_succeeded"):
+            if not state.get("chat_send_succeeded") and not state.get("codex_review_succeeded"):
                 output_block(
                     "BLOCKED: Cannot write receipt before review completes. "
-                    "You must run 'flowctl rp chat-send' and receive a review response "
-                    "before writing the receipt. The review has not been sent yet."
+                    "You must run 'flowctl rp chat-send' or 'flowctl codex impl-review/plan-review' "
+                    "and receive a review response before writing the receipt."
                 )
             # Validate receipt has required 'id' field
             if '"id"' not in command and "'id'" not in command:
@@ -245,6 +251,15 @@ def handle_post_tool_use(data: dict) -> None:
             state["chat_send_succeeded"] = False
             save_state(session_id, state)
 
+    # Track codex review calls - check for verdict in output
+    if "flowctl" in command and "codex" in command and ("impl-review" in command or "plan-review" in command):
+        # Codex writes receipt automatically with --receipt flag, but we still track success
+        verdict_in_output = re.search(r"<verdict>(SHIP|NEEDS_WORK|MAJOR_RETHINK)</verdict>", response_text)
+        if verdict_in_output:
+            state["codex_review_succeeded"] = True
+            state["last_verdict"] = verdict_in_output.group(1)
+            save_state(session_id, state)
+
     # Track flowctl done calls - match various invocation patterns:
     # - flowctl done <task>
     # - flowctl.py done <task>
@@ -277,10 +292,11 @@ def handle_post_tool_use(data: dict) -> None:
                 with Path("/tmp/ralph-guard-debug.log").open("a") as f:
                     f.write(f"  -> Added {task_id} to flowctl_done_called: {done_set}\n")
 
-    # Track receipt writes - reset chat_send_succeeded after write
+    # Track receipt writes - reset review state after write
     receipt_path = os.environ.get("REVIEW_RECEIPT_PATH", "")
     if receipt_path and receipt_path in command and ">" in command:
         state["chat_send_succeeded"] = False  # Reset for next review
+        state["codex_review_succeeded"] = False  # Reset codex state too
         save_state(session_id, state)
 
     # Track setup-review output (W= T=)
@@ -299,11 +315,12 @@ def handle_post_tool_use(data: dict) -> None:
         state["last_verdict"] = verdict_match.group(1)
         save_state(session_id, state)
 
-        # If SHIP, remind about receipt
+        # If SHIP, remind about receipt (only for rp mode - codex writes receipt automatically)
         if verdict_match.group(1) == "SHIP":
             receipt_path = os.environ.get("REVIEW_RECEIPT_PATH", "")
-            if receipt_path and not Path(receipt_path).exists():
-                # Provide feedback to Claude
+            # Only remind if receipt doesn't exist and we're in rp mode (not codex)
+            if receipt_path and not Path(receipt_path).exists() and state.get("chat_send_succeeded"):
+                # Provide feedback to Claude (rp mode only - codex writes receipt automatically)
                 output_json({
                     "hookSpecificOutput": {
                         "hookEventName": "PostToolUse",
