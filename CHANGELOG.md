@@ -2,6 +2,31 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.5.7] - 2026-01-11
+
+### Changed
+- Removed "Experimental" label - flow-next is production-ready
+- Updated callouts to show feature maturity (not "New" on old features)
+- Moved YOLO warning before Ralph setup section
+- Improved safety warning format (bullet points)
+
+### Added
+- "vs Anthropic's ralph-wiggum" comparison section explaining architectural differences
+- Plain-English re-anchoring explanation in "Why It Works"
+- "How to Start" recommended workflow (spec -> interview -> plan -> work)
+- Use-case matrix for choosing workflow (manual, review, autonomous)
+- "Auto-blocks stuck tasks" feature to features list
+- Troubleshooting section with common issues and fixes
+- `ralph_once.sh` test step in Ralph Quick Start
+- Verdict format documentation (SHIP, NEEDS_WORK, MAJOR_RETHINK)
+- Partial run handling in morning review workflow
+- Review criteria summary table (plan vs implementation)
+
+### Fixed
+- Clarified `/flow-next:setup` benefits with concrete examples
+- Removed duplicate "Agents that finish what they start" tagline
+- Updated repo description and topics via `gh repo edit`
+
 ## [flow-next 0.5.6] - 2026-01-11
 
 ### Fixed

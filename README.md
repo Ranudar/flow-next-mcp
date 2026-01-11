@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-blueviolet)](https://claude.ai/code)
-[![Flow-next](https://img.shields.io/badge/Flow--next-v0.5.6-green)](plugins/flow-next/)
+[![Flow-next](https://img.shields.io/badge/Flow--next-v0.5.7-green)](plugins/flow-next/)
 [![Flow](https://img.shields.io/badge/Flow-v0.8.4-blue)](plugins/flow/)
 [![Author](https://img.shields.io/badge/Author-Gordon_Mickel-orange)](https://mickel.tech)
 [![Twitter](https://img.shields.io/badge/@gmickel-black?logo=x)](https://twitter.com/gmickel)
@@ -14,13 +14,13 @@
 
 </div>
 
-> 🔄 **Update issues?** Auto-updates sometimes lag. Run: `claude plugin update flow-next@gmickel-claude-marketplace`
+> 🔄 **Update issues?** Run: `claude plugin update flow-next@gmickel-claude-marketplace`
 >
-> 🤖 **New**: [Ralph mode](plugins/flow-next/docs/ralph.md) — ship features while you sleep. Multi-model review gates that actually block on quality.
+> 🤖 **[Ralph mode](plugins/flow-next/docs/ralph.md)**: Ship features while you sleep. Fresh context per iteration, multi-model review gates, auto-blocks stuck tasks.
 >
-> 🧠 **New in v0.3.17**: [Memory system](plugins/flow-next/README.md#memory-system-opt-in) — agents learn from NEEDS_WORK feedback. Stop repeating the same mistakes.
+> 💪 **Stable features**: Plan-first workflow, re-anchoring, receipt-based gating, structured task management
 >
-> 📡 **New in v0.5.0**: [Codex review backend](plugins/flow-next/README.md#codex-review-backend) — multi-model reviews without RepoPrompt.
+> 📡 **Cross-platform reviews**: [RepoPrompt](https://repoprompt.com) (macOS) or [Codex CLI](plugins/flow-next/README.md#codex-review-backend) (any OS)
 
 ---
 
@@ -53,8 +53,6 @@ This marketplace ships plugins that fix these problems.
 
 ## Flow-Next
 
-> **Experimental.** Give it a spin. [Report issues.](https://github.com/gmickel/gmickel-claude-marketplace/issues)
-
 🌐 **Prefer a visual overview?** See the [Flow-Next app page](https://mickel.tech/apps/flow-next) for diagrams and examples.
 
 **Plan first, work second. Zero external dependencies.**
@@ -72,7 +70,20 @@ This marketplace ships plugins that fix these problems.
 /flow-next:work fn-1
 ```
 
-Setup is technically optional but recommended - it adds CLI access via `flowctl` and project docs that help other AI tools understand your flow.
+**What setup unlocks:**
+- CLI access: `flowctl epics`, `flowctl ready`, `flowctl show` (no Claude needed)
+- Project docs: Adds instructions for other AI tools (Codex, Cursor, etc.)
+- Local guide: `.flow/usage.md` reference
+
+Idempotent - safe to re-run. Skip if you only need `/flow-next:plan` and `/flow-next:work`.
+
+### Choose Your Path
+
+| I want to... | Command | Automation Level |
+|--------------|---------|------------------|
+| Plan + work one task at a time | `/flow-next:work fn-1.1` | Manual |
+| Plan an epic, work with reviews | `/flow-next:plan` -> `/flow-next:work fn-1` | Manual + optional review |
+| Run overnight unattended | `/flow-next:ralph-init` -> `scripts/ralph/ralph.sh` | Full autonomous |
 
 **Agents that finish what they start.**
 
@@ -120,6 +131,50 @@ flowchart TD
 </tr>
 </table>
 
+### How to Start
+
+**1. Write a short spec**
+
+Start with a rough idea - 1-5 sentences describing what you want to build. Save it as a markdown file or just keep it in your head.
+
+**2. Flesh it out (optional but recommended)**
+
+```bash
+/flow-next:interview "Add user authentication with OAuth"
+# or point to a spec file:
+/flow-next:interview specs/auth.md
+```
+
+The interview asks 40+ deep questions to surface edge cases, requirements, and decisions before you start coding.
+
+**3. Plan it**
+
+```bash
+/flow-next:plan "Add user authentication with OAuth"
+# or if you have a refined spec:
+/flow-next:plan fn-1  # refine existing epic
+```
+
+Creates an epic with dependency-ordered tasks in `.flow/`.
+
+**4. Work it**
+
+Choose your mode:
+
+```bash
+# Interactive - one task at a time, full control
+/flow-next:work fn-1.1
+
+# Interactive - whole epic, still in Claude
+/flow-next:work fn-1
+
+# Autonomous - run overnight, walk away
+/flow-next:ralph-init  # one-time setup
+scripts/ralph/ralph.sh  # run from terminal
+```
+
+That's it. Spec -> Interview -> Plan -> Work.
+
 ### Why It Works
 
 **You control the granularity:**
@@ -135,13 +190,30 @@ Either way you get the same guarantees: re-anchoring, evidence, cross-model revi
 
 **Reviewer as safety net:**
 - If drift happens despite re-anchoring, a different model catches it
-- Reviews block until `SHIP` verdict — no "LGTM with nits" that get ignored
+- Reviews block until `SHIP` verdict - no "LGTM with nits" that get ignored
+
+**What reviewers check:**
+
+| Plan Reviews | Implementation Reviews |
+|--------------|------------------------|
+| Completeness & feasibility | Correctness & simplicity |
+| Architecture & scope | DRY & edge cases |
+| Dependencies & risks | Test coverage & security |
+| Task breakdown quality | Evidence of completion |
+
+**Re-anchoring prevents drift:**
+
+Before EVERY task, Flow-Next re-reads the epic spec, task spec, and git state from `.flow/`. This forces Claude back to the source of truth - no hallucinated scope creep, no forgotten requirements. In Ralph mode, this happens automatically each iteration.
+
+Unlike agents that carry accumulated context (where early mistakes compound), re-anchoring gives each task a fresh, accurate starting point.
 
 Bundles everything in a single Python script. No npm. No daemons. No config edits. Try it in 30 seconds. Uninstall by deleting `.flow/` (and `scripts/ralph/` if enabled).
 
 ## Ralph (Autonomous Mode)
 
-> **⚠️ Warning**: Ralph defaults to `YOLO=1` (skips permission prompts). Start with `ralph_once.sh` to observe a single iteration. Consider running in a [Docker sandbox](https://docs.docker.com/ai/sandboxes/claude-code/) for isolation.
+> **⚠️ Safety first**: Ralph defaults to `YOLO=1` (skips permission prompts).
+> - Start with `ralph_once.sh` to observe one iteration
+> - Consider [Docker sandbox](https://docs.docker.com/ai/sandboxes/claude-code/) for isolation
 
 **Setup (one-time, inside Claude):**
 ```bash
@@ -174,6 +246,35 @@ Most agents gate by tests alone. Ralph adds production-grade quality gates:
 
 📖 **[Ralph deep dive](plugins/flow-next/docs/ralph.md)**
 
+### Why Flow-Next Ralph vs Anthropic's ralph-wiggum?
+
+Anthropic's official ralph-wiggum plugin uses a Stop hook to keep Claude in the same session. Flow-Next inverts this architecture for production-grade reliability.
+
+| Aspect | ralph-wiggum | Flow-Next Ralph |
+|--------|--------------|-----------------|
+| **Session model** | Single session, accumulating context | Fresh context per iteration |
+| **Loop mechanism** | Stop hook re-feeds prompt in SAME session | External bash loop, new `claude -p` each iteration |
+| **Context management** | Transcript grows, context fills up | Clean slate every time |
+| **Failed attempts** | Pollute future iterations | Gone with the session |
+| **Re-anchoring** | None | Re-reads epic/task spec EVERY iteration |
+| **Quality gates** | None (test-based only) | Multi-model reviews block until SHIP |
+| **Stuck detection** | `--max-iterations` safety limit | Auto-blocks task after N failures |
+| **State storage** | In-memory transcript | File I/O (`.flow/`, receipts, evidence) |
+| **Auditability** | Session transcript | Per-iteration logs + receipts + evidence |
+
+**The Core Problem with ralph-wiggum**
+
+1. **Context pollution** - Every failed attempt stays in context, potentially misleading future iterations
+2. **No re-anchoring** - As context fills, Claude loses sight of the original task spec
+3. **Single model** - No external validation; Claude grades its own homework
+4. **Binary outcome** - Either completion promise triggers, or you hit max iterations
+
+**Flow-Next's Solution**
+
+Fresh context every iteration + multi-model review gates + receipt-based proof-of-work.
+
+Two models catch what one misses. Process failures, not model failures.
+
 ### Features
 
 | | |
@@ -186,6 +287,7 @@ Most agents gate by tests alone. Ralph adds production-grade quality gates:
 | **One file per task** | Merge-friendly. Conflict surface is minimal. |
 | **Automated reviews** | Require [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (rp-cli). Without it, reviews are skipped. |
 | **Dependency graphs** | Tasks declare blockers. Nothing starts until dependencies resolve. |
+| **Auto-block stuck tasks** | After MAX_ATTEMPTS_PER_TASK failures (default 5), task is blocked with failure context. Prevents infinite retry loops. |
 
 ### Commands
 

@@ -37,6 +37,14 @@ WORK_REVIEW=codex   # or: rp, none
 
 See [Configuration](#configuration) for all options.
 
+### Step 1.75: Test First (Recommended)
+
+```bash
+scripts/ralph/ralph_once.sh
+```
+
+Runs ONE iteration then exits. Observe the output before committing to a full run.
+
 ### Step 2: Run (outside Claude)
 
 ```bash
@@ -89,6 +97,37 @@ flowchart TD
 
 ---
 
+## Why Flow-Next Ralph vs Anthropic's ralph-wiggum?
+
+Anthropic's official ralph-wiggum plugin uses a Stop hook to keep Claude in the same session. Flow-Next inverts this architecture for production-grade reliability.
+
+| Aspect | ralph-wiggum | Flow-Next Ralph |
+|--------|--------------|-----------------|
+| **Session model** | Single session, accumulating context | Fresh context per iteration |
+| **Loop mechanism** | Stop hook re-feeds prompt in SAME session | External bash loop, new `claude -p` each iteration |
+| **Context management** | Transcript grows, context fills up | Clean slate every time |
+| **Failed attempts** | Pollute future iterations | Gone with the session |
+| **Re-anchoring** | None | Re-reads epic/task spec EVERY iteration |
+| **Quality gates** | None (test-based only) | Multi-model reviews block until SHIP |
+| **Stuck detection** | `--max-iterations` safety limit | Auto-blocks task after N failures |
+| **State storage** | In-memory transcript | File I/O (`.flow/`, receipts, evidence) |
+| **Auditability** | Session transcript | Per-iteration logs + receipts + evidence |
+
+**The Core Problem with ralph-wiggum**
+
+1. **Context pollution** - Every failed attempt stays in context, potentially misleading future iterations
+2. **No re-anchoring** - As context fills, Claude loses sight of the original task spec
+3. **Single model** - No external validation; Claude grades its own homework
+4. **Binary outcome** - Either completion promise triggers, or you hit max iterations
+
+**Flow-Next's Solution**
+
+Fresh context every iteration + multi-model review gates + receipt-based proof-of-work.
+
+Two models catch what one misses. Process failures, not model failures.
+
+---
+
 ## Quality Gates
 
 Ralph enforces quality through three mechanisms:
@@ -127,7 +166,19 @@ Reviews don't just flag issues—they block progress. The cycle repeats until:
 <verdict>SHIP</verdict>
 ```
 
-Fix → re-review → fix → re-review... until the reviewer approves.
+Fix -> re-review -> fix -> re-review... until the reviewer approves.
+
+#### Verdict Format
+
+Reviews MUST return XML verdict tags:
+- `<verdict>SHIP</verdict>` - approved, proceed to next task
+- `<verdict>NEEDS_WORK</verdict>` - fix issues, re-review in same chat
+- `<verdict>MAJOR_RETHINK</verdict>` - fundamental problems, blocks progress
+
+**Common failures:**
+- Plain text "SHIP" or "Approved" -> review skill wasn't used correctly
+- Interactive prompt (a/b/c) -> review backend misconfigured
+- No verdict in response -> check iteration log for errors
 
 ### 4. Memory Capture (Opt-in)
 
@@ -375,6 +426,21 @@ Permanently: delete `hooks/` directory and remove `"hooks"` from `plugin.json`.
 ## Morning Review Workflow
 
 After Ralph completes overnight, here's how to review and merge the work.
+
+### 0. Check run completion
+
+```bash
+# Did Ralph finish?
+cat scripts/ralph/runs/*/progress.txt | tail -5
+
+# Any blocked tasks?
+ls scripts/ralph/runs/*/block-*.md 2>/dev/null
+
+# Tasks still pending?
+flowctl ready --json
+```
+
+If run is partial: review `block-*.md` files, fix issues, re-run `ralph.sh` (resumes from pending tasks).
 
 ### 1. Check what happened
 

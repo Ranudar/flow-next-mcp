@@ -4,8 +4,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/Version-0.5.6-green)](../../CHANGELOG.md)
-[![Status](https://img.shields.io/badge/Status-Experimental-orange)]()
+[![Version](https://img.shields.io/badge/Version-0.5.7-green)](../../CHANGELOG.md)
+[![Status](https://img.shields.io/badge/Status-Active_Development-brightgreen)](../../CHANGELOG.md)
 
 **Plan first, work second. Zero external dependencies.**
 
@@ -13,7 +13,7 @@
 
 ---
 
-> **Experimental.** This plugin is under active development. Give it a spin and [report issues](https://github.com/gmickel/gmickel-claude-marketplace/issues).
+> **Active development.** [Changelog](../../CHANGELOG.md) | [Report issues](https://github.com/gmickel/gmickel-claude-marketplace/issues)
 
 🌐 **Prefer a visual overview?** See the [Flow-Next app page](https://mickel.tech/apps/flow-next) for diagrams and examples.
 
@@ -26,8 +26,6 @@
 Flow-Next is a Claude Code plugin for plan-first orchestration. Bundled task tracking, dependency graphs, re-anchoring, and cross-model reviews.
 
 Everything lives in your repo. No external services. No global config. Uninstall: delete `.flow/` (and `scripts/ralph/` if enabled).
-
-**Agents that finish what they start.**
 
 <table>
 <tr>
@@ -154,11 +152,68 @@ flowctl ready --epic fn-1    # What's ready to work on
 
 That's it. Flow-Next handles research, task ordering, reviews, and audit trails.
 
-Start with a short spec (prompt or file). If fuzzy, run `/flow-next:interview` first.
+### Recommended Workflow
+
+**Spec -> Interview -> Plan -> Work**
+
+1. **Write a short spec** - 1-5 sentences describing what you want to build
+2. **Interview** (optional) - `/flow-next:interview "your idea"` - 40+ questions to surface edge cases
+3. **Plan** - `/flow-next:plan "your idea"` - creates epic with dependency-ordered tasks
+4. **Work** - `/flow-next:work fn-1` - executes tasks with re-anchoring and reviews
+
+Start simple. Add interview when specs are fuzzy. Add reviews when quality matters.
 
 ### 4. Autonomous Mode (Optional)
 
 Want to run overnight? See [Ralph Mode](#ralph-autonomous-mode).
+
+---
+
+## Troubleshooting
+
+### Reset a stuck task
+
+```bash
+# Check task status
+flowctl show fn-1.2 --json | jq '.status'
+
+# Mark as pending to retry
+flowctl task set fn-1.2 --status pending
+```
+
+### Clean up `.flow/` safely
+
+```bash
+# Remove all flow state (keeps git history)
+rm -rf .flow/
+
+# Re-initialize
+flowctl init
+```
+
+### Debug Ralph runs
+
+```bash
+# Check run progress
+cat scripts/ralph/runs/*/progress.txt
+
+# View iteration logs
+ls scripts/ralph/runs/*/iter-*.log
+
+# Check for blocked tasks
+ls scripts/ralph/runs/*/block-*.md
+```
+
+### Receipt validation failing
+
+```bash
+# Check receipt exists
+ls scripts/ralph/runs/*/receipts/
+
+# Verify receipt format
+cat scripts/ralph/runs/*/receipts/impl-fn-1.1.json
+# Must have: {"type":"impl_review","id":"fn-1.1",...}
+```
 
 ---
 
@@ -172,6 +227,10 @@ rm -rf scripts/ralph/       # Ralph (if enabled)
 ---
 
 ## Ralph (Autonomous Mode)
+
+> **⚠️ Safety first**: Ralph defaults to `YOLO=1` (skips permission prompts).
+> - Start with `ralph_once.sh` to observe one iteration
+> - Consider [Docker sandbox](https://docs.docker.com/ai/sandboxes/claude-code/) for isolation
 
 Ralph is the repo-local autonomous loop that plans and works through tasks end-to-end.
 
@@ -191,8 +250,6 @@ scripts/ralph/ralph.sh
 ```
 
 Ralph writes run artifacts under `scripts/ralph/runs/`, including review receipts used for gating.
-
-> **⚠️ Warning**: Ralph defaults to `YOLO=1` (skips permission prompts). Start with `ralph_once.sh` to observe a single iteration. Consider running in a [Docker sandbox](https://docs.docker.com/ai/sandboxes/claude-code/) for isolation.
 
 📖 **[Ralph deep dive](docs/ralph.md)**
 
@@ -261,6 +318,12 @@ Plan review in rp mode requires `flowctl rp chat-send`; if rp-cli/windows unavai
 ## Features
 
 Built for reliability. These are the guardrails.
+
+**Re-anchoring prevents drift**
+
+Before EVERY task, Flow-Next re-reads the epic spec, task spec, and git state from `.flow/`. This forces Claude back to the source of truth - no hallucinated scope creep, no forgotten requirements. In Ralph mode, this happens automatically each iteration.
+
+Unlike agents that carry accumulated context (where early mistakes compound), re-anchoring gives each task a fresh, accurate starting point.
 
 ### Re-anchoring
 
@@ -413,6 +476,15 @@ Without either backend installed, reviews are skipped with a warning.
 ### Dependency Graphs
 
 Tasks declare their blockers. `flowctl ready` shows what can start. Nothing executes until dependencies resolve.
+
+### Auto-Block Stuck Tasks
+
+After MAX_ATTEMPTS_PER_TASK failures (default 5), Ralph:
+1. Writes `block-<task>.md` with failure context
+2. Marks task blocked via `flowctl block`
+3. Moves to next task
+
+Prevents infinite retry loops. Review `block-*.md` files in the morning to understand what went wrong.
 
 ### Memory System (Opt-in)
 
