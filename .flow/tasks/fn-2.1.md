@@ -45,9 +45,19 @@ This will be called from `codex impl-review` and `codex plan-review` (fn-2.2).
 - [ ] Works with empty diff (returns empty hints, no error)
 - [ ] Works with large diff (reasonable limit, not 1000 files)
 ## Done summary
-TBD
+- Added gather_context_hints(base_branch) to flowctl.py
+- Extracts symbols from Python/JS/TS/Go files via regex
+- Finds external references via git grep
+- Handles edge cases: empty diff, bad branch, large diffs (capped 50 files)
 
+Why:
+- Foundation for codex backend to get RP-like context hints
+- Uses inline grep approach (no subagent needed)
+
+Verification:
+- smoke_test.sh passes
+- Edge case tests pass (empty diff, bad branch)
 ## Evidence
-- Commits:
-- Tests:
+- Commits: d757f023329535bb7b82047fe98469fb76224912
+- Tests: smoke_test.sh
 - PRs:

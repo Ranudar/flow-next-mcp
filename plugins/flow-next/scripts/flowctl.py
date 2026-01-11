@@ -378,6 +378,146 @@ def epic_id_from_task(task_id: str) -> str:
     return f"fn-{epic}"
 
 
+# --- Context Hints (for codex reviews) ---
+
+
+def get_changed_files(base_branch: str) -> list[str]:
+    """Get files changed between base branch and HEAD."""
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", base_branch],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=get_repo_root(),
+        )
+        return [f.strip() for f in result.stdout.strip().split("\n") if f.strip()]
+    except subprocess.CalledProcessError:
+        return []
+
+
+def extract_symbols_from_file(file_path: Path) -> list[str]:
+    """Extract exported/defined symbols from a file (functions, classes, consts)."""
+    if not file_path.exists():
+        return []
+    try:
+        content = file_path.read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return []
+
+    symbols = []
+    ext = file_path.suffix.lower()
+
+    # Python: def/class definitions
+    if ext == ".py":
+        for match in re.finditer(r"^(?:def|class)\s+(\w+)", content, re.MULTILINE):
+            symbols.append(match.group(1))
+        # Also catch exported __all__
+        all_match = re.search(r"__all__\s*=\s*\[([^\]]+)\]", content)
+        if all_match:
+            for s in re.findall(r"['\"](\w+)['\"]", all_match.group(1)):
+                symbols.append(s)
+
+    # JS/TS: export function/class/const
+    elif ext in (".js", ".ts", ".jsx", ".tsx", ".mjs"):
+        for match in re.finditer(
+            r"export\s+(?:default\s+)?(?:function|class|const|let|var)\s+(\w+)",
+            content,
+        ):
+            symbols.append(match.group(1))
+        # Named exports: export { foo, bar }
+        for match in re.finditer(r"export\s*\{([^}]+)\}", content):
+            for s in re.findall(r"(\w+)", match.group(1)):
+                symbols.append(s)
+
+    # Go: func/type definitions
+    elif ext == ".go":
+        for match in re.finditer(r"^func\s+(\w+)", content, re.MULTILINE):
+            symbols.append(match.group(1))
+        for match in re.finditer(r"^type\s+(\w+)", content, re.MULTILINE):
+            symbols.append(match.group(1))
+
+    return list(set(symbols))
+
+
+def find_references(symbol: str, exclude_files: list[str], max_results: int = 3) -> list[tuple[str, int]]:
+    """Find files referencing a symbol. Returns [(path, line_number), ...]."""
+    repo_root = get_repo_root()
+    try:
+        result = subprocess.run(
+            ["git", "grep", "-n", "-w", symbol, "--", "*.py", "*.js", "*.ts", "*.tsx", "*.go", "*.jsx", "*.mjs"],
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        )
+        refs = []
+        for line in result.stdout.strip().split("\n"):
+            if not line:
+                continue
+            # Format: file:line:content
+            parts = line.split(":", 2)
+            if len(parts) >= 2:
+                file_path = parts[0]
+                # Skip excluded files (the changed files themselves)
+                if file_path in exclude_files:
+                    continue
+                try:
+                    line_num = int(parts[1])
+                    refs.append((file_path, line_num))
+                except ValueError:
+                    continue
+            if len(refs) >= max_results:
+                break
+        return refs
+    except subprocess.CalledProcessError:
+        return []
+
+
+def gather_context_hints(base_branch: str, max_hints: int = 15) -> str:
+    """Gather context hints for code review.
+
+    Returns formatted hints like:
+    Consider these related files:
+    - src/auth.ts:15 - references validateToken
+    - src/types.ts:42 - references User
+    """
+    changed_files = get_changed_files(base_branch)
+    if not changed_files:
+        return ""
+
+    # Limit to avoid processing too many files
+    if len(changed_files) > 50:
+        changed_files = changed_files[:50]
+
+    repo_root = get_repo_root()
+    hints = []
+    seen_files = set(changed_files)
+
+    # Extract symbols from changed files and find references
+    for changed_file in changed_files:
+        file_path = repo_root / changed_file
+        symbols = extract_symbols_from_file(file_path)
+
+        # Limit symbols per file
+        for symbol in symbols[:10]:
+            refs = find_references(symbol, changed_files, max_results=2)
+            for ref_path, ref_line in refs:
+                if ref_path not in seen_files:
+                    hints.append(f"- {ref_path}:{ref_line} - references {symbol}")
+                    seen_files.add(ref_path)
+                    if len(hints) >= max_hints:
+                        break
+            if len(hints) >= max_hints:
+                break
+        if len(hints) >= max_hints:
+            break
+
+    if not hints:
+        return ""
+
+    return "Consider these related files:\n" + "\n".join(hints)
+
+
 def get_actor() -> str:
     """Determine current actor for soft-claim semantics.
 
