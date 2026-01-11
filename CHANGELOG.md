@@ -2,6 +2,19 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.5.5] - 2026-01-11
+
+### Fixed
+- Ralph no longer fails on non-zero exit code when task actually succeeded (#11)
+- Checks both `task_status=done` and `verdict=SHIP` before treating exit code as failure
+- Prevents false failures from transient errors (telemetry, model fallback, etc.)
+
+### Added
+- Smoke tests for non-zero exit code handling
+
+### Chores
+- ruff format on Python files
+
 ## [flow-next 0.5.4] - 2026-01-11
 
 ### Fixed

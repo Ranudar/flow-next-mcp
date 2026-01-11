@@ -440,12 +440,28 @@ def extract_symbols_from_file(file_path: Path) -> list[str]:
     return list(set(symbols))
 
 
-def find_references(symbol: str, exclude_files: list[str], max_results: int = 3) -> list[tuple[str, int]]:
+def find_references(
+    symbol: str, exclude_files: list[str], max_results: int = 3
+) -> list[tuple[str, int]]:
     """Find files referencing a symbol. Returns [(path, line_number), ...]."""
     repo_root = get_repo_root()
     try:
         result = subprocess.run(
-            ["git", "grep", "-n", "-w", symbol, "--", "*.py", "*.js", "*.ts", "*.tsx", "*.go", "*.jsx", "*.mjs"],
+            [
+                "git",
+                "grep",
+                "-n",
+                "-w",
+                symbol,
+                "--",
+                "*.py",
+                "*.js",
+                "*.ts",
+                "*.tsx",
+                "*.go",
+                "*.jsx",
+                "*.mjs",
+            ],
             capture_output=True,
             text=True,
             cwd=repo_root,
@@ -584,11 +600,16 @@ def run_codex_exec(
 
     # New session with model + high reasoning effort
     cmd = [
-        codex, "exec",
-        "--model", effective_model,
-        "-c", "model_reasoning_effort=\"high\"",
-        "--sandbox", sandbox,
-        "--json", prompt
+        codex,
+        "exec",
+        "--model",
+        effective_model,
+        "-c",
+        'model_reasoning_effort="high"',
+        "--sandbox",
+        sandbox,
+        "--json",
+        prompt,
     ]
     try:
         result = subprocess.run(
@@ -3719,14 +3740,18 @@ def main() -> None:
     p_codex_impl = codex_sub.add_parser("impl-review", help="Implementation review")
     p_codex_impl.add_argument("task", help="Task ID (fn-N.M)")
     p_codex_impl.add_argument("--base", required=True, help="Base branch for diff")
-    p_codex_impl.add_argument("--receipt", help="Receipt file path for session continuity")
+    p_codex_impl.add_argument(
+        "--receipt", help="Receipt file path for session continuity"
+    )
     p_codex_impl.add_argument("--json", action="store_true", help="JSON output")
     p_codex_impl.set_defaults(func=cmd_codex_impl_review)
 
     p_codex_plan = codex_sub.add_parser("plan-review", help="Plan review")
     p_codex_plan.add_argument("epic", help="Epic ID (fn-N)")
     p_codex_plan.add_argument("--base", default="main", help="Base branch for context")
-    p_codex_plan.add_argument("--receipt", help="Receipt file path for session continuity")
+    p_codex_plan.add_argument(
+        "--receipt", help="Receipt file path for session continuity"
+    )
     p_codex_plan.add_argument("--json", action="store_true", help="JSON output")
     p_codex_plan.set_defaults(func=cmd_codex_plan_review)
 

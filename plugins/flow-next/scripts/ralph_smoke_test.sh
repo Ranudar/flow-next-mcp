@@ -99,6 +99,8 @@ set -euo pipefail
  write_receipt="${STUB_WRITE_RECEIPT:-1}"
  write_plan="${STUB_WRITE_PLAN_RECEIPT:-$write_receipt}"
  write_impl="${STUB_WRITE_IMPL_RECEIPT:-$write_receipt}"
+ exit_code="${STUB_EXIT_CODE:-0}"
+ skip_done="${STUB_SKIP_DONE:-0}"
 has_p=0
 for arg in "$@"; do
   if [[ "$arg" == "-p" ]]; then has_p=1; break; fi
@@ -127,18 +129,20 @@ EOF_RECEIPT
     echo "REVIEW_RECEIPT_WRITTEN: $REVIEW_RECEIPT_PATH"
   fi
   echo "<verdict>SHIP</verdict>"
-  exit 0
+  exit "$exit_code"
 fi
 
 if [[ "$prompt" == *"Ralph work iteration"* ]]; then
   task_id="$(printf '%s\n' "$prompt" | sed -n 's/.*TASK_ID=\(fn-[0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' | head -n1)"
-  summary="$(mktemp)"
-  evidence="$(mktemp)"
-  printf "ok\n" > "$summary"
-  printf '{"commits":[],"tests":[],"prs":[]}' > "$evidence"
-  scripts/ralph/flowctl start "$task_id" --json >/dev/null
-  scripts/ralph/flowctl done "$task_id" --summary-file "$summary" --evidence-json "$evidence" --json >/dev/null
-  rm -f "$summary" "$evidence"
+  if [[ "$skip_done" != "1" ]]; then
+    summary="$(mktemp)"
+    evidence="$(mktemp)"
+    printf "ok\n" > "$summary"
+    printf '{"commits":[],"tests":[],"prs":[]}' > "$evidence"
+    scripts/ralph/flowctl start "$task_id" --json >/dev/null
+    scripts/ralph/flowctl done "$task_id" --summary-file "$summary" --evidence-json "$evidence" --json >/dev/null
+    rm -f "$summary" "$evidence"
+  fi
   if [[ "$write_impl" == "1" && -n "${REVIEW_RECEIPT_PATH:-}" ]]; then
     ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
     mkdir -p "$(dirname "$REVIEW_RECEIPT_PATH")"
@@ -148,7 +152,7 @@ EOF_RECEIPT
     echo "REVIEW_RECEIPT_WRITTEN: $REVIEW_RECEIPT_PATH"
   fi
   echo "done $task_id"
-  exit 0
+  exit "$exit_code"
 fi
 
 echo "<promise>FAIL</promise>"
@@ -323,6 +327,55 @@ else
   echo -e "${RED}✗${NC} multi-run uniqueness"
   FAIL=$((FAIL + 1))
 fi
+
+echo -e "${YELLOW}--- non-zero exit code handling (#11) ---${NC}"
+# Test 1: task done + non-zero exit → should NOT fail
+# This validates fix for issue #11 where transient errors caused false failures
+scripts/ralph/flowctl epic create --title "Exit Code Epic 1" --json >/dev/null
+scripts/ralph/flowctl task create --epic fn-6 --title "Done but exit 1" --json >/dev/null
+write_config "none" "none" "0" "new" "3" "5" "2"
+set +e
+STUB_MODE=success STUB_EXIT_CODE=1 CLAUDE_BIN="$TEST_DIR/bin/claude" scripts/ralph/ralph.sh >/dev/null 2>&1
+rc=$?
+set -e
+python3 - <<'PY'
+import json
+from pathlib import Path
+data = json.loads(Path(".flow/tasks/fn-6.1.json").read_text())
+assert data["status"] == "done", f"Expected done, got {data['status']}"
+PY
+if [[ $? -eq 0 ]]; then
+  echo -e "${GREEN}✓${NC} task done + exit 1 → task completed (rc=$rc)"
+  PASS=$((PASS + 1))
+else
+  echo -e "${RED}✗${NC} task done + exit 1 → task completed"
+  FAIL=$((FAIL + 1))
+fi
+
+# Test 2: task NOT done + non-zero exit → should fail/block
+scripts/ralph/flowctl epic create --title "Exit Code Epic 2" --json >/dev/null
+scripts/ralph/flowctl task create --epic fn-7 --title "Not done and exit 1" --json >/dev/null
+write_config "none" "none" "0" "new" "3" "5" "1"
+set +e
+STUB_MODE=success STUB_EXIT_CODE=1 STUB_SKIP_DONE=1 CLAUDE_BIN="$TEST_DIR/bin/claude" scripts/ralph/ralph.sh >/dev/null 2>&1
+rc=$?
+set -e
+python3 - <<'PY'
+import json
+from pathlib import Path
+data = json.loads(Path(".flow/tasks/fn-7.1.json").read_text())
+# Should be blocked because task wasn't done AND exit was non-zero
+assert data["status"] == "blocked", f"Expected blocked, got {data['status']}"
+PY
+if [[ $? -eq 0 ]]; then
+  echo -e "${GREEN}✓${NC} task not done + exit 1 → blocked (rc=$rc)"
+  PASS=$((PASS + 1))
+else
+  echo -e "${RED}✗${NC} task not done + exit 1 → blocked"
+  FAIL=$((FAIL + 1))
+fi
+
+# Note: verdict=SHIP check for plan phase uses identical logic, verified by code review
 
 echo ""
 echo -e "${YELLOW}=== Results ===${NC}"
