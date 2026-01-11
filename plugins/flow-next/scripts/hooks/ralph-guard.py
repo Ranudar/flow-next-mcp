@@ -247,6 +247,26 @@ def handle_pre_tool_use(data: dict) -> None:
     sys.exit(0)
 
 
+def parse_receipt_path(receipt_path: str) -> tuple:
+    """Parse receipt path to derive type and id.
+
+    Returns (receipt_type, item_id) based on filename pattern:
+    - plan-fn-N.json -> ("plan_review", "fn-N")
+    - impl-fn-N.M.json -> ("impl_review", "fn-N.M")
+    """
+    basename = os.path.basename(receipt_path)
+    # Try plan pattern first: plan-fn-N.json
+    plan_match = re.match(r"plan-(fn-\d+)\.json$", basename)
+    if plan_match:
+        return ("plan_review", plan_match.group(1))
+    # Try impl pattern: impl-fn-N.M.json
+    impl_match = re.match(r"impl-(fn-\d+\.\d+)\.json$", basename)
+    if impl_match:
+        return ("impl_review", impl_match.group(1))
+    # Fallback
+    return ("impl_review", "UNKNOWN")
+
+
 def handle_post_tool_use(data: dict) -> None:
     """Handle PostToolUse event - track state and provide feedback."""
     tool_input = data.get("tool_input", {})
@@ -344,6 +364,8 @@ def handle_post_tool_use(data: dict) -> None:
             receipt_path = os.environ.get("REVIEW_RECEIPT_PATH", "")
             # Only remind if receipt doesn't exist and we're in rp mode (not codex)
             if receipt_path and not Path(receipt_path).exists() and state.get("chat_send_succeeded"):
+                # Derive type and id from receipt path
+                receipt_type, item_id = parse_receipt_path(receipt_path)
                 # Provide feedback to Claude (rp mode only - codex writes receipt automatically)
                 output_json({
                     "hookSpecificOutput": {
@@ -352,7 +374,9 @@ def handle_post_tool_use(data: dict) -> None:
                             f"IMPORTANT: SHIP verdict received. You MUST now write the receipt. "
                             f"Run this command:\n"
                             f"mkdir -p \"$(dirname '{receipt_path}')\" && "
-                            f"echo '{{\"type\":\"impl_review\",\"mode\":\"rp\",\"timestamp\":\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"}}' > '{receipt_path}'"
+                            f"cat > '{receipt_path}' <<EOF\n"
+                            f'{{\"type\":\"{receipt_type}\",\"id\":\"{item_id}\",\"mode\":\"rp\",\"timestamp\":\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"}}\n'
+                            f"EOF"
                         )
                     }
                 })
@@ -417,6 +441,8 @@ def handle_stop(data: dict) -> None:
 
     if receipt_path:
         if not Path(receipt_path).exists():
+            # Derive type and id from receipt path
+            receipt_type, item_id = parse_receipt_path(receipt_path)
             # Block stop - receipt not written
             output_json({
                 "decision": "block",
@@ -424,7 +450,9 @@ def handle_stop(data: dict) -> None:
                     f"Cannot stop: Review receipt not written. "
                     f"You must write the receipt to: {receipt_path}\n"
                     f"Run: mkdir -p \"$(dirname '{receipt_path}')\" && "
-                    f"echo '{{\"type\":\"impl_review\",\"mode\":\"rp\",\"timestamp\":\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"}}' > '{receipt_path}'"
+                    f"cat > '{receipt_path}' <<EOF\n"
+                    f'{{\"type\":\"{receipt_type}\",\"id\":\"{item_id}\",\"mode\":\"rp\",\"timestamp\":\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"}}\n'
+                    f"EOF"
                 )
             })
 
