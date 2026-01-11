@@ -7,7 +7,7 @@ CLI for `.flow/` task tracking. Agents must use flowctl for all writes.
 ## Available Commands
 
 ```
-init, detect, epic, task, dep, show, epics, tasks, list, cat, ready, next, start, done, block, validate, prep-chat, rp
+init, detect, epic, task, dep, show, epics, tasks, list, cat, ready, next, start, done, block, validate, prep-chat, rp, codex
 ```
 
 ## Multi-User Safety
@@ -395,6 +395,30 @@ flowctl rp select-add --window "$W" --tab "$T" path/to/file
 flowctl rp chat-send --window "$W" --tab "$T" --message-file /tmp/review-prompt.md
 flowctl rp prompt-export --window "$W" --tab "$T" --out /tmp/export.md
 ```
+
+### codex
+
+OpenAI Codex CLI wrappers (cross-platform alternative to rp):
+
+```bash
+# Check codex availability
+flowctl codex check [--json]
+
+# Run implementation review via codex
+flowctl codex impl-review --id fn-1.3 --spec-file spec.md [--receipt-path /path/to/receipt.json] [--session-id <session>] [--json]
+
+# Run plan review via codex
+flowctl codex plan-review --id fn-1 --spec-file spec.md [--receipt-path /path/to/receipt.json] [--session-id <session>] [--json]
+```
+
+The codex commands:
+1. Gather context hints (changed files, symbols, references)
+2. Build a review prompt from the spec
+3. Run codex with `codex exec` (or `codex exec resume` for continuity)
+4. Parse verdict from output (`<verdict>SHIP|NEEDS_WORK|MAJOR_RETHINK</verdict>`)
+5. Write receipt JSON if `--receipt-path` provided
+
+Session continuity: If `--session-id` provided, continues previous session. Receipt includes `thread_id` for future continuity.
 
 ## Ralph Receipts
 

@@ -39,9 +39,8 @@ Update all documentation to include Codex as cross-platform alternative to RepoP
 - [ ] Codex positioned as cross-platform alternative, not replacement
 
 ## Done summary
-TBD
-
+Added codex backend documentation: flowctl.md with codex command group, ralph.md with integration section and config table, README.md with updated requirements and review sections.
 ## Evidence
-- Commits:
-- Tests:
+- Commits: 1349589
+- Tests: smoke_test.sh
 - PRs:

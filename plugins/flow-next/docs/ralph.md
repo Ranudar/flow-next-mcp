@@ -84,7 +84,12 @@ Ralph enforces quality through three mechanisms:
 
 ### 1. Multi-Model Reviews
 
-Reviews use [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) to send code to a *different* model. Two models catch what one misses.
+Reviews use a second model to verify code. Two models catch what one misses.
+
+**Review backends:**
+- `rp` — [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (macOS only, GUI-based)
+- `codex` — OpenAI Codex CLI (cross-platform, terminal-based)
+- `none` — skip reviews (not recommended for production)
 
 - Plan reviews verify architecture and edge cases before coding starts
 - Impl reviews verify the implementation meets spec after each task
@@ -129,9 +134,13 @@ Edit `scripts/ralph/config.env`:
 
 | Variable | Values | Description |
 |----------|--------|-------------|
-| `PLAN_REVIEW` | `rp`, `none` | How to review plans (rp = RepoPrompt) |
-| `WORK_REVIEW` | `rp`, `none` | How to review implementations |
+| `PLAN_REVIEW` | `rp`, `codex`, `none` | How to review plans |
+| `WORK_REVIEW` | `rp`, `codex`, `none` | How to review implementations |
 | `REQUIRE_PLAN_REVIEW` | `1`, `0` | Block work until plan review passes |
+
+- `rp` — RepoPrompt (macOS, requires GUI)
+- `codex` — OpenAI Codex CLI (cross-platform, terminal-based)
+- `none` — skip reviews
 
 ### Branch Settings
 
@@ -196,7 +205,7 @@ scripts/ralph/runs/<run-id>/
 
 ## RepoPrompt Integration
 
-Ralph uses `flowctl rp` wrappers for all RepoPrompt operations:
+When `PLAN_REVIEW=rp` or `WORK_REVIEW=rp`, Ralph uses `flowctl rp` wrappers:
 
 ```bash
 flowctl rp pick-window --repo-root .  # Find window by repo
@@ -207,6 +216,29 @@ flowctl rp chat-send ...               # Send to reviewer
 Never call `rp-cli` directly in Ralph mode.
 
 **Window selection** is automatic by repo root. RepoPrompt must have a window open on your project.
+
+---
+
+## Codex Integration
+
+When `PLAN_REVIEW=codex` or `WORK_REVIEW=codex`, Ralph uses `flowctl codex` wrappers:
+
+```bash
+flowctl codex check            # Verify codex available
+flowctl codex impl-review ...  # Run implementation review
+flowctl codex plan-review ...  # Run plan review
+```
+
+**Requirements:**
+- OpenAI Codex CLI installed (`npm install -g @openai/codex`)
+- `OPENAI_API_KEY` environment variable set
+
+**Advantages over rp:**
+- Cross-platform (Windows, Linux, macOS)
+- Terminal-based (no GUI required)
+- Session continuity via thread_id
+
+**Session continuity:** Codex reviews store `thread_id` in receipts. Subsequent reviews in the same run continue the conversation.
 
 ---
 
@@ -235,7 +267,20 @@ After `MAX_ATTEMPTS_PER_TASK` failures, Ralph:
 
 Ensure rp-cli is installed and RepoPrompt window is open on your repo.
 
-If rp-cli unavailable, set `PLAN_REVIEW=none` and `WORK_REVIEW=none`.
+Alternatives:
+- Use Codex instead: set `PLAN_REVIEW=codex` and `WORK_REVIEW=codex`
+- Skip reviews: set `PLAN_REVIEW=none` and `WORK_REVIEW=none`
+
+### Codex not found
+
+Ensure Codex CLI is installed and `OPENAI_API_KEY` is set:
+
+```bash
+npm install -g @openai/codex
+export OPENAI_API_KEY=sk-...
+```
+
+Or switch to RepoPrompt: set `PLAN_REVIEW=rp` and `WORK_REVIEW=rp`.
 
 ---
 
@@ -291,10 +336,11 @@ Ralph includes plugin hooks that enforce workflow rules deterministically.
 
 | Rule | Why |
 |------|-----|
-| No `--json` on chat-send | Preserves review text output |
-| No `--new-chat` on re-reviews | First review creates chat, subsequent stay in same |
+| No `--json` on chat-send | Preserves review text output (rp) |
+| No `--new-chat` on re-reviews | First review creates chat, subsequent stay in same (rp) |
 | Receipt must exist before Stop | Blocks Claude from stopping without writing receipt |
-| Required flags on setup/select-add | Ensures proper window/tab targeting |
+| Required flags on setup/select-add | Ensures proper window/tab targeting (rp) |
+| Track codex review verdicts | Validates codex review completed successfully |
 
 ### Hook location
 

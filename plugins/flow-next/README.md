@@ -198,7 +198,7 @@ Ralph writes run artifacts under `scripts/ralph/runs/`, including review receipt
 
 Autonomous coding agents are taking the industry by storm—loop until done, commit, repeat. Most solutions gate progress by tests and linting alone. Ralph goes further.
 
-**Multi-model review gates**: Ralph uses [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) to send plan and implementation reviews to a *different* model (we recommend GPT-5.2 High). A second set of eyes catches blind spots that self-review misses. The reviewing model sees full file context via RepoPrompt's builder, not just diffs.
+**Multi-model review gates**: Ralph uses [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (macOS) or OpenAI Codex CLI (cross-platform) to send plan and implementation reviews to a *different* model. A second set of eyes catches blind spots that self-review misses. RepoPrompt's builder provides full file context; Codex uses context hints from changed files.
 
 **Review loops until Ship**: Reviews don't just flag issues—they block progress until resolved. Ralph runs fix → re-review cycles until the reviewer returns `<verdict>SHIP</verdict>`. No "LGTM with nits" that get ignored.
 
@@ -316,7 +316,11 @@ Each epic and task gets its own JSON + markdown file pair. Merge conflicts are r
 
 ### Automated Reviews
 
-Reviews require [rp-cli](https://repoprompt.com/?atp=KJbuL4) ([RepoPrompt](https://repoprompt.com/?atp=KJbuL4)). Without it, review steps are skipped. Cross-model review catches blind spots.
+Reviews require one of:
+- [rp-cli](https://repoprompt.com/?atp=KJbuL4) ([RepoPrompt](https://repoprompt.com/?atp=KJbuL4)) — macOS GUI-based
+- OpenAI Codex CLI — cross-platform terminal-based
+
+Without either, review steps are skipped. Cross-model review catches blind spots.
 
 ### Dependency Graphs
 
@@ -651,7 +655,11 @@ This creates a complete audit trail: what was planned, what was done, how it was
 
 - Python 3.8+
 - git
-- [rp-cli](https://repoprompt.com/?atp=KJbuL4) ([RepoPrompt](https://repoprompt.com/?atp=KJbuL4)) — optional but highly recommended. Enables the entire review flow: AI-powered context building, cross-model plan reviews, and implementation reviews using a separate model. Without it, reviews are skipped.
+- For reviews (optional but highly recommended), one of:
+  - [rp-cli](https://repoprompt.com/?atp=KJbuL4) ([RepoPrompt](https://repoprompt.com/?atp=KJbuL4)) — macOS, GUI-based
+  - OpenAI Codex CLI (`npm install -g @openai/codex`) — cross-platform, terminal-based
+
+Without a review backend, reviews are skipped.
 
 ---
 
