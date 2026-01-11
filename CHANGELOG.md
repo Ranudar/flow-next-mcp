@@ -2,6 +2,11 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.3.22] - 2026-01-11
+
+### Fixed
+- Hook now tracks `flowctl done` with path/variable invocations ($FLOWCTL, .flow/bin/flowctl)
+
 ## [flow-next 0.3.21] - 2026-01-11
 
 ### Fixed

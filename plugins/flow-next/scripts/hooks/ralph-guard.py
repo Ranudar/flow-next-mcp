@@ -228,15 +228,21 @@ def handle_post_tool_use(data: dict) -> None:
             state["chat_send_succeeded"] = False
             save_state(session_id, state)
 
-    # Track flowctl done calls - match flowctl.py, ./flowctl, etc.
-    if "flowctl" in command and " done " in command:
+    # Track flowctl done calls - match various invocation patterns:
+    # - flowctl done <task>
+    # - flowctl.py done <task>
+    # - .flow/bin/flowctl done <task>
+    # - scripts/ralph/flowctl done <task>
+    # - $FLOWCTL done <task>
+    # - "$FLOWCTL" done <task>
+    if " done " in command and ("flowctl" in command or "FLOWCTL" in command):
         # Debug logging
         with Path("/tmp/ralph-guard-debug.log").open("a") as f:
             f.write(f"  -> flowctl done detected in: {command[:100]}...\n")
 
-        # Extract task ID from command - skip flags (start with -)
-        # Match: flowctl done <task_id> OR flowctl.py done <task_id>
-        done_match = re.search(r"flowctl(?:\.py)?\s+done\s+([a-zA-Z0-9][a-zA-Z0-9._-]*)", command)
+        # Extract task ID from command - look for "done" followed by task ID
+        # Simplified: just find "done <task_id>" pattern since we already validated flowctl context
+        done_match = re.search(r"\bdone\s+([a-zA-Z0-9][a-zA-Z0-9._-]*)", command)
         if done_match:
             task_id = done_match.group(1)
             with Path("/tmp/ralph-guard-debug.log").open("a") as f:
