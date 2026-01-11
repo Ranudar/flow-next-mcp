@@ -162,12 +162,19 @@ def require_rp_cli() -> str:
     return rp
 
 
-def run_rp_cli(args: list[str]) -> subprocess.CompletedProcess:
-    """Run rp-cli with safe error handling."""
+def run_rp_cli(args: list[str], timeout: int = 600) -> subprocess.CompletedProcess:
+    """Run rp-cli with safe error handling and timeout.
+
+    Args:
+        args: Command arguments to pass to rp-cli
+        timeout: Max seconds to wait (default 600s/10min for chat operations)
+    """
     rp = require_rp_cli()
     cmd = [rp] + args
     try:
-        return subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        error_exit(f"rp-cli timed out after {timeout}s", use_json=False, code=3)
     except subprocess.CalledProcessError as e:
         msg = (e.stderr or e.stdout or str(e)).strip()
         error_exit(f"rp-cli failed: {msg}", use_json=False, code=2)
