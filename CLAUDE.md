@@ -89,6 +89,13 @@ TEST_DIR=/tmp/flow-next-ralph-e2e-rpN KEEP_TEST_DIR=1 \
   plugins/flow-next/scripts/ralph_e2e_rp_test.sh
 ```
 
+Short RP e2e (2 tasks, faster iteration):
+```bash
+CREATE=1 TEST_DIR=/tmp/flow-next-ralph-e2e-short-rpN \
+  plugins/flow-next/scripts/ralph_e2e_short_rp_test.sh
+# Then open RepoPrompt on test repo and re-run without CREATE
+```
+
 RP gotchas (must follow):
 - Use `flowctl rp` wrappers only (no direct `rp-cli`).
 - Resolve numeric window id via `flowctl rp pick-window --repo-root "$REPO_ROOT"` before builder.
