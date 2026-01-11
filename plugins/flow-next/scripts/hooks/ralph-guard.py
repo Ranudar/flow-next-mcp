@@ -366,17 +366,21 @@ def handle_post_tool_use(data: dict) -> None:
             if receipt_path and not Path(receipt_path).exists() and state.get("chat_send_succeeded"):
                 # Derive type and id from receipt path
                 receipt_type, item_id = parse_receipt_path(receipt_path)
+                # Build command with ts variable to avoid shell substitution in JSON
+                cmd = (
+                    f"mkdir -p \"$(dirname '{receipt_path}')\"\n"
+                    "ts=\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"\n"
+                    f"cat > '{receipt_path}' <<EOF\n"
+                    f'{{\"type\":\"{receipt_type}\",\"id\":\"{item_id}\",\"mode\":\"rp\",\"timestamp\":\"$ts\"}}\n'
+                    "EOF"
+                )
                 # Provide feedback to Claude (rp mode only - codex writes receipt automatically)
                 output_json({
                     "hookSpecificOutput": {
                         "hookEventName": "PostToolUse",
                         "additionalContext": (
                             f"IMPORTANT: SHIP verdict received. You MUST now write the receipt. "
-                            f"Run this command:\n"
-                            f"mkdir -p \"$(dirname '{receipt_path}')\" && "
-                            f"cat > '{receipt_path}' <<EOF\n"
-                            f'{{\"type\":\"{receipt_type}\",\"id\":\"{item_id}\",\"mode\":\"rp\",\"timestamp\":\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"}}\n'
-                            f"EOF"
+                            f"Run this command:\n{cmd}"
                         )
                     }
                 })
@@ -443,16 +447,21 @@ def handle_stop(data: dict) -> None:
         if not Path(receipt_path).exists():
             # Derive type and id from receipt path
             receipt_type, item_id = parse_receipt_path(receipt_path)
+            # Build command with ts variable to avoid shell substitution in JSON
+            cmd = (
+                f"mkdir -p \"$(dirname '{receipt_path}')\"\n"
+                "ts=\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"\n"
+                f"cat > '{receipt_path}' <<EOF\n"
+                f'{{\"type\":\"{receipt_type}\",\"id\":\"{item_id}\",\"mode\":\"rp\",\"timestamp\":\"$ts\"}}\n'
+                "EOF"
+            )
             # Block stop - receipt not written
             output_json({
                 "decision": "block",
                 "reason": (
                     f"Cannot stop: Review receipt not written. "
                     f"You must write the receipt to: {receipt_path}\n"
-                    f"Run: mkdir -p \"$(dirname '{receipt_path}')\" && "
-                    f"cat > '{receipt_path}' <<EOF\n"
-                    f'{{\"type\":\"{receipt_type}\",\"id\":\"{item_id}\",\"mode\":\"rp\",\"timestamp\":\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"}}\n'
-                    f"EOF"
+                    f"Run:\n{cmd}"
                 )
             })
 
