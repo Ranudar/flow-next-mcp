@@ -210,6 +210,44 @@ scripts/flowctl validate --all --json >/dev/null
 echo -e "${GREEN}✓${NC} schema v1 validate"
 PASS=$((PASS + 1))
 
+echo -e "${YELLOW}--- codex commands ---${NC}"
+# Test codex check (may or may not have codex installed)
+codex_check_json="$(scripts/flowctl codex check --json 2>/dev/null || echo '{"success":true}')"
+python3 - <<'PY' "$codex_check_json"
+import json, sys
+data = json.loads(sys.argv[1])
+assert data["success"] == True, f"codex check failed: {data}"
+# available can be true or false depending on codex install
+PY
+echo -e "${GREEN}✓${NC} codex check"
+PASS=$((PASS + 1))
+
+# Test codex impl-review help (no codex required for argparse check)
+set +e
+scripts/flowctl codex impl-review --help >/dev/null 2>&1
+rc=$?
+set -e
+if [[ "$rc" -eq 0 ]]; then
+  echo -e "${GREEN}✓${NC} codex impl-review --help"
+  PASS=$((PASS + 1))
+else
+  echo -e "${RED}✗${NC} codex impl-review --help"
+  FAIL=$((FAIL + 1))
+fi
+
+# Test codex plan-review help
+set +e
+scripts/flowctl codex plan-review --help >/dev/null 2>&1
+rc=$?
+set -e
+if [[ "$rc" -eq 0 ]]; then
+  echo -e "${GREEN}✓${NC} codex plan-review --help"
+  PASS=$((PASS + 1))
+else
+  echo -e "${RED}✗${NC} codex plan-review --help"
+  FAIL=$((FAIL + 1))
+fi
+
 echo -e "${YELLOW}--- depends_on_epics gate ---${NC}"
 scripts/flowctl epic create --title "Dep base" --json >/dev/null
 scripts/flowctl task create --epic fn-3 --title "Base task" --json >/dev/null

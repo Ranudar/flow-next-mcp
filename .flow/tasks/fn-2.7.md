@@ -35,9 +35,8 @@ Add smoke tests for codex backend.
 - [ ] Receipts verified with `"mode": "codex"`
 - [ ] All existing tests still pass (no regression)
 ## Done summary
-TBD
-
+Added codex backend smoke tests: codex check, codex impl-review --help, codex plan-review --help. Tests gracefully handle codex not installed.
 ## Evidence
-- Commits:
-- Tests:
+- Commits: c713c56
+- Tests: smoke_test.sh
 - PRs:
