@@ -2,6 +2,12 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.5.2] - 2026-01-11
+
+### Fixed
+- plan-review and impl-review skills now ask which backend when both available (interactive mode)
+- Only prompts when not in Ralph mode (`FLOW_RALPH` not set)
+
 ## [flow-next 0.5.1] - 2026-01-11
 
 ### Added

@@ -23,7 +23,7 @@ FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 **Priority** (first match wins):
 1. `FLOW_REVIEW_BACKEND` env var (`rp`, `codex`, `none`)
 2. `.flow/config.json` → `review.backend`
-3. Interactive prompt if both rp-cli and codex available
+3. Interactive prompt if both rp-cli and codex available (and not in Ralph mode)
 4. Default: whichever is available (rp preferred)
 
 ```bash
@@ -36,7 +36,28 @@ BACKEND="${FLOW_REVIEW_BACKEND:-}"
 if [[ -z "$BACKEND" ]]; then
   BACKEND="$($FLOWCTL config get review.backend 2>/dev/null | jq -r '.value // empty')"
 fi
+```
 
+### If no backend configured and both available
+
+If `BACKEND` is empty AND both `HAVE_RP=1` and `HAVE_CODEX=1`, AND not in Ralph mode (`FLOW_RALPH` not set):
+
+Output this question as text (do NOT use AskUserQuestion tool):
+```
+Which review backend?
+a) Codex CLI (cross-platform, GPT 5.2 High)
+b) RepoPrompt (macOS, visual builder)
+
+(Reply: "a", "codex", "b", "rp", or just tell me)
+```
+
+Wait for response. Parse naturally.
+
+**Default if empty/ambiguous**: `codex`
+
+### If only one available or in Ralph mode
+
+```bash
 # Fallback to available
 if [[ -z "$BACKEND" ]]; then
   if [[ "$HAVE_RP" == "1" ]]; then BACKEND="rp"
