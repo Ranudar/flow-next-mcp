@@ -25,9 +25,18 @@ Same pattern as fn-2.3 (impl-review):
 - [ ] RP path unchanged (no regression)
 - [ ] Verdict returned correctly from both backends
 ## Done summary
-TBD
+- Updated SKILL.md with backend selection logic
+- Updated workflow.md with codex backend workflow (Phase 0 + codex section)
+- Labeled RP phases for clarity
+- Updated anti-patterns for both backends
 
+Why:
+- Enable codex as alternative to RepoPrompt for plan reviews
+- No regression on RP workflow
+
+Verification:
+- smoke_test.sh passes
 ## Evidence
-- Commits:
-- Tests:
+- Commits: 4d2b1a5945ec615f37b6b0dbf1b59cfebe729f95
+- Tests: smoke_test.sh
 - PRs:

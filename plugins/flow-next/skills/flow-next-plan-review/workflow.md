@@ -2,11 +2,13 @@
 
 ## Philosophy
 
-The reviewer model only sees selected files. RepoPrompt's Builder discovers context you'd miss. We provide the plan; Builder finds related patterns, architecture, dependencies.
+The reviewer model only sees selected files. RepoPrompt's Builder discovers context you'd miss (rp backend). Codex uses context hints from flowctl (codex backend).
 
-## Atomic Setup Block
+---
 
-**Run this first. Do not skip or modify.**
+## Phase 0: Backend Detection
+
+**Run this first. Do not skip.**
 
 **CRITICAL: flowctl is BUNDLED — NOT installed globally.** `which flowctl` will fail (expected). Always use:
 
@@ -15,6 +17,78 @@ set -e
 FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
+# Check available backends
+HAVE_RP=$(which rp-cli >/dev/null 2>&1 && echo 1 || echo 0)
+HAVE_CODEX=$(which codex >/dev/null 2>&1 && echo 1 || echo 0)
+
+# Get configured backend (priority: env > config)
+BACKEND="${FLOW_REVIEW_BACKEND:-}"
+if [[ -z "$BACKEND" ]]; then
+  BACKEND="$($FLOWCTL config get review.backend 2>/dev/null | jq -r '.value // empty' 2>/dev/null || echo "")"
+fi
+
+# Fallback to available (rp preferred)
+if [[ -z "$BACKEND" ]]; then
+  if [[ "$HAVE_RP" == "1" ]]; then BACKEND="rp"
+  elif [[ "$HAVE_CODEX" == "1" ]]; then BACKEND="codex"
+  else BACKEND="none"; fi
+fi
+
+echo "Review backend: $BACKEND"
+```
+
+**If backend is "none"**: Skip review, inform user, and exit cleanly (no error).
+
+**Then branch to backend-specific workflow below.**
+
+---
+
+## Codex Backend Workflow
+
+Use when `BACKEND="codex"`.
+
+### Step 1: Execute Review
+
+```bash
+EPIC_ID="${1:-}"
+RECEIPT_PATH="${REVIEW_RECEIPT_PATH:-/tmp/plan-review-receipt.json}"
+
+$FLOWCTL codex plan-review "$EPIC_ID" --receipt "$RECEIPT_PATH"
+```
+
+**Output includes `VERDICT=SHIP|NEEDS_WORK|MAJOR_RETHINK`.**
+
+### Step 2: Update Status
+
+```bash
+# Based on verdict
+$FLOWCTL epic set-plan-review-status "$EPIC_ID" --status ship --json
+# OR
+$FLOWCTL epic set-plan-review-status "$EPIC_ID" --status needs_work --json
+```
+
+### Step 3: Handle Verdict
+
+If `VERDICT=NEEDS_WORK`:
+1. Parse issues from output
+2. Fix plan via `$FLOWCTL epic set-plan`
+3. Re-run step 1 (receipt enables session continuity)
+4. Repeat until SHIP
+
+### Step 4: Receipt
+
+Receipt is written automatically by `flowctl codex plan-review` when `--receipt` provided.
+Format: `{"mode":"codex","epic":"<id>","verdict":"<verdict>","session_id":"<thread_id>","timestamp":"..."}`
+
+---
+
+## RepoPrompt Backend Workflow
+
+Use when `BACKEND="rp"`.
+
+### Atomic Setup Block
+
+```bash
 # Atomic: pick-window + builder
 eval "$($FLOWCTL rp setup-review --repo-root "$REPO_ROOT" --summary "Review plan for <EPIC_ID>: <summary>")"
 
@@ -31,7 +105,7 @@ If this block fails, output `<promise>RETRY</promise>` and stop. Do not improvis
 
 ---
 
-## Phase 1: Read the Plan
+## Phase 1: Read the Plan (RP)
 
 **If Flow issue:**
 ```bash
@@ -43,7 +117,7 @@ Save output for inclusion in review prompt. Compose a 1-2 sentence summary for t
 
 ---
 
-## Phase 2: Augment Selection
+## Phase 2: Augment Selection (RP)
 
 Builder selects context automatically. Review and add must-haves:
 
@@ -62,7 +136,7 @@ $FLOWCTL rp select-add --window "$W" --tab "$T" docs/prd.md
 
 ---
 
-## Phase 3: Execute Review
+## Phase 3: Execute Review (RP)
 
 ### Build combined prompt
 
@@ -119,7 +193,7 @@ $FLOWCTL rp chat-send --window "$W" --tab "$T" --message-file /tmp/review-prompt
 
 ---
 
-## Phase 4: Receipt + Status
+## Phase 4: Receipt + Status (RP)
 
 ### Write receipt (if REVIEW_RECEIPT_PATH set)
 
@@ -149,7 +223,7 @@ If no verdict tag, output `<promise>RETRY</promise>` and stop.
 
 ---
 
-## Fix Loop
+## Fix Loop (RP)
 
 **CRITICAL: You MUST fix the plan BEFORE re-reviewing. Never re-review without making changes.**
 
@@ -184,9 +258,17 @@ If verdict is NEEDS_WORK:
 
 ## Anti-patterns
 
+**All backends:**
+- **Reviewing yourself** - You coordinate; the backend reviews
+- **No receipt** - If REVIEW_RECEIPT_PATH is set, you MUST write receipt
+- **Ignoring verdict** - Must extract and act on verdict tag
+- **Mixing backends** - Stick to one backend for the entire review session
+
+**RP backend only:**
 - **Calling builder directly** - Must use `setup-review` which wraps it
 - **Skipping setup-review** - Window selection MUST happen via this command
 - **Hard-coding window IDs** - Never write `--window 1`
-- **Reviewing yourself** - You coordinate; RepoPrompt reviews
-- **No receipt** - If REVIEW_RECEIPT_PATH is set, you MUST write receipt
-- **Ignoring verdict** - Must extract and act on verdict tag
+
+**Codex backend only:**
+- **Using `--last` flag** - Conflicts with parallel usage; use `--receipt` instead
+- **Direct codex calls** - Must use `flowctl codex` wrappers
