@@ -66,9 +66,20 @@ flowctl codex plan-review <epic>              # Plan review via codex exec
 - [ ] Graceful error when codex not installed
 - [ ] Existing `flowctl rp` commands still work (no regression)
 ## Done summary
-TBD
+- Added `flowctl codex` command group with check, impl-review, plan-review
+- Session continuity via thread_id storage/resume
+- Helper functions: require_codex, get_codex_version, run_codex_exec, parse_codex_thread_id, parse_codex_verdict, build_review_prompt
 
+Why:
+- Enables cross-platform code reviews using Codex CLI
+- Alternative to RepoPrompt for Windows/Linux users
+
+Verification:
+- smoke_test.sh passes
+- `flowctl codex check --json` returns {"available": true, "version": "0.80.0"}
+- Help output correct for all subcommands
+- Helper functions tested: verdict/thread_id parsing, prompt building
 ## Evidence
-- Commits:
-- Tests:
+- Commits: a06f103cab5cbe2950b950cea71a7a3e5302ed14
+- Tests: smoke_test.sh, codex check --json
 - PRs:

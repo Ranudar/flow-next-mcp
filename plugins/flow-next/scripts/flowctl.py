@@ -518,6 +518,169 @@ def gather_context_hints(base_branch: str, max_hints: int = 15) -> str:
     return "Consider these related files:\n" + "\n".join(hints)
 
 
+# --- Codex Backend Helpers ---
+
+
+def require_codex() -> str:
+    """Ensure codex CLI is available. Returns path to codex."""
+    codex = shutil.which("codex")
+    if not codex:
+        error_exit("codex not found in PATH", use_json=False, code=2)
+    return codex
+
+
+def get_codex_version() -> Optional[str]:
+    """Get codex version, or None if not available."""
+    codex = shutil.which("codex")
+    if not codex:
+        return None
+    try:
+        result = subprocess.run(
+            [codex, "--version"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        # Parse version from output like "codex 0.1.2" or "0.1.2"
+        output = result.stdout.strip()
+        match = re.search(r"(\d+\.\d+\.\d+)", output)
+        return match.group(1) if match else output
+    except subprocess.CalledProcessError:
+        return None
+
+
+def run_codex_exec(
+    prompt: str,
+    session_id: Optional[str] = None,
+    sandbox: str = "read-only",
+) -> tuple[str, Optional[str]]:
+    """Run codex exec and return (output, thread_id).
+
+    If session_id provided, tries to resume. Falls back to new session if resume fails.
+    """
+    codex = require_codex()
+
+    if session_id:
+        # Try resume first
+        cmd = [codex, "exec", "resume", session_id, prompt]
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=300,
+            )
+            output = result.stdout
+            # For resumed sessions, thread_id stays the same
+            return output, session_id
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            # Resume failed - fall through to new session
+            pass
+
+    # New session
+    cmd = [codex, "exec", "--sandbox", sandbox, "--json", prompt]
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=300,
+        )
+        output = result.stdout
+        thread_id = parse_codex_thread_id(output)
+        return output, thread_id
+    except subprocess.TimeoutExpired:
+        error_exit("codex exec timed out (300s)", use_json=False, code=2)
+    except subprocess.CalledProcessError as e:
+        msg = (e.stderr or e.stdout or str(e)).strip()
+        error_exit(f"codex exec failed: {msg}", use_json=False, code=2)
+
+
+def parse_codex_thread_id(output: str) -> Optional[str]:
+    """Extract thread_id from codex --json output.
+
+    Looks for: {"type":"thread.started","thread_id":"019baa19-..."}
+    """
+    for line in output.split("\n"):
+        if not line.strip():
+            continue
+        try:
+            data = json.loads(line)
+            if data.get("type") == "thread.started" and "thread_id" in data:
+                return data["thread_id"]
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
+def parse_codex_verdict(output: str) -> Optional[str]:
+    """Extract verdict from codex output.
+
+    Looks for <verdict>SHIP</verdict> or <verdict>NEEDS_WORK</verdict>
+    """
+    match = re.search(r"<verdict>(SHIP|NEEDS_WORK|MAJOR_RETHINK)</verdict>", output)
+    return match.group(1) if match else None
+
+
+def build_review_prompt(
+    review_type: str,
+    spec_content: str,
+    context_hints: str,
+    diff_summary: str = "",
+) -> str:
+    """Build XML-structured review prompt for codex.
+
+    review_type: 'impl' or 'plan'
+    """
+    if review_type == "impl":
+        instruction = """Review this implementation with John Carmack-level rigor.
+
+Check for:
+- Logic errors and edge cases
+- Performance issues
+- Security vulnerabilities
+- Code clarity and maintainability
+- Test coverage gaps
+
+Be critical. Find real issues.
+
+End your review with exactly one of:
+<verdict>SHIP</verdict> - Ready to merge
+<verdict>NEEDS_WORK</verdict> - Has issues that must be fixed
+<verdict>MAJOR_RETHINK</verdict> - Fundamental approach problems"""
+    else:  # plan
+        instruction = """Review this plan with John Carmack-level rigor.
+
+Check for:
+- Missing requirements or edge cases
+- Technical feasibility issues
+- Unclear specifications
+- Potential blockers
+- Over-engineering or under-engineering
+
+Be critical. Find real issues.
+
+End your review with exactly one of:
+<verdict>SHIP</verdict> - Plan is solid, ready to implement
+<verdict>NEEDS_WORK</verdict> - Plan has gaps that need addressing
+<verdict>MAJOR_RETHINK</verdict> - Fundamental approach problems"""
+
+    parts = []
+
+    if context_hints:
+        parts.append(f"<context_hints>\n{context_hints}\n</context_hints>")
+
+    if diff_summary:
+        parts.append(f"<diff_summary>\n{diff_summary}\n</diff_summary>")
+
+    parts.append(f"<spec>\n{spec_content}\n</spec>")
+    parts.append(f"<review_instructions>\n{instruction}\n</review_instructions>")
+
+    return "\n\n".join(parts)
+
+
 def get_actor() -> str:
     """Determine current actor for soft-claim semantics.
 
@@ -2867,6 +3030,184 @@ def cmd_rp_setup_review(args: argparse.Namespace) -> None:
         print(f"W={win_id} T={tab}")
 
 
+# --- Codex Commands ---
+
+
+def cmd_codex_check(args: argparse.Namespace) -> None:
+    """Check if codex CLI is available and return version."""
+    codex = shutil.which("codex")
+    available = codex is not None
+    version = get_codex_version() if available else None
+
+    if args.json:
+        json_output({"available": available, "version": version})
+    else:
+        if available:
+            print(f"codex available: {version or 'unknown version'}")
+        else:
+            print("codex not available")
+
+
+def cmd_codex_impl_review(args: argparse.Namespace) -> None:
+    """Run implementation review via codex exec."""
+    if not ensure_flow_exists():
+        error_exit(".flow/ does not exist", use_json=args.json)
+
+    task_id = args.task
+    base_branch = args.base
+
+    # Validate task ID
+    if not is_task_id(task_id):
+        error_exit(f"Invalid task ID: {task_id}", use_json=args.json)
+
+    # Load task spec
+    flow_dir = get_flow_dir()
+    epic_num, task_num = parse_id(task_id)
+    task_spec_path = flow_dir / TASKS_DIR / f"{task_id}.md"
+
+    if not task_spec_path.exists():
+        error_exit(f"Task spec not found: {task_spec_path}", use_json=args.json)
+
+    task_spec = task_spec_path.read_text(encoding="utf-8")
+
+    # Get context hints
+    context_hints = gather_context_hints(base_branch)
+
+    # Get diff summary
+    try:
+        diff_result = subprocess.run(
+            ["git", "diff", "--stat", base_branch],
+            capture_output=True,
+            text=True,
+            cwd=get_repo_root(),
+        )
+        diff_summary = diff_result.stdout.strip()
+    except subprocess.CalledProcessError:
+        diff_summary = ""
+
+    # Build prompt
+    prompt = build_review_prompt("impl", task_spec, context_hints, diff_summary)
+
+    # Check for existing session in receipt
+    receipt_path = args.receipt if hasattr(args, "receipt") and args.receipt else None
+    session_id = None
+    if receipt_path:
+        receipt_file = Path(receipt_path)
+        if receipt_file.exists():
+            try:
+                receipt_data = json.loads(receipt_file.read_text(encoding="utf-8"))
+                session_id = receipt_data.get("session_id")
+            except (json.JSONDecodeError, Exception):
+                pass
+
+    # Run codex
+    output, thread_id = run_codex_exec(prompt, session_id=session_id)
+
+    # Parse verdict
+    verdict = parse_codex_verdict(output)
+
+    # Write receipt if path provided
+    if receipt_path:
+        receipt_data = {
+            "mode": "codex",
+            "task": task_id,
+            "base": base_branch,
+            "verdict": verdict,
+            "session_id": thread_id,
+            "timestamp": now_iso(),
+        }
+        Path(receipt_path).write_text(
+            json.dumps(receipt_data, indent=2) + "\n", encoding="utf-8"
+        )
+
+    # Output
+    if args.json:
+        json_output(
+            {
+                "task": task_id,
+                "verdict": verdict,
+                "session_id": thread_id,
+                "mode": "codex",
+            }
+        )
+    else:
+        print(output)
+        print(f"\nVERDICT={verdict or 'UNKNOWN'}")
+
+
+def cmd_codex_plan_review(args: argparse.Namespace) -> None:
+    """Run plan review via codex exec."""
+    if not ensure_flow_exists():
+        error_exit(".flow/ does not exist", use_json=args.json)
+
+    epic_id = args.epic
+
+    # Validate epic ID
+    if not is_epic_id(epic_id):
+        error_exit(f"Invalid epic ID: {epic_id}", use_json=args.json)
+
+    # Load epic spec
+    flow_dir = get_flow_dir()
+    epic_spec_path = flow_dir / SPECS_DIR / f"{epic_id}.md"
+
+    if not epic_spec_path.exists():
+        error_exit(f"Epic spec not found: {epic_spec_path}", use_json=args.json)
+
+    epic_spec = epic_spec_path.read_text(encoding="utf-8")
+
+    # Get context hints (from main branch for plans)
+    base_branch = args.base if hasattr(args, "base") and args.base else "main"
+    context_hints = gather_context_hints(base_branch)
+
+    # Build prompt
+    prompt = build_review_prompt("plan", epic_spec, context_hints)
+
+    # Check for existing session in receipt
+    receipt_path = args.receipt if hasattr(args, "receipt") and args.receipt else None
+    session_id = None
+    if receipt_path:
+        receipt_file = Path(receipt_path)
+        if receipt_file.exists():
+            try:
+                receipt_data = json.loads(receipt_file.read_text(encoding="utf-8"))
+                session_id = receipt_data.get("session_id")
+            except (json.JSONDecodeError, Exception):
+                pass
+
+    # Run codex
+    output, thread_id = run_codex_exec(prompt, session_id=session_id)
+
+    # Parse verdict
+    verdict = parse_codex_verdict(output)
+
+    # Write receipt if path provided
+    if receipt_path:
+        receipt_data = {
+            "mode": "codex",
+            "epic": epic_id,
+            "verdict": verdict,
+            "session_id": thread_id,
+            "timestamp": now_iso(),
+        }
+        Path(receipt_path).write_text(
+            json.dumps(receipt_data, indent=2) + "\n", encoding="utf-8"
+        )
+
+    # Output
+    if args.json:
+        json_output(
+            {
+                "epic": epic_id,
+                "verdict": verdict,
+                "session_id": thread_id,
+                "mode": "codex",
+            }
+        )
+    else:
+        print(output)
+        print(f"\nVERDICT={verdict or 'UNKNOWN'}")
+
+
 def cmd_validate(args: argparse.Namespace) -> None:
     """Validate epic structure or all epics."""
     if not ensure_flow_exists():
@@ -3324,6 +3665,28 @@ def main() -> None:
     p_rp_setup.add_argument("--summary", required=True, help="Builder summary")
     p_rp_setup.add_argument("--json", action="store_true", help="JSON output")
     p_rp_setup.set_defaults(func=cmd_rp_setup_review)
+
+    # codex (Codex CLI wrappers)
+    p_codex = subparsers.add_parser("codex", help="Codex CLI helpers")
+    codex_sub = p_codex.add_subparsers(dest="codex_cmd", required=True)
+
+    p_codex_check = codex_sub.add_parser("check", help="Check codex availability")
+    p_codex_check.add_argument("--json", action="store_true", help="JSON output")
+    p_codex_check.set_defaults(func=cmd_codex_check)
+
+    p_codex_impl = codex_sub.add_parser("impl-review", help="Implementation review")
+    p_codex_impl.add_argument("task", help="Task ID (fn-N.M)")
+    p_codex_impl.add_argument("--base", required=True, help="Base branch for diff")
+    p_codex_impl.add_argument("--receipt", help="Receipt file path for session continuity")
+    p_codex_impl.add_argument("--json", action="store_true", help="JSON output")
+    p_codex_impl.set_defaults(func=cmd_codex_impl_review)
+
+    p_codex_plan = codex_sub.add_parser("plan-review", help="Plan review")
+    p_codex_plan.add_argument("epic", help="Epic ID (fn-N)")
+    p_codex_plan.add_argument("--base", default="main", help="Base branch for context")
+    p_codex_plan.add_argument("--receipt", help="Receipt file path for session continuity")
+    p_codex_plan.add_argument("--json", action="store_true", help="JSON output")
+    p_codex_plan.set_defaults(func=cmd_codex_plan_review)
 
     args = parser.parse_args()
     args.func(args)
