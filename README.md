@@ -14,11 +14,13 @@
 
 </div>
 
+> 🔄 **Update issues?** Auto-updates sometimes lag. Run: `claude plugin update flow-next@gmickel-claude-marketplace`
+>
 > 🤖 **New**: [Ralph mode](#ralph-autonomous-mode) — ship features while you sleep. Multi-model review gates that actually block on quality.
 >
 > 🧠 **New in v0.3.17**: [Memory system](plugins/flow-next/README.md#memory-system-opt-in) — agents learn from NEEDS_WORK feedback. Stop repeating the same mistakes.
 >
-> 📡 **Coming soon**: [Codex CLI support](https://github.com/gmickel/gmickel-claude-marketplace/issues/5) — multi-model reviews without RepoPrompt.
+> 📡 **New in v0.5.0**: [Codex review backend](plugins/flow-next/README.md#codex-review-backend) — multi-model reviews without RepoPrompt.
 
 ---
 
