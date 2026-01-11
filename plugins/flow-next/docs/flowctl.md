@@ -7,7 +7,7 @@ CLI for `.flow/` task tracking. Agents must use flowctl for all writes.
 ## Available Commands
 
 ```
-init, detect, epic, task, dep, show, epics, tasks, list, cat, ready, next, start, done, block, validate, prep-chat, rp, codex
+init, detect, epic, task, dep, show, epics, tasks, list, cat, ready, next, start, done, block, validate, config, memory, prep-chat, rp, codex
 ```
 
 ## Multi-User Safety
@@ -344,6 +344,53 @@ Checks:
 
 Exits with code 1 if validation fails (for CI use).
 
+### config
+
+Manage project configuration stored in `.flow/config.json`.
+
+```bash
+# Get a config value
+flowctl config get memory.enabled [--json]
+flowctl config get review.backend [--json]
+
+# Set a config value
+flowctl config set memory.enabled true [--json]
+flowctl config set review.backend codex [--json]  # rp, codex, or none
+
+# Toggle boolean config
+flowctl config toggle memory.enabled [--json]
+```
+
+**Available settings:**
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `memory.enabled` | bool | `false` | Enable memory system |
+| `review.backend` | string | auto | Default review backend (`rp`, `codex`, `none`) |
+
+Auto-detect priority: `FLOW_REVIEW_BACKEND` env → config → available CLI.
+
+### memory
+
+Manage persistent learnings in `.flow/memory/`.
+
+```bash
+# Initialize memory directory
+flowctl memory init [--json]
+
+# Add entries
+flowctl memory add --type pitfall "Always use flowctl rp wrappers" [--json]
+flowctl memory add --type convention "Tests in __tests__ dirs" [--json]
+flowctl memory add --type decision "SQLite for simplicity" [--json]
+
+# Query
+flowctl memory list [--json]
+flowctl memory search "pattern" [--json]
+flowctl memory read --type pitfalls [--json]
+```
+
+Types: `pitfall`, `convention`, `decision`
+
 ### prep-chat
 
 Generate properly escaped JSON for RepoPrompt chat. Avoids shell escaping issues with complex prompts.
@@ -398,34 +445,64 @@ flowctl rp prompt-export --window "$W" --tab "$T" --out /tmp/export.md
 
 ### codex
 
-OpenAI Codex CLI wrappers (cross-platform alternative to rp):
+OpenAI Codex CLI wrappers — cross-platform alternative to RepoPrompt.
+
+**Requirements:**
+```bash
+npm install -g @openai/codex
+export OPENAI_API_KEY=sk-...
+```
+
+**Commands:**
 
 ```bash
-# Check codex availability
+# Verify codex is available
 flowctl codex check [--json]
 
-# Run implementation review via codex
+# Implementation review (reviews code changes for a task)
 flowctl codex impl-review <task-id> --base <branch> [--receipt <path>] [--json]
 # Example: flowctl codex impl-review fn-1.3 --base main --receipt /tmp/impl-fn-1.3.json
 
-# Run plan review via codex
+# Plan review (reviews epic spec before implementation)
 flowctl codex plan-review <epic-id> --base <branch> [--receipt <path>] [--json]
 # Example: flowctl codex plan-review fn-1 --base main --receipt /tmp/plan-fn-1.json
 ```
 
-The codex commands:
-1. Gather context hints (changed files, symbols, references)
-2. Build a review prompt from the task/epic spec
-3. Run codex with `codex exec` (or `codex exec resume` for session continuity)
-4. Parse verdict from output (`<verdict>SHIP|NEEDS_WORK|MAJOR_RETHINK</verdict>`)
-5. Write receipt JSON if `--receipt` provided
+**How it works:**
 
-Receipt schema (Ralph-compatible):
-```json
-{"type":"impl_review","id":"fn-1.3","mode":"codex","verdict":"SHIP","session_id":"...","timestamp":"..."}
+1. **Gather context hints** — Analyzes changed files, extracts symbols (functions, classes), finds references in unchanged files
+2. **Build review prompt** — Uses same Carmack-level criteria as RepoPrompt (7 criteria each for plan/impl)
+3. **Run codex** — Executes `codex exec` with the prompt (or `codex exec resume` for session continuity)
+4. **Parse verdict** — Extracts `<verdict>SHIP|NEEDS_WORK|MAJOR_RETHINK</verdict>` from output
+5. **Write receipt** — If `--receipt` provided, writes JSON for Ralph gating
+
+**Context hints example:**
+```
+Changed files: src/auth.py, src/handlers.py
+Symbols: authenticate(), UserSession, validate_token()
+References: src/middleware.py:45 (calls authenticate), tests/test_auth.py:12
 ```
 
-Session continuity: Receipt includes `session_id` (thread_id from codex). Next review reads existing receipt and resumes the session.
+**Review criteria (identical to RepoPrompt):**
+
+| Review | Criteria |
+|--------|----------|
+| Plan | Completeness, Feasibility, Clarity, Architecture, Risks, Scope, Testability |
+| Impl | Correctness, Simplicity, DRY, Architecture, Edge Cases, Tests, Security |
+
+**Receipt schema (Ralph-compatible):**
+```json
+{
+  "type": "impl_review",
+  "id": "fn-1.3",
+  "mode": "codex",
+  "verdict": "SHIP",
+  "session_id": "thread_abc123",
+  "timestamp": "2026-01-11T10:30:00Z"
+}
+```
+
+**Session continuity:** Receipt includes `session_id` (thread_id from codex). Subsequent reviews read the existing receipt and resume the conversation, maintaining full context across fix → re-review cycles.
 
 ## Ralph Receipts
 

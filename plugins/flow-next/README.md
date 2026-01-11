@@ -314,13 +314,100 @@ Exits 1 on errors. Drop into pre-commit hooks or GitHub Actions. See `docs/ci-wo
 
 Each epic and task gets its own JSON + markdown file pair. Merge conflicts are rare and easy to resolve.
 
-### Automated Reviews
+### Cross-Model Reviews
 
-Reviews require one of:
-- [rp-cli](https://repoprompt.com/?atp=KJbuL4) ([RepoPrompt](https://repoprompt.com/?atp=KJbuL4)) — macOS GUI-based **← recommended**
-- OpenAI Codex CLI — cross-platform terminal-based
+Two models catch what one misses. Reviews use a second model (via RepoPrompt or Codex) to verify plans and implementations before they ship.
 
-**We recommend RepoPrompt** when available. Its Builder provides full file context with intelligent selection. Codex is a good cross-platform alternative using context hints. Without either, review steps are skipped.
+**Review criteria (Carmack-level, identical for both backends):**
+
+| Review Type | Criteria |
+|-------------|----------|
+| **Plan** | Completeness, Feasibility, Clarity, Architecture, Risks (incl. security), Scope, Testability |
+| **Impl** | Correctness, Simplicity, DRY, Architecture, Edge Cases, Tests, Security |
+
+Reviews block progress until `<verdict>SHIP</verdict>`. Fix → re-review cycles continue until approved.
+
+#### RepoPrompt (Recommended)
+
+[RepoPrompt](https://repoprompt.com/?atp=KJbuL4) provides the best review experience on macOS.
+
+**Why recommended:**
+- Builder provides full file context with intelligent selection
+- Visual interface for reviewing diffs
+- Maintains conversation history across reviews
+
+**Setup:**
+```bash
+# Install rp-cli (macOS only)
+brew install --cask repoprompt
+# Open RepoPrompt on your repo before running reviews
+```
+
+**Usage:**
+```bash
+/flow-next:plan-review fn-1 --mode=rp
+/flow-next:impl-review --mode=rp
+```
+
+#### Codex (Cross-Platform Alternative)
+
+OpenAI Codex CLI works on any platform (macOS, Linux, Windows).
+
+**Why use Codex:**
+- Cross-platform (no macOS requirement)
+- Terminal-based (no GUI needed)
+- Session continuity via thread IDs
+- Same Carmack-level review criteria as RepoPrompt
+
+**Trade-off:** Uses heuristic context hints from changed files rather than RepoPrompt's intelligent file selection.
+
+**Setup:**
+```bash
+# Install Codex CLI
+npm install -g @openai/codex
+
+# Set API key
+export OPENAI_API_KEY=sk-...
+```
+
+**Usage:**
+```bash
+/flow-next:plan-review fn-1 --mode=codex
+/flow-next:impl-review --mode=codex
+
+# Or via flowctl directly
+flowctl codex plan-review fn-1 --base main
+flowctl codex impl-review fn-1.3 --base main
+```
+
+**Verify installation:**
+```bash
+flowctl codex check
+```
+
+#### Configuration
+
+Set default review backend:
+```bash
+# Per-project (saved in .flow/config.json)
+flowctl config set review.backend rp      # or codex, or none
+
+# Per-session (environment variable)
+export FLOW_REVIEW_BACKEND=codex
+```
+
+Priority: `FLOW_REVIEW_BACKEND` env > `.flow/config.json` > auto-detect.
+
+#### Which to Choose?
+
+| Scenario | Recommendation |
+|----------|----------------|
+| macOS with GUI available | RepoPrompt (better context) |
+| Linux/Windows | Codex (only option) |
+| CI/headless environments | Codex (no GUI needed) |
+| Ralph overnight runs | Either works; RP needs window open |
+
+Without either backend installed, reviews are skipped with a warning.
 
 ### Dependency Graphs
 
