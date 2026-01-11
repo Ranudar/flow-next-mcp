@@ -282,6 +282,16 @@ EPICS="${EPICS:-}"
 
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
 
+# Detect timeout command (GNU coreutils). On macOS: brew install coreutils
+if command -v timeout >/dev/null 2>&1; then
+  TIMEOUT_CMD="timeout"
+elif command -v gtimeout >/dev/null 2>&1; then
+  TIMEOUT_CMD="gtimeout"
+else
+  TIMEOUT_CMD=""
+  echo "ralph: warning: timeout command not found; worker timeout disabled (brew install coreutils)" >&2
+fi
+
 sanitize_id() {
   local v="$1"
   v="${v// /_}"
@@ -665,20 +675,26 @@ Violations break automation and leave the user with incomplete work. Be precise,
   ui_waiting
 
   set +e
-  claude_out="$(timeout "$WORKER_TIMEOUT" "$CLAUDE_BIN" "${claude_args[@]}" "$prompt" 2>&1)"
+  if [[ -n "$TIMEOUT_CMD" ]]; then
+    claude_out="$("$TIMEOUT_CMD" "$WORKER_TIMEOUT" "$CLAUDE_BIN" "${claude_args[@]}" "$prompt" 2>&1)"
+  else
+    claude_out="$("$CLAUDE_BIN" "${claude_args[@]}" "$prompt" 2>&1)"
+  fi
   claude_rc=$?
   set -e
 
-  # Handle timeout (exit code 124)
-  if [[ "$claude_rc" -eq 124 ]]; then
+  # Handle timeout (exit code 124 from timeout command)
+  worker_timeout=0
+  if [[ -n "$TIMEOUT_CMD" && "$claude_rc" -eq 124 ]]; then
     echo "ralph: worker timed out after ${WORKER_TIMEOUT}s" >> "$iter_log"
     log "worker timeout after ${WORKER_TIMEOUT}s"
+    worker_timeout=1
   fi
 
   printf '%s\n' "$claude_out" > "$iter_log"
   log "claude rc=$claude_rc log=$iter_log"
 
-  force_retry=0
+  force_retry=$worker_timeout
   plan_review_status=""
   task_status=""
   if [[ "$status" == "plan" && ( "$PLAN_REVIEW" == "rp" || "$PLAN_REVIEW" == "codex" ) ]]; then

@@ -162,17 +162,23 @@ def require_rp_cli() -> str:
     return rp
 
 
-def run_rp_cli(args: list[str], timeout: int = 600) -> subprocess.CompletedProcess:
+def run_rp_cli(
+    args: list[str], timeout: Optional[int] = None
+) -> subprocess.CompletedProcess:
     """Run rp-cli with safe error handling and timeout.
 
     Args:
         args: Command arguments to pass to rp-cli
-        timeout: Max seconds to wait (default 600s/10min for chat operations)
+        timeout: Max seconds to wait. Default from FLOW_RP_TIMEOUT env or 1200s (20min).
     """
+    if timeout is None:
+        timeout = int(os.environ.get("FLOW_RP_TIMEOUT", "1200"))
     rp = require_rp_cli()
     cmd = [rp] + args
     try:
-        return subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=timeout)
+        return subprocess.run(
+            cmd, capture_output=True, text=True, check=True, timeout=timeout
+        )
     except subprocess.TimeoutExpired:
         error_exit(f"rp-cli timed out after {timeout}s", use_json=False, code=3)
     except subprocess.CalledProcessError as e:
@@ -420,9 +426,7 @@ def extract_symbols_from_file(file_path: Path) -> list[str]:
 
         # Python: def/class definitions
         if ext == ".py":
-            for match in re.finditer(
-                r"^(?:def|class)\s+(\w+)", content, re.MULTILINE
-            ):
+            for match in re.finditer(r"^(?:def|class)\s+(\w+)", content, re.MULTILINE):
                 symbols.append(match.group(1))
             # Also catch exported __all__
             all_match = re.search(r"__all__\s*=\s*\[([^\]]+)\]", content)
@@ -451,9 +455,7 @@ def extract_symbols_from_file(file_path: Path) -> list[str]:
 
         # Rust: pub fn/struct/enum/trait, also private fn for references
         elif ext == ".rs":
-            for match in re.finditer(
-                r"^(?:pub\s+)?fn\s+(\w+)", content, re.MULTILINE
-            ):
+            for match in re.finditer(r"^(?:pub\s+)?fn\s+(\w+)", content, re.MULTILINE):
                 symbols.append(match.group(1))
             for match in re.finditer(
                 r"^(?:pub\s+)?(?:struct|enum|trait|type)\s+(\w+)",
@@ -773,7 +775,9 @@ a thorough review requires understanding the system, not just the diff.
 """
 
     if review_type == "impl":
-        instruction = context_preamble + """Conduct a John Carmack-level review of this implementation.
+        instruction = (
+            context_preamble
+            + """Conduct a John Carmack-level review of this implementation.
 
 ## Review Criteria
 
@@ -801,8 +805,11 @@ Be critical. Find real issues.
 <verdict>MAJOR_RETHINK</verdict> - Fundamental approach problems
 
 Do NOT skip this tag. The automation depends on it."""
+        )
     else:  # plan
-        instruction = context_preamble + """Conduct a John Carmack-level review of this plan.
+        instruction = (
+            context_preamble
+            + """Conduct a John Carmack-level review of this plan.
 
 ## Review Criteria
 
@@ -830,6 +837,7 @@ Be critical. Find real issues.
 <verdict>MAJOR_RETHINK</verdict> - Fundamental approach problems
 
 Do NOT skip this tag. The automation depends on it."""
+        )
 
     parts = []
 
