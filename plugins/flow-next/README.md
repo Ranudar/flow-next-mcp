@@ -4,7 +4,11 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
-[![Version](https://img.shields.io/badge/Version-0.5.9-green)](../../CHANGELOG.md)
+
+[![Version](https://img.shields.io/badge/Version-0.6.0-green)](../../CHANGELOG.md)
+
+[![Version](https://img.shields.io/badge/Version-0.6.0-green)](../../CHANGELOG.md)
+
 [![Status](https://img.shields.io/badge/Status-Active_Development-brightgreen)](../../CHANGELOG.md)
 
 **Plan first, work second. Zero external dependencies.**

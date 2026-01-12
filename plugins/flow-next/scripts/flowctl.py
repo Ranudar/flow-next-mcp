@@ -674,7 +674,7 @@ def run_codex_exec(
                 capture_output=True,
                 text=True,
                 check=True,
-                timeout=300,
+                timeout=600,
             )
             output = result.stdout
             # For resumed sessions, thread_id stays the same
@@ -702,13 +702,13 @@ def run_codex_exec(
             capture_output=True,
             text=True,
             check=True,
-            timeout=300,
+            timeout=600,
         )
         output = result.stdout
         thread_id = parse_codex_thread_id(output)
         return output, thread_id
     except subprocess.TimeoutExpired:
-        error_exit("codex exec timed out (300s)", use_json=False, code=2)
+        error_exit("codex exec timed out (600s)", use_json=False, code=2)
     except subprocess.CalledProcessError as e:
         msg = (e.stderr or e.stdout or str(e)).strip()
         error_exit(f"codex exec failed: {msg}", use_json=False, code=2)
@@ -3220,30 +3220,79 @@ def cmd_codex_check(args: argparse.Namespace) -> None:
             print("codex not available")
 
 
+def build_standalone_review_prompt(
+    base_branch: str, focus: Optional[str], diff_summary: str
+) -> str:
+    """Build review prompt for standalone branch review (no task context)."""
+    focus_section = ""
+    if focus:
+        focus_section = f"""
+## Focus Areas
+{focus}
+
+Pay special attention to these areas during review.
+"""
+
+    return f"""# Implementation Review: Branch Changes vs {base_branch}
+
+Review all changes on the current branch compared to {base_branch}.
+{focus_section}
+## Diff Summary
+```
+{diff_summary}
+```
+
+## Review Criteria (Carmack-level)
+
+1. **Correctness** - Does the code do what it claims?
+2. **Reliability** - Can this fail silently or cause flaky behavior?
+3. **Simplicity** - Is this the simplest solution?
+4. **Security** - Injection, auth gaps, resource exhaustion?
+5. **Edge Cases** - Failure modes, race conditions, malformed input?
+
+## Output Format
+
+For each issue found:
+- **Severity**: Critical / Major / Minor / Nitpick
+- **File:Line**: Exact location
+- **Problem**: What's wrong
+- **Suggestion**: How to fix
+
+Be critical. Find real issues.
+
+**REQUIRED**: End your response with exactly one verdict tag:
+- `<verdict>SHIP</verdict>` - Ready to merge
+- `<verdict>NEEDS_WORK</verdict>` - Issues must be fixed first
+- `<verdict>MAJOR_RETHINK</verdict>` - Fundamental problems, reconsider approach
+"""
+
+
 def cmd_codex_impl_review(args: argparse.Namespace) -> None:
     """Run implementation review via codex exec."""
-    if not ensure_flow_exists():
-        error_exit(".flow/ does not exist", use_json=args.json)
-
     task_id = args.task
     base_branch = args.base
+    focus = getattr(args, "focus", None)
 
-    # Validate task ID
-    if not is_task_id(task_id):
-        error_exit(f"Invalid task ID: {task_id}", use_json=args.json)
+    # Standalone mode (no task ID) - review branch without task context
+    standalone = task_id is None
 
-    # Load task spec
-    flow_dir = get_flow_dir()
-    epic_num, task_num = parse_id(task_id)
-    task_spec_path = flow_dir / TASKS_DIR / f"{task_id}.md"
+    if not standalone:
+        # Task-specific review requires .flow/
+        if not ensure_flow_exists():
+            error_exit(".flow/ does not exist", use_json=args.json)
 
-    if not task_spec_path.exists():
-        error_exit(f"Task spec not found: {task_spec_path}", use_json=args.json)
+        # Validate task ID
+        if not is_task_id(task_id):
+            error_exit(f"Invalid task ID: {task_id}", use_json=args.json)
 
-    task_spec = task_spec_path.read_text(encoding="utf-8")
+        # Load task spec
+        flow_dir = get_flow_dir()
+        task_spec_path = flow_dir / TASKS_DIR / f"{task_id}.md"
 
-    # Get context hints
-    context_hints = gather_context_hints(base_branch)
+        if not task_spec_path.exists():
+            error_exit(f"Task spec not found: {task_spec_path}", use_json=args.json)
+
+        task_spec = task_spec_path.read_text(encoding="utf-8")
 
     # Get diff summary
     try:
@@ -3258,7 +3307,12 @@ def cmd_codex_impl_review(args: argparse.Namespace) -> None:
         diff_summary = ""
 
     # Build prompt
-    prompt = build_review_prompt("impl", task_spec, context_hints, diff_summary)
+    if standalone:
+        prompt = build_standalone_review_prompt(base_branch, focus, diff_summary)
+    else:
+        # Get context hints for task-specific review
+        context_hints = gather_context_hints(base_branch)
+        prompt = build_review_prompt("impl", task_spec, context_hints, diff_summary)
 
     # Check for existing session in receipt
     receipt_path = args.receipt if hasattr(args, "receipt") and args.receipt else None
@@ -3278,17 +3332,23 @@ def cmd_codex_impl_review(args: argparse.Namespace) -> None:
     # Parse verdict
     verdict = parse_codex_verdict(output)
 
+    # Determine review id (task_id for task reviews, "branch" for standalone)
+    review_id = task_id if task_id else "branch"
+
     # Write receipt if path provided (Ralph-compatible schema)
     if receipt_path:
         receipt_data = {
             "type": "impl_review",  # Required by Ralph
-            "id": task_id,  # Required by Ralph
+            "id": review_id,  # Required by Ralph
             "mode": "codex",
             "base": base_branch,
             "verdict": verdict,
             "session_id": thread_id,
             "timestamp": now_iso(),
+            "review": output,  # Full review feedback for fix loop
         }
+        if focus:
+            receipt_data["focus"] = focus
         Path(receipt_path).write_text(
             json.dumps(receipt_data, indent=2) + "\n", encoding="utf-8"
         )
@@ -3298,10 +3358,12 @@ def cmd_codex_impl_review(args: argparse.Namespace) -> None:
         json_output(
             {
                 "type": "impl_review",
-                "id": task_id,
+                "id": review_id,
                 "verdict": verdict,
                 "session_id": thread_id,
                 "mode": "codex",
+                "standalone": standalone,
+                "review": output,  # Full review feedback for fix loop
             }
         )
     else:
@@ -3363,6 +3425,7 @@ def cmd_codex_plan_review(args: argparse.Namespace) -> None:
             "verdict": verdict,
             "session_id": thread_id,
             "timestamp": now_iso(),
+            "review": output,  # Full review feedback for fix loop
         }
         Path(receipt_path).write_text(
             json.dumps(receipt_data, indent=2) + "\n", encoding="utf-8"
@@ -3377,6 +3440,7 @@ def cmd_codex_plan_review(args: argparse.Namespace) -> None:
                 "verdict": verdict,
                 "session_id": thread_id,
                 "mode": "codex",
+                "review": output,  # Full review feedback for fix loop
             }
         )
     else:
@@ -3851,8 +3915,13 @@ def main() -> None:
     p_codex_check.set_defaults(func=cmd_codex_check)
 
     p_codex_impl = codex_sub.add_parser("impl-review", help="Implementation review")
-    p_codex_impl.add_argument("task", help="Task ID (fn-N.M)")
+    p_codex_impl.add_argument(
+        "task", nargs="?", default=None, help="Task ID (fn-N.M), optional for standalone"
+    )
     p_codex_impl.add_argument("--base", required=True, help="Base branch for diff")
+    p_codex_impl.add_argument(
+        "--focus", help="Focus areas for standalone review (comma-separated)"
+    )
     p_codex_impl.add_argument(
         "--receipt", help="Receipt file path for session continuity"
     )
