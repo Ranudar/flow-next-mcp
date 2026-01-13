@@ -2,6 +2,38 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next-tui 0.1.2] - 2026-01-14
+
+### Added
+- Support for collision-resistant epic IDs (`fn-N-xxx` format)
+  - Updated runs.ts receipt/block/epic parsing
+  - Added tests for new ID format
+
+### Fixed
+- Resolved oxlint warnings (useless escapes, control-regex disable comments)
+
+## [flow-next 0.7.0] - 2026-01-14
+
+### Added
+- **Collision-resistant epic IDs**: New epics use `fn-N-xxx` format with 3-char alphanumeric suffix
+  - Prevents ID collisions when team members create epics simultaneously
+  - Cryptographically secure suffix using Python `secrets` module
+  - Legacy `fn-N` format still supported (backwards compatible)
+  - Example: `fn-1-abc`, `fn-42-z9k`, tasks: `fn-1-abc.1`
+
+### Changed
+- Updated TUI to parse new ID format in run discovery
+- Updated Ralph receipt parsing for new format
+- Updated all error messages to mention both `fn-N` and `fn-N-xxx` formats
+
+### Fixed
+- **Codex reviews from `/tmp` dirs**: Added `--skip-git-repo-check` to `codex exec` (GH-33)
+  - Fixes "not a git repo" errors when reviewing cloned/temp repos
+  - Safe: reviews run with read-only sandbox
+- **Ralph Ctrl+C handling**: Signal now properly terminates entire process tree
+  - Added cleanup trap for SIGINT/SIGTERM in all modes
+  - Fixed `timeout --foreground` detection for proper signal propagation
+
 ## [flow-next 0.6.3] - 2026-01-13
 
 ### Added
