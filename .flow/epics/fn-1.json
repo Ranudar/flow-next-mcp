@@ -7,7 +7,7 @@
   "plan_review_status": "unknown",
   "plan_reviewed_at": null,
   "spec_path": ".flow/specs/fn-1.md",
-  "status": "open",
+  "status": "done",
   "title": "Memory system for persistent learning",
-  "updated_at": "2026-01-10T10:50:35.997631Z"
+  "updated_at": "2026-01-13T16:57:32.496099Z"
 }
