@@ -23,6 +23,8 @@
 > 💪 **Stable features**: Plan-first workflow, re-anchoring, receipt-based gating, structured task management
 >
 > 📡 **Cross-platform reviews**: [RepoPrompt](https://repoprompt.com/?atp=KJbuL4) (macOS) or [Codex CLI](plugins/flow-next/README.md#codex-review-backend) (any OS)
+>
+> 🧪 **OpenCode user?** Try [flow-next-opencode](https://github.com/gmickel/flow-next-opencode) (experimental port)
 
 ---
 
