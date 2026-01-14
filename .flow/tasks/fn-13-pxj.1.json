@@ -1,0 +1,23 @@
+{
+  "assignee": "gordon.mickel@gmail.com",
+  "claim_note": "",
+  "claimed_at": "2026-01-14T23:57:34.932285Z",
+  "created_at": "2026-01-14T23:01:20.601749Z",
+  "depends_on": [],
+  "epic": "fn-13-pxj",
+  "evidence": {
+    "commits": [
+      "adb63bfab60edc5aa9a02789d8be7818f217191e"
+    ],
+    "prs": [],
+    "tests": [
+      "plugins/flow-next/scripts/ci_test.sh"
+    ]
+  },
+  "id": "fn-13-pxj.1",
+  "priority": null,
+  "spec_path": ".flow/tasks/fn-13-pxj.1.md",
+  "status": "done",
+  "title": "Add flowctl status command",
+  "updated_at": "2026-01-14T23:59:51.213918Z"
+}

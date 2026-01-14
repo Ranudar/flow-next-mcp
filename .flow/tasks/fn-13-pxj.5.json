@@ -1,0 +1,20 @@
+{
+  "assignee": null,
+  "claim_note": "",
+  "claimed_at": null,
+  "created_at": "2026-01-14T23:01:20.948082Z",
+  "depends_on": [
+    "fn-13-pxj.1",
+    "fn-13-pxj.2",
+    "fn-13-pxj.3",
+    "fn-13-pxj.4",
+    "fn-13-pxj.8"
+  ],
+  "epic": "fn-13-pxj",
+  "id": "fn-13-pxj.5",
+  "priority": null,
+  "spec_path": ".flow/tasks/fn-13-pxj.5.md",
+  "status": "todo",
+  "title": "Add CI tests for async control commands",
+  "updated_at": "2026-01-14T23:32:00.798108Z"
+}

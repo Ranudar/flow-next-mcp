@@ -1132,6 +1132,65 @@ def validate_task_spec_headings(content: str) -> list[str]:
     return errors
 
 
+# --- Ralph Run Detection ---
+
+
+def find_active_runs() -> list[dict]:
+    """
+    Find active Ralph runs by scanning scripts/ralph/runs/*/progress.txt.
+    A run is active if progress.txt exists AND does NOT contain 'promise=COMPLETE'.
+    Returns list of dicts with run info.
+    """
+    repo_root = get_repo_root()
+    runs_dir = repo_root / "scripts" / "ralph" / "runs"
+    active_runs = []
+
+    if not runs_dir.exists():
+        return active_runs
+
+    for run_dir in runs_dir.iterdir():
+        if not run_dir.is_dir():
+            continue
+        progress_file = run_dir / "progress.txt"
+        if not progress_file.exists():
+            continue
+
+        content = progress_file.read_text(encoding="utf-8", errors="replace")
+
+        # Run is complete if it contains the completion marker
+        if "promise=COMPLETE" in content:
+            continue
+
+        # Parse progress info from content
+        run_info = {
+            "id": run_dir.name,
+            "path": str(run_dir),
+            "iteration": None,
+            "current_epic": None,
+            "current_task": None,
+            "paused": (run_dir / "PAUSE").exists(),
+            "stopped": (run_dir / "STOP").exists(),
+        }
+
+        # Extract iteration number (format: "iteration: N" or "Iteration N")
+        iter_match = re.search(r"iteration[:\s]+(\d+)", content, re.IGNORECASE)
+        if iter_match:
+            run_info["iteration"] = int(iter_match.group(1))
+
+        # Extract current epic/task (format varies, try common patterns)
+        epic_match = re.search(r"epic[:\s]+(fn-[\w-]+)", content, re.IGNORECASE)
+        if epic_match:
+            run_info["current_epic"] = epic_match.group(1)
+
+        task_match = re.search(r"task[:\s]+(fn-[\w.-]+\.\d+)", content, re.IGNORECASE)
+        if task_match:
+            run_info["current_task"] = task_match.group(1)
+
+        active_runs.append(run_info)
+
+    return active_runs
+
+
 # --- Commands ---
 
 
@@ -1211,6 +1270,98 @@ def cmd_detect(args: argparse.Namespace) -> None:
                 print(f"  - {issue}")
         else:
             print(".flow/ does not exist")
+
+
+def cmd_status(args: argparse.Namespace) -> None:
+    """Show .flow state and active Ralph runs."""
+    flow_dir = get_flow_dir()
+    flow_exists = flow_dir.exists()
+
+    # Count epics and tasks by status
+    epic_counts = {"open": 0, "done": 0}
+    task_counts = {"todo": 0, "in_progress": 0, "blocked": 0, "done": 0}
+
+    if flow_exists:
+        epics_dir = flow_dir / EPICS_DIR
+        tasks_dir = flow_dir / TASKS_DIR
+
+        if epics_dir.exists():
+            for epic_file in epics_dir.glob("fn-*.json"):
+                try:
+                    epic_data = load_json(epic_file)
+                    status = epic_data.get("status", "open")
+                    if status in epic_counts:
+                        epic_counts[status] += 1
+                except Exception:
+                    pass
+
+        if tasks_dir.exists():
+            for task_file in tasks_dir.glob("fn-*.json"):
+                # Skip non-task files (must have . before .json)
+                if "." not in task_file.stem:
+                    continue
+                try:
+                    task_data = load_json(task_file)
+                    status = task_data.get("status", "todo")
+                    if status in task_counts:
+                        task_counts[status] += 1
+                except Exception:
+                    pass
+
+    # Get active runs
+    active_runs = find_active_runs()
+
+    if args.json:
+        json_output(
+            {
+                "success": True,
+                "flow_exists": flow_exists,
+                "epics": epic_counts,
+                "tasks": task_counts,
+                "runs": [
+                    {
+                        "id": r["id"],
+                        "iteration": r["iteration"],
+                        "current_epic": r["current_epic"],
+                        "current_task": r["current_task"],
+                        "paused": r["paused"],
+                        "stopped": r["stopped"],
+                    }
+                    for r in active_runs
+                ],
+            }
+        )
+    else:
+        if not flow_exists:
+            print(".flow/ not initialized")
+        else:
+            total_epics = sum(epic_counts.values())
+            total_tasks = sum(task_counts.values())
+            print(f"Epics: {epic_counts['open']} open, {epic_counts['done']} done")
+            print(
+                f"Tasks: {task_counts['todo']} todo, {task_counts['in_progress']} in_progress, "
+                f"{task_counts['done']} done, {task_counts['blocked']} blocked"
+            )
+
+        print()
+        if active_runs:
+            print("Active runs:")
+            for r in active_runs:
+                state = []
+                if r["paused"]:
+                    state.append("PAUSED")
+                if r["stopped"]:
+                    state.append("STOPPED")
+                state_str = f" [{', '.join(state)}]" if state else ""
+                task_info = ""
+                if r["current_task"]:
+                    task_info = f", working on {r['current_task']}"
+                elif r["current_epic"]:
+                    task_info = f", epic {r['current_epic']}"
+                iter_info = f"iteration {r['iteration']}" if r["iteration"] else "starting"
+                print(f"  {r['id']} ({iter_info}{task_info}){state_str}")
+        else:
+            print("No active runs")
 
 
 def cmd_config_get(args: argparse.Namespace) -> None:
@@ -3724,6 +3875,11 @@ def main() -> None:
     p_detect = subparsers.add_parser("detect", help="Check if .flow/ exists")
     p_detect.add_argument("--json", action="store_true", help="JSON output")
     p_detect.set_defaults(func=cmd_detect)
+
+    # status
+    p_status = subparsers.add_parser("status", help="Show .flow state and active runs")
+    p_status.add_argument("--json", action="store_true", help="JSON output")
+    p_status.set_defaults(func=cmd_status)
 
     # config
     p_config = subparsers.add_parser("config", help="Config commands")

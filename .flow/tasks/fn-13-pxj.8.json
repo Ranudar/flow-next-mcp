@@ -1,0 +1,14 @@
+{
+  "assignee": null,
+  "claim_note": "",
+  "claimed_at": null,
+  "created_at": "2026-01-14T23:31:34.482427Z",
+  "depends_on": [],
+  "epic": "fn-13-pxj",
+  "id": "fn-13-pxj.8",
+  "priority": null,
+  "spec_path": ".flow/tasks/fn-13-pxj.8.md",
+  "status": "todo",
+  "title": "Add flowctl epic add-dep/rm-dep commands",
+  "updated_at": "2026-01-14T23:32:00.714450Z"
+}
