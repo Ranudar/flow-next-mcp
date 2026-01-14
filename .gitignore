@@ -7,3 +7,4 @@ plans/
 todos/
 /docs/
 !plugins/*/docs/
+WARP.md
