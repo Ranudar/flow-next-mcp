@@ -382,6 +382,17 @@ All commands accept flags to bypass interactive questions:
 
 ---
 
+## Ecosystem
+
+Community ports and inspired projects:
+
+| Project | Platform | Based On |
+|---------|----------|----------|
+| OpenCode port | OpenCode | Flow-Next (coming soon) |
+| [FlowFactory](https://github.com/Gitmaxd/flowfactory) | Factory.ai Droid | Flow |
+
+---
+
 ## Also Check Out
 
 > **[GNO](https://gno.sh)** — Local hybrid search for your notes, docs, and code. Give Claude Code long-term memory over your files via MCP.

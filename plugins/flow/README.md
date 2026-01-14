@@ -475,6 +475,12 @@ Flow partially works in OpenAI Codex with some limitations:
 ./scripts/install-codex.sh flow
 ```
 
+### Community Ports and Inspired Projects
+
+| Project | Platform |
+|---------|----------|
+| [FlowFactory](https://github.com/Gitmaxd/flowfactory) | Factory.ai Droid |
+
 ---
 
 <div align="center">
