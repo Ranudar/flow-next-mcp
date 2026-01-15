@@ -588,10 +588,17 @@ check_sentinels() {
     exit 0
   fi
 
-  # Check for pause (log once, wait in loop)
+  # Check for pause (log once, wait in loop, re-check STOP while waiting)
   if [[ -f "$pause_file" ]]; then
     log "PAUSED - waiting for resume..."
     while [[ -f "$pause_file" ]]; do
+      # Re-check STOP while paused so external stop works
+      if [[ -f "$stop_file" ]]; then
+        log "STOP sentinel detected while paused, exiting gracefully"
+        ui_fail "STOP sentinel detected"
+        write_completion_marker "STOPPED"
+        exit 0
+      fi
       sleep 5
     done
     log "Resumed"

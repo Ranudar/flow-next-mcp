@@ -1142,7 +1142,8 @@ def clear_task_evidence(task_id: str) -> None:
 
     # Replace contents under ## Evidence with empty template, keeping heading
     # Pattern: ## Evidence\n<content until next ## or end of file>
-    pattern = r"(## Evidence\n).*?(?=\n## |\Z)"
+    # Handle both LF and CRLF line endings
+    pattern = r"(## Evidence\s*\r?\n).*?(?=\r?\n## |\Z)"
     replacement = r"\g<1>- Commits:\n- Tests:\n- PRs:\n"
     new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
 
@@ -1158,7 +1159,7 @@ def find_dependents(task_id: str, same_epic: bool = False) -> list[str]:
         return []
 
     epic_id = epic_id_from_task(task_id) if same_epic else None
-    dependents = []
+    dependents: set[str] = set()  # Use set to avoid duplicates
     to_check = [task_id]
     checked = set()
 
@@ -1174,19 +1175,19 @@ def find_dependents(task_id: str, same_epic: bool = False) -> list[str]:
             try:
                 task_data = load_json(task_file)
                 tid = task_data.get("id", task_file.stem)
-                if tid in checked:
+                if tid in checked or tid in dependents:
                     continue
                 # Skip if same_epic filter and different epic
                 if same_epic and epic_id_from_task(tid) != epic_id:
                     continue
                 deps = task_data.get("depends_on", [])
                 if checking in deps:
-                    dependents.append(tid)
+                    dependents.add(tid)
                     to_check.append(tid)
             except Exception:
                 pass
 
-    return dependents
+    return sorted(dependents)
 
 
 # --- Ralph Run Detection ---
@@ -1214,8 +1215,10 @@ def find_active_runs() -> list[dict]:
 
         content = progress_file.read_text(encoding="utf-8", errors="replace")
 
-        # Run is complete if it contains the completion marker
-        if "promise=COMPLETE" in content:
+        # Run is complete if it contains the completion marker block
+        # Require both completion_reason= AND promise=COMPLETE to avoid
+        # false positives from per-iteration promise= logging
+        if "completion_reason=" in content and "promise=COMPLETE" in content:
             continue
 
         # Parse progress info from content

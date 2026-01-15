@@ -496,6 +496,48 @@ flowctl epic rm-dep "$DEP_CHILD" "$DEP_BASE" --json >/dev/null
 DEPS="$(flowctl show "$DEP_CHILD" --json | "$PYTHON_BIN" -c 'import json,sys; print(",".join(json.load(sys.stdin).get("depends_on_epics",[])))')"
 [[ -z "$DEPS" ]] && pass "epic rm-dep" || fail "epic rm-dep: deps=$DEPS"
 
+# Test ralph auto-detection (single active run)
+mkdir -p scripts/ralph/runs/auto-test
+echo "iteration: 1" > scripts/ralph/runs/auto-test/progress.txt
+flowctl ralph pause >/dev/null 2>&1  # Should auto-detect single run
+[[ -f scripts/ralph/runs/auto-test/PAUSE ]] && pass "ralph auto-detect single run" || fail "ralph auto-detect"
+rm -rf scripts/ralph/runs/auto-test
+
+# Test multiple active runs error
+mkdir -p scripts/ralph/runs/run-a scripts/ralph/runs/run-b
+echo "iteration: 1" > scripts/ralph/runs/run-a/progress.txt
+echo "iteration: 1" > scripts/ralph/runs/run-b/progress.txt
+set +e
+flowctl ralph pause 2>/dev/null
+MULTI_RC=$?
+set -e
+[[ $MULTI_RC -ne 0 ]] && pass "ralph rejects multiple active runs" || fail "ralph should reject multiple runs"
+rm -rf scripts/ralph/runs/run-a scripts/ralph/runs/run-b
+
+# Test completion marker detection (run with markers not detected as active)
+mkdir -p scripts/ralph/runs/completed-test
+cat > scripts/ralph/runs/completed-test/progress.txt << 'PROGRESS'
+iteration: 5
+promise=RETRY
+
+completion_reason=DONE
+promise=COMPLETE
+PROGRESS
+ACTIVE_COUNT="$(flowctl status --json | "$PYTHON_BIN" -c 'import json,sys; d=json.load(sys.stdin); print(len(d.get("active_runs",[])))')"
+[[ "$ACTIVE_COUNT" == "0" ]] && pass "completed run excluded from active" || fail "completed run still active: count=$ACTIVE_COUNT"
+rm -rf scripts/ralph/runs/completed-test
+
+# Test task reset --cascade
+CASCADE_EPIC="$(flowctl epic create --title "Cascade test" --json | "$PYTHON_BIN" -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+CASCADE_T1="$(flowctl task create --epic "$CASCADE_EPIC" --title "Base task" --json | "$PYTHON_BIN" -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+CASCADE_T2="$(flowctl task create --epic "$CASCADE_EPIC" --title "Dependent task" --json | "$PYTHON_BIN" -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+flowctl dep add "$CASCADE_T2" "$CASCADE_T1" --json >/dev/null  # T2 depends on T1
+flowctl start "$CASCADE_T1" >/dev/null && flowctl done "$CASCADE_T1" >/dev/null
+flowctl start "$CASCADE_T2" >/dev/null && flowctl done "$CASCADE_T2" >/dev/null
+flowctl task reset "$CASCADE_T1" --cascade --json >/dev/null
+T2_STATUS="$(flowctl show "$CASCADE_T2" --json | "$PYTHON_BIN" -c 'import json,sys; print(json.load(sys.stdin)["status"])')"
+[[ "$T2_STATUS" == "todo" ]] && pass "task reset --cascade" || fail "cascade reset: t2 status=$T2_STATUS"
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Summary
 # ─────────────────────────────────────────────────────────────────────────────
