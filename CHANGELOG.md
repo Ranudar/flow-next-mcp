@@ -14,6 +14,15 @@ All notable changes to the gmickel-claude-marketplace.
 - New phase 3e in `/flow-next:work` phases.md (between verify and loop)
 - `planSync.enabled` config key in flowctl.py
 - Smoke test for planSync config
+- **Idempotent `flowctl init`** - Safe to re-run, handles upgrades
+  - Creates missing dirs/files without destroying existing data
+  - Merges new config keys into existing config.json (deep merge)
+  - Old configs without `planSync` now work correctly
+- **Config deep merge** - `load_flow_config()` merges with defaults
+  - Missing keys automatically get default values
+  - Existing user values preserved
+- `/flow-next:setup` now uses `AskUserQuestion` for all options at once
+  - Memory, Plan-Sync, Docs, Star questions in single UI interaction
 
 ## [flow-next 0.11.1] - 2026-01-15
 
