@@ -23,7 +23,7 @@ Check if `.flow/` directory exists (use Bash `ls .flow/` or check for `.flow/met
 Also ensure `.flow/config.json` exists with defaults:
 ```bash
 if [ ! -f .flow/config.json ]; then
-  echo '{"memory":{"enabled":false}}' > .flow/config.json
+  echo '{"memory":{"enabled":false},"planSync":{"enabled":false}}' > .flow/config.json
 fi
 ```
 
@@ -135,6 +135,9 @@ Documentation updated:
 
 Memory system: disabled by default
 Enable with: flowctl config set memory.enabled true
+
+Plan-Sync: disabled by default
+Enable with: flowctl config set planSync.enabled true
 
 Notes:
 - Re-run /flow-next:setup after plugin updates to refresh scripts
