@@ -132,7 +132,7 @@ Check if plan-sync should run:
 $FLOWCTL config get planSync.enabled --json
 ```
 
-Skip if planSync.enabled is false.
+Skip unless planSync.enabled is explicitly `true` (null/false/missing = skip).
 
 Get remaining tasks (todo status = not started yet):
 
