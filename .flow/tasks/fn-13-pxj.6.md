@@ -40,9 +40,14 @@ No changes needed - it references README which will be updated.
 - [ ] Documentation is concise and matches actual command behavior
 - [ ] No new documentation files created
 ## Done summary
-TBD
+- Added "Controlling Ralph" subsection with CLI + sentinel file docs
+- Fixed Troubleshooting: replaced nonexistent `task set` with `task reset`
+- Removed jq dependency from example code
 
+Why: Document new async control features, fix broken documentation
+
+Verification: CI 40/40, README renders correctly
 ## Evidence
-- Commits:
-- Tests:
+- Commits: 7b9969e9557088074a5c108c0814d98c182ca67a
+- Tests: plugins/flow-next/scripts/ci_test.sh
 - PRs:
