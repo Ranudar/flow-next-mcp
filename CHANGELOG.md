@@ -2,6 +2,13 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.11.1] - 2026-01-15
+
+### Fixed
+- **flowctl tasks/list commands** - Fixed KeyError crash when TUI calls `flowctl tasks --epic`
+  - Used `epic_id` field (correct) instead of `epic` (wrong) in task JSON
+  - Added guard to skip artifact files lacking required fields (GH-21)
+
 ## [flow-next 0.11.0] - 2026-01-15
 
 ### Added
