@@ -1,6 +1,6 @@
 {
   "name": "flow-next",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Zero-dependency planning + execution with .flow/ task tracking and Ralph autonomous mode (multi-model review gates). Includes 6 subagents, 8 commands, 12 skills.",
   "author": {
     "name": "Gordon Mickel",

@@ -2,6 +2,26 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.10.0] - 2026-01-15
+
+### Added
+- **Stdin support** (`--file -`) for flowctl commands
+  - `epic set-plan`, `task set-description`, `task set-acceptance` now accept `-` to read from stdin
+  - Enables heredoc usage: `flowctl epic set-plan fn-1 --file - <<'EOF'`
+  - Eliminates temp file creation, solves shell escaping issues
+- **Combined task set-spec command**
+  - `flowctl task set-spec <id> --description <file> --acceptance <file>`
+  - Sets both sections in single call (2 atomic writes vs 4)
+- **Checkpoint commands** for compaction recovery
+  - `flowctl checkpoint save --epic <id>` - Snapshots epic + all tasks to `.flow/.checkpoint-<id>.json`
+  - `flowctl checkpoint restore --epic <id>` - Restores from checkpoint
+  - `flowctl checkpoint delete --epic <id>` - Removes checkpoint file
+
+### Changed
+- Updated skill files to use stdin heredocs and `task set-spec` where applicable
+- Plan-review workflow now saves checkpoint before review (recovery point)
+- Added smoke tests for stdin, set-spec, and checkpoint commands
+
 ## [flow-next 0.9.0] - 2026-01-15
 
 ### Added
