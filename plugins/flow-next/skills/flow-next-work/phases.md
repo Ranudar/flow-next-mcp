@@ -124,6 +124,8 @@ If status is not `done`, the worker failed. Check output and retry or investigat
 
 ### 3e. Plan Sync (if enabled)
 
+Only run plan-sync if the task status is `done` (from step 3d). If not `done`, skip plan-sync and investigate/retry.
+
 Check if plan-sync should run:
 
 ```bash
@@ -148,7 +150,7 @@ DOWNSTREAM=$($FLOWCTL tasks --epic <epic-id> --status todo --json | jq -r '[.[].
 
 Note: Only sync to `todo` tasks. `in_progress` tasks are already being worked on - updating them mid-flight could cause confusion.
 
-Spawn plan-sync:
+Use the Task tool to spawn the `plan-sync` subagent with this prompt:
 
 ```
 Sync downstream tasks after implementation.
