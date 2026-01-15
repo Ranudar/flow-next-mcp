@@ -561,6 +561,21 @@ After MAX_ATTEMPTS_PER_TASK failures (default 5), Ralph:
 
 Prevents infinite retry loops. Review `block-*.md` files in the morning to understand what went wrong.
 
+### Plan-Sync (Opt-in)
+
+Synchronizes downstream task specs when implementation drifts from the original plan.
+
+```bash
+flowctl config set planSync.enabled true
+```
+
+When enabled, after each task completes, a plan-sync agent:
+1. Compares what was planned vs what was actually built
+2. Identifies downstream tasks that reference stale assumptions (names, APIs, data structures)
+3. Updates affected task specs with accurate info
+
+Skip conditions: disabled (default), task failed, no downstream tasks.
+
 ### Memory System (Opt-in)
 
 Persistent learnings that survive context compaction.

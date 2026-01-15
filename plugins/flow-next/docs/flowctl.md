@@ -366,6 +366,7 @@ flowctl config toggle memory.enabled [--json]
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `memory.enabled` | bool | `false` | Enable memory system |
+| `planSync.enabled` | bool | `false` | Enable plan-sync after task completion |
 | `review.backend` | string | auto | Default review backend (`rp`, `codex`, `none`) |
 
 Auto-detect priority: `FLOW_REVIEW_BACKEND` env → config → available CLI.

@@ -2,6 +2,19 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.11.4] - 2026-01-16
+
+### Added
+- **Plan-sync agent** - Synchronizes downstream task specs when implementation drifts
+  - Opt-in via `flowctl config set planSync.enabled true`
+  - Runs after each task completes, compares spec vs actual implementation
+  - Updates downstream tasks with accurate names, APIs, data structures
+  - Skip conditions: disabled (default), task failed, no downstream tasks
+  - Agent uses `disallowedTools: Task, Write, Bash` + prompt-based Edit restriction
+- New phase 3e in `/flow-next:work` phases.md (between verify and loop)
+- `planSync.enabled` config key in flowctl.py
+- Smoke test for planSync config
+
 ## [flow-next 0.11.1] - 2026-01-15
 
 ### Fixed
