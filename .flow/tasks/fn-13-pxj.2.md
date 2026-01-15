@@ -78,9 +78,15 @@ This must match what `find_active_runs()` searches for in task fn-13-pxj.1. The 
 - [ ] `status == "none"` exit writes "NO_WORK" marker
 - [ ] Max iterations exit writes "MAX_ITERATIONS" marker
 ## Done summary
-TBD
+- Added `write_completion_marker()` - writes `promise=COMPLETE` + reason to progress.txt
+- Added `check_sentinels()` - PAUSE loops with 5s sleep, STOP exits gracefully
+- Updated 4 exit paths: NO_WORK, DONE, FAILED, MAX_ITERATIONS
+- Sentinel checks at iteration start + after Claude returns
 
+Why: Enable external pause/stop control + proper active run detection
+
+Verification: CI (31/31), smoke (28/28), bash syntax OK
 ## Evidence
-- Commits:
-- Tests:
+- Commits: a7a9720c69c27c323f52eadce453ad38e275289a
+- Tests: plugins/flow-next/scripts/ci_test.sh, plugins/flow-next/scripts/smoke_test.sh
 - PRs:
