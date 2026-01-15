@@ -130,9 +130,15 @@ Add `flowctl task reset <task_id> [--cascade]` to reset task status to todo.
 - [ ] No-op (success) if task already todo
 - [ ] `--json` outputs valid JSON with reset task IDs
 ## Done summary
-TBD
+- Added `clear_task_evidence()` helper to reset spec Evidence section
+- Added `find_dependents()` for recursive dependency traversal
+- Added `cmd_task_reset()` with --cascade support
+- Clears: status→todo, evidence, claim fields, blocked_reason
 
+Why: Enable retry/re-run of completed tasks without manual JSON editing
+
+Verification: Manual tests for reset, already-todo, in_progress error; CI 31/31
 ## Evidence
-- Commits:
-- Tests:
+- Commits: d8fe7a45132450286a9e6777f3bc98e8874c9b1f
+- Tests: plugins/flow-next/scripts/ci_test.sh
 - PRs:

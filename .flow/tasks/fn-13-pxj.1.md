@@ -74,6 +74,6 @@ Why: Enable monitoring of .flow state and Ralph runs externally
 
 Verification: CI tests pass (31/31), manual tests for active/paused/stopped states
 ## Evidence
-- Commits: adb63bfab60edc5aa9a02789d8be7818f217191e
+- Commits: 4197e7e
 - Tests: plugins/flow-next/scripts/ci_test.sh
 - PRs:

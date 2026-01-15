@@ -1132,6 +1132,63 @@ def validate_task_spec_headings(content: str) -> list[str]:
     return errors
 
 
+def clear_task_evidence(task_id: str) -> None:
+    """Clear ## Evidence section contents but keep the heading with empty template."""
+    flow_dir = get_flow_dir()
+    spec_path = flow_dir / TASKS_DIR / f"{task_id}.md"
+    if not spec_path.exists():
+        return
+    content = spec_path.read_text(encoding="utf-8")
+
+    # Replace contents under ## Evidence with empty template, keeping heading
+    # Pattern: ## Evidence\n<content until next ## or end of file>
+    pattern = r"(## Evidence\n).*?(?=\n## |\Z)"
+    replacement = r"\g<1>- Commits:\n- Tests:\n- PRs:\n"
+    new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+
+    if new_content != content:
+        atomic_write(spec_path, new_content)
+
+
+def find_dependents(task_id: str, same_epic: bool = False) -> list[str]:
+    """Find tasks that depend on task_id (recursive). Returns list of dependent task IDs."""
+    flow_dir = get_flow_dir()
+    tasks_dir = flow_dir / TASKS_DIR
+    if not tasks_dir.exists():
+        return []
+
+    epic_id = epic_id_from_task(task_id) if same_epic else None
+    dependents = []
+    to_check = [task_id]
+    checked = set()
+
+    while to_check:
+        checking = to_check.pop(0)
+        if checking in checked:
+            continue
+        checked.add(checking)
+
+        for task_file in tasks_dir.glob("fn-*.json"):
+            if "." not in task_file.stem:
+                continue
+            try:
+                task_data = load_json(task_file)
+                tid = task_data.get("id", task_file.stem)
+                if tid in checked:
+                    continue
+                # Skip if same_epic filter and different epic
+                if same_epic and epic_id_from_task(tid) != epic_id:
+                    continue
+                deps = task_data.get("depends_on", [])
+                if checking in deps:
+                    dependents.append(tid)
+                    to_check.append(tid)
+            except Exception:
+                pass
+
+    return dependents
+
+
 # --- Ralph Run Detection ---
 
 
@@ -2455,6 +2512,111 @@ def cmd_task_set_description(args: argparse.Namespace) -> None:
 def cmd_task_set_acceptance(args: argparse.Namespace) -> None:
     """Set task acceptance section."""
     _task_set_section(args.id, "## Acceptance", args.file, args.json)
+
+
+def cmd_task_reset(args: argparse.Namespace) -> None:
+    """Reset task status to todo."""
+    if not ensure_flow_exists():
+        error_exit(
+            ".flow/ does not exist. Run 'flowctl init' first.", use_json=args.json
+        )
+
+    task_id = args.task_id
+    if not is_task_id(task_id):
+        error_exit(
+            f"Invalid task ID: {task_id}. Expected format: fn-N.M or fn-N-xxx.M",
+            use_json=args.json,
+        )
+
+    flow_dir = get_flow_dir()
+    task_json_path = flow_dir / TASKS_DIR / f"{task_id}.json"
+
+    if not task_json_path.exists():
+        error_exit(f"Task {task_id} not found", use_json=args.json)
+
+    task_data = load_json_or_exit(task_json_path, f"Task {task_id}", use_json=args.json)
+
+    # Load epic to check if closed
+    epic_id = epic_id_from_task(task_id)
+    epic_path = flow_dir / EPICS_DIR / f"{epic_id}.json"
+    if epic_path.exists():
+        epic_data = load_json_or_exit(epic_path, f"Epic {epic_id}", use_json=args.json)
+        if epic_data.get("status") == "done":
+            error_exit(
+                f"Cannot reset task in closed epic {epic_id}", use_json=args.json
+            )
+
+    # Check status validations
+    current_status = task_data.get("status", "todo")
+    if current_status == "in_progress":
+        error_exit(
+            f"Cannot reset in_progress task {task_id}. Complete or block it first.",
+            use_json=args.json,
+        )
+    if current_status == "todo":
+        # Already todo - no-op success
+        if args.json:
+            json_output(
+                {"success": True, "reset": [], "message": f"{task_id} already todo"}
+            )
+        else:
+            print(f"{task_id} already todo")
+        return
+
+    # Reset task
+    task_data["status"] = "todo"
+    task_data["updated_at"] = now_iso()
+
+    # Clear optional fields
+    task_data.pop("blocked_reason", None)
+    task_data.pop("completed_at", None)
+
+    # Clear claim fields (MU-2)
+    task_data.pop("assignee", None)
+    task_data.pop("claimed_at", None)
+    task_data.pop("claim_note", None)
+
+    # Clear evidence from JSON
+    task_data.pop("evidence", None)
+
+    atomic_write_json(task_json_path, task_data)
+
+    # Clear evidence section from spec markdown
+    clear_task_evidence(task_id)
+
+    reset_ids = [task_id]
+
+    # Handle cascade
+    if args.cascade:
+        dependents = find_dependents(task_id, same_epic=True)
+        for dep_id in dependents:
+            dep_path = flow_dir / TASKS_DIR / f"{dep_id}.json"
+            if not dep_path.exists():
+                continue
+            dep_data = load_json(dep_path)
+            dep_status = dep_data.get("status", "todo")
+
+            # Skip in_progress and already todo
+            if dep_status == "in_progress" or dep_status == "todo":
+                continue
+
+            dep_data["status"] = "todo"
+            dep_data["updated_at"] = now_iso()
+            dep_data.pop("blocked_reason", None)
+            dep_data.pop("completed_at", None)
+            dep_data.pop("assignee", None)
+            dep_data.pop("claimed_at", None)
+            dep_data.pop("claim_note", None)
+            dep_data.pop("evidence", None)
+
+            atomic_write_json(dep_path, dep_data)
+            clear_task_evidence(dep_id)
+            reset_ids.append(dep_id)
+
+    if args.json:
+        json_output({"success": True, "reset": reset_ids})
+    else:
+        print(f"Reset: {', '.join(reset_ids)}")
 
 
 def _task_set_section(
@@ -4102,6 +4264,14 @@ def main() -> None:
     p_task_acc.add_argument("--file", required=True, help="Markdown file")
     p_task_acc.add_argument("--json", action="store_true", help="JSON output")
     p_task_acc.set_defaults(func=cmd_task_set_acceptance)
+
+    p_task_reset = task_sub.add_parser("reset", help="Reset task to todo")
+    p_task_reset.add_argument("task_id", help="Task ID (fn-N.M)")
+    p_task_reset.add_argument(
+        "--cascade", action="store_true", help="Also reset dependent tasks (same epic)"
+    )
+    p_task_reset.add_argument("--json", action="store_true", help="JSON output")
+    p_task_reset.set_defaults(func=cmd_task_reset)
 
     # dep add
     p_dep = subparsers.add_parser("dep", help="Dependency commands")
