@@ -1,5 +1,8 @@
 {
   "memory": {
     "enabled": false
+  },
+  "planSync": {
+    "enabled": false
   }
 }
