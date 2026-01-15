@@ -82,9 +82,14 @@ Add `flowctl ralph` subcommand group with pause/resume/stop/status.
 - [ ] Pause already-paused is no-op (success)
 - [ ] Resume non-paused is no-op (success)
 ## Done summary
-TBD
+- Added `find_active_run()` helper for single-run auto-detection
+- Added `cmd_ralph_pause/resume/stop/status` handlers
+- Registered `flowctl ralph` subparser group
 
+Why: Enable external control of Ralph runs via CLI
+
+Verification: Manual tests for pause/resume/stop/status, auto-detect, error cases; CI 31/31
 ## Evidence
-- Commits:
-- Tests:
+- Commits: 784fb1e828e3accc895356e4ec14476d465a42f1
+- Tests: plugins/flow-next/scripts/ci_test.sh
 - PRs:
