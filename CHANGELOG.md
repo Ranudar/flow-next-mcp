@@ -22,6 +22,12 @@ All notable changes to the gmickel-claude-marketplace.
 
 **Backwards compatible:** All existing `.flow/` data works unchanged. Only review invocation behavior changed.
 
+### Added
+- **`flowctl review-backend` command** - Returns explicit `ASK` or configured backend (`rp`/`codex`/`none`)
+  - Skills use this instead of complex jq checks
+  - LLMs handle explicit string matching better than empty/non-empty checks
+  - Reduces LLM deviation on conditional logic
+
 ### Changed
 - **Remove runtime `which` detection from skills** - Skills no longer auto-detect review backends
   - Removed `which rp-cli` / `which codex` from impl-review, plan-review, work, plan skills
@@ -29,6 +35,9 @@ All notable changes to the gmickel-claude-marketplace.
   - Run `/flow-next:setup` to configure preferred backend (one-time)
   - Reduces LLM deviation (agents checking wrong binary names)
   - Reduces subprocess overhead (12+ calls per session)
+- **Simplified skill conditionals** - All skills now use `$FLOWCTL review-backend`
+  - Check for `ASK` (not configured) vs actual value (configured)
+  - No more jq parsing or empty string checks
 - **Setup asks review backend** - `/flow-next:setup` now prompts for RepoPrompt/Codex/None
   - Writes to `.flow/config.json` under `review.backend`
   - Shows detection status (detected / not detected) for each option

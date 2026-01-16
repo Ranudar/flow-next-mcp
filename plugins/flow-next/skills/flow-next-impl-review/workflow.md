@@ -18,12 +18,9 @@ FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
 # Priority: --review flag > env > config (flag parsed in SKILL.md)
-BACKEND="${FLOW_REVIEW_BACKEND:-}"
-if [[ -z "$BACKEND" ]]; then
-  BACKEND="$($FLOWCTL config get review.backend 2>/dev/null | jq -r '.value // empty' 2>/dev/null || echo "")"
-fi
+BACKEND=$($FLOWCTL review-backend)
 
-if [[ -z "$BACKEND" || "$BACKEND" == "null" ]]; then
+if [[ "$BACKEND" == "ASK" ]]; then
   echo "Error: No review backend configured."
   echo "Run /flow-next:setup to configure, or pass --review=rp|codex|none"
   exit 1

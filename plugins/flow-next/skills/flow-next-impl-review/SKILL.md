@@ -38,13 +38,9 @@ If found, use that backend and skip all other detection.
 ### Otherwise read from config
 
 ```bash
-# Priority: --review flag > env > config
-BACKEND="${FLOW_REVIEW_BACKEND:-}"
-if [[ -z "$BACKEND" ]]; then
-  BACKEND="$($FLOWCTL config get review.backend 2>/dev/null | jq -r '.value // empty')"
-fi
+BACKEND=$($FLOWCTL review-backend)
 
-if [[ -z "$BACKEND" || "$BACKEND" == "null" ]]; then
+if [[ "$BACKEND" == "ASK" ]]; then
   echo "Error: No review backend configured."
   echo "Run /flow-next:setup to configure, or pass --review=rp|codex|none"
   exit 1
