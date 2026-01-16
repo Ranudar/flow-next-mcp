@@ -45,9 +45,8 @@ cat .flow/config.json | jq '.review'
 - [ ] Existing configs upgraded via `flowctl init` get the new key merged in
 - [ ] Smoke tests pass
 ## Done summary
-TBD
-
+Added review.backend key with None value to get_default_config() in flowctl.py. Existing configs get the new key via deep_merge on upgrade.
 ## Evidence
-- Commits:
-- Tests:
+- Commits: 3a3248c906b97a0ef66dd9ed3b3a41b487f73925
+- Tests: flowctl init --json (fresh dir), config get review.backend (upgrade test), smoke_test.sh (43 tests pass)
 - PRs:
