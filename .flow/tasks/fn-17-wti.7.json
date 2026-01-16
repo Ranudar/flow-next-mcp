@@ -1,0 +1,19 @@
+{
+  "assignee": null,
+  "claim_note": "",
+  "claimed_at": null,
+  "created_at": "2026-01-16T10:29:45.911630Z",
+  "depends_on": [
+    "fn-17-wti.3",
+    "fn-17-wti.4",
+    "fn-17-wti.5",
+    "fn-17-wti.6"
+  ],
+  "epic": "fn-17-wti",
+  "id": "fn-17-wti.7",
+  "priority": null,
+  "spec_path": ".flow/tasks/fn-17-wti.7.md",
+  "status": "todo",
+  "title": "Run smoke tests and update docs",
+  "updated_at": "2026-01-16T10:29:45.911800Z"
+}

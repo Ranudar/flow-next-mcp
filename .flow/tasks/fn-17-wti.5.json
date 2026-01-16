@@ -1,0 +1,16 @@
+{
+  "assignee": null,
+  "claim_note": "",
+  "claimed_at": null,
+  "created_at": "2026-01-16T10:29:43.436752Z",
+  "depends_on": [
+    "fn-17-wti.1"
+  ],
+  "epic": "fn-17-wti",
+  "id": "fn-17-wti.5",
+  "priority": null,
+  "spec_path": ".flow/tasks/fn-17-wti.5.md",
+  "status": "todo",
+  "title": "Remove runtime detection from flow-next-work",
+  "updated_at": "2026-01-16T10:29:43.436927Z"
+}
