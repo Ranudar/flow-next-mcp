@@ -96,11 +96,8 @@ To:
 - [ ] Override hint shown when backend configured: "(Tip: --review=rp|codex|none overrides configured backend)"
 
 ## Done summary
-
-TBD
-
+Removed runtime `which rp-cli` / `which codex` detection from flow-next-plan skill. Simplified question logic to use configured backend from env/config, with override hint when backend is pre-configured.
 ## Evidence
-
-- Commits:
-- Tests:
+- Commits: d960c3ff2e27a77fbc6f5ce5e3f54bf1f27f5c07, 38fb2022def6bf548c72436ac4a327b56990231a
+- Tests: grep detection check
 - PRs:

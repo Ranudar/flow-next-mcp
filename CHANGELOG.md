@@ -2,6 +2,20 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.11.10] - 2026-01-16
+
+### Changed
+- **Remove runtime `which` detection from skills** - Skills no longer auto-detect review backends
+  - Removed `which rp-cli` / `which codex` from impl-review, plan-review, work, plan skills
+  - Priority order: `--review=X` flag > `FLOW_REVIEW_BACKEND` env > `.flow/config.json` > error
+  - Run `/flow-next:setup` to configure preferred backend (one-time)
+  - Reduces LLM deviation (agents checking wrong binary names)
+  - Reduces subprocess overhead (12+ calls per session)
+- **Setup asks review backend** - `/flow-next:setup` now prompts for RepoPrompt/Codex/None
+  - Writes to `.flow/config.json` under `review.backend`
+  - Shows detection status (detected / not detected) for each option
+- **README updated** - Removed "auto-detect" from priority documentation
+
 ## [flow-next 0.11.9] - 2026-01-16
 
 ### Fixed

@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin-blueviolet)](https://claude.ai/code)
 
-[![Version](https://img.shields.io/badge/Version-0.11.9-green)](../../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-0.11.10-green)](../../CHANGELOG.md)
 
 [![Status](https://img.shields.io/badge/Status-Active_Development-brightgreen)](../../CHANGELOG.md)
 
@@ -601,7 +601,9 @@ flowctl config set review.backend rp      # or codex, or none
 export FLOW_REVIEW_BACKEND=codex
 ```
 
-Priority: `--review=...` argument > `FLOW_REVIEW_BACKEND` env > `.flow/config.json` > auto-detect.
+Priority: `--review=...` argument > `FLOW_REVIEW_BACKEND` env > `.flow/config.json` > error.
+
+**No auto-detect.** Run `/flow-next:setup` to configure your preferred review backend, or pass `--review=X` explicitly.
 
 #### Which to Choose?
 
@@ -612,7 +614,7 @@ Priority: `--review=...` argument > `FLOW_REVIEW_BACKEND` env > `.flow/config.js
 | CI/headless environments | Codex (no GUI needed) |
 | Ralph overnight runs | Either works; RP needs window open |
 
-Without either backend installed, reviews are skipped with a warning.
+Without a backend configured, reviews fail with a clear error. Run `/flow-next:setup` or pass `--review=X`.
 
 ### Dependency Graphs
 
@@ -744,7 +746,7 @@ Flow-Next uses the same defaults in manual and Ralph runs. Ralph bypasses prompt
 
 - plan: `--research=grep`
 - work: `--branch=new`
-- review: `rp` when `rp-cli` exists, otherwise `none`
+- review: from `.flow/config.json` (set via `/flow-next:setup`), or `none` if not configured
 
 Override via flags or `scripts/ralph/config.env`.
 
