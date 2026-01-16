@@ -40,13 +40,11 @@ If empty, ask: "What should I plan? Give me the feature or bug in 1-5 sentences.
 
 ## FIRST: Parse Options or Ask Questions
 
-Check configured backend (priority: env > config):
+Check configured backend:
 ```bash
-CONFIGURED_BACKEND="${FLOW_REVIEW_BACKEND:-}"
-if [[ -z "$CONFIGURED_BACKEND" ]]; then
-  CONFIGURED_BACKEND="$($FLOWCTL config get review.backend --json 2>/dev/null | jq -r '.value // empty')"
-fi
+REVIEW_BACKEND=$($FLOWCTL review-backend)
 ```
+Returns: `ASK` (not configured), or `rp`/`codex`/`none` (configured).
 
 ### Option Parsing (skip questions if found in arguments)
 
@@ -64,7 +62,7 @@ Parse the arguments for these patterns. If found, use them and skip questions:
 
 ### If options NOT found in arguments
 
-**If backend already configured** (`CONFIGURED_BACKEND` not empty, from env or config): Only ask research question, skip review question. Show override hint:
+**If REVIEW_BACKEND is rp, codex, or none** (already configured): Only ask research question. Show override hint:
 
 ```
 Quick setup: Use RepoPrompt for deeper context?
@@ -75,7 +73,7 @@ b) No, repo-scout (faster)
 (Tip: --review=rp|codex|none overrides configured backend)
 ```
 
-**If no backend configured** (`CONFIGURED_BACKEND` is empty): Ask both research AND review questions (do NOT use AskUserQuestion tool):
+**If REVIEW_BACKEND is ASK** (not configured): Ask both research AND review questions (do NOT use AskUserQuestion tool):
 
 ```
 Quick setup before planning:

@@ -55,13 +55,11 @@ If no input provided, ask for it.
 
 ## FIRST: Parse Options or Ask Questions
 
-Check configured backend (priority: env > config):
+Check configured backend:
 ```bash
-CONFIGURED_BACKEND="${FLOW_REVIEW_BACKEND:-}"
-if [[ -z "$CONFIGURED_BACKEND" ]]; then
-  CONFIGURED_BACKEND="$($FLOWCTL config get review.backend 2>/dev/null | jq -r '.value // empty')"
-fi
+REVIEW_BACKEND=$($FLOWCTL review-backend)
 ```
+Returns: `ASK` (not configured), or `rp`/`codex`/`none` (configured).
 
 ### Option Parsing (skip questions if found in arguments)
 
@@ -80,7 +78,7 @@ Parse the arguments for these patterns. If found, use them and skip correspondin
 
 ### If options NOT found in arguments
 
-**If backend already configured** (from env or config): Only ask branch question, but show override hint:
+**If REVIEW_BACKEND is rp, codex, or none** (already configured): Only ask branch question. Show override hint:
 
 ```
 Quick setup: Where to work?
@@ -90,7 +88,7 @@ a) Current branch  b) New branch  c) Isolated worktree
 (Tip: --review=rp|codex|export|none overrides configured backend)
 ```
 
-**If no backend configured**: Ask both branch AND review questions:
+**If REVIEW_BACKEND is ASK** (not configured): Ask both branch AND review questions:
 
 ```
 Quick setup before starting:

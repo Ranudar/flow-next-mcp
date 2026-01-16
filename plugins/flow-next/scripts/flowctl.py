@@ -1615,6 +1615,31 @@ def cmd_config_set(args: argparse.Namespace) -> None:
         print(f"{args.key} set to {new_value}")
 
 
+def cmd_review_backend(args: argparse.Namespace) -> None:
+    """Get review backend for skill conditionals. Returns ASK if not configured."""
+    # Priority: FLOW_REVIEW_BACKEND env > config > ASK
+    env_val = os.environ.get("FLOW_REVIEW_BACKEND", "").strip()
+    if env_val and env_val in ("rp", "codex", "none"):
+        backend = env_val
+        source = "env"
+    elif ensure_flow_exists():
+        cfg_val = get_config("review.backend")
+        if cfg_val and cfg_val in ("rp", "codex", "none"):
+            backend = cfg_val
+            source = "config"
+        else:
+            backend = "ASK"
+            source = "none"
+    else:
+        backend = "ASK"
+        source = "none"
+
+    if args.json:
+        json_output({"backend": backend, "source": source})
+    else:
+        print(backend)
+
+
 MEMORY_TEMPLATES = {
     "pitfalls.md": """# Pitfalls
 
@@ -4617,6 +4642,13 @@ def main() -> None:
     p_config_set.add_argument("value", help="Config value")
     p_config_set.add_argument("--json", action="store_true", help="JSON output")
     p_config_set.set_defaults(func=cmd_config_set)
+
+    # review-backend (helper for skills)
+    p_review_backend = subparsers.add_parser(
+        "review-backend", help="Get review backend (ASK if not configured)"
+    )
+    p_review_backend.add_argument("--json", action="store_true", help="JSON output")
+    p_review_backend.set_defaults(func=cmd_review_backend)
 
     # memory
     p_memory = subparsers.add_parser("memory", help="Memory commands")
