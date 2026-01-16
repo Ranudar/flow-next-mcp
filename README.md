@@ -50,6 +50,9 @@ This marketplace ships plugins that fix these problems.
 /plugin marketplace add https://github.com/gmickel/gmickel-claude-marketplace
 /plugin install flow-next
 
+# Setup (configures review backend + CLI tools)
+/flow-next:setup
+
 # Use
 /flow-next:plan Add a contact form with validation
 /flow-next:work fn-1

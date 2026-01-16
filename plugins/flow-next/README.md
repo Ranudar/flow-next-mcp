@@ -141,11 +141,11 @@ Two models catch what one misses.
 /flow-next:setup
 ```
 
-This is technically optional but **highly recommended**. Great for power users and non-Claude-Code environments (Codex, Cursor, etc.). It:
+This is technically optional but **highly recommended**. It:
+- **Configures review backend** (RepoPrompt, Codex, or none) — required for cross-model reviews
 - Copies `flowctl` to `.flow/bin/` for direct CLI access
 - Adds flow-next instructions to CLAUDE.md/AGENTS.md (helps other AI tools understand your project)
 - Creates `.flow/usage.md` with full CLI reference
-- Tracks setup version for updates
 
 **Idempotent** - safe to re-run. Detects plugin updates and refreshes scripts automatically.
 
