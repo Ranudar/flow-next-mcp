@@ -104,9 +104,15 @@ fi
 ## Input
 
 Arguments: $ARGUMENTS
-Format: `[focus areas or task ID]`
+Format: `[task ID] [--base <commit>] [focus areas]`
 
-Reviews all changes on **current branch** vs main/master.
+- `--base <commit>` - Compare against this commit instead of main/master (for task-scoped reviews)
+- Task ID - Optional, for context and receipt tracking
+- Focus areas - Optional, specific areas to examine
+
+**Scope behavior:**
+- With `--base`: Reviews only changes since that commit (task-scoped)
+- Without `--base`: Reviews entire branch vs main/master (full branch review)
 
 ## Workflow
 
@@ -117,18 +123,30 @@ FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ```
 
-### Step 0: Detect Backend
+### Step 0: Parse Arguments
+
+Parse $ARGUMENTS for:
+- `--base <commit>` → `BASE_COMMIT` (if provided, use for scoped diff)
+- First positional arg matching `fn-*` → `TASK_ID`
+- Remaining args → focus areas
+
+If `--base` not provided, `BASE_COMMIT` stays empty (will fall back to main/master).
+
+### Step 1: Detect Backend
 
 Run backend detection from SKILL.md above. Then branch:
 
 ### Codex Backend
 
 ```bash
-TASK_ID="${1:-}"
-BASE_BRANCH="main"
 RECEIPT_PATH="${REVIEW_RECEIPT_PATH:-/tmp/impl-review-receipt.json}"
 
-$FLOWCTL codex impl-review "$TASK_ID" --base "$BASE_BRANCH" --receipt "$RECEIPT_PATH"
+# Use BASE_COMMIT if provided, else fall back to main
+if [[ -n "$BASE_COMMIT" ]]; then
+  $FLOWCTL codex impl-review "$TASK_ID" --base "$BASE_COMMIT" --receipt "$RECEIPT_PATH"
+else
+  $FLOWCTL codex impl-review "$TASK_ID" --base main --receipt "$RECEIPT_PATH"
+fi
 # Output includes VERDICT=SHIP|NEEDS_WORK|MAJOR_RETHINK
 ```
 
@@ -137,16 +155,22 @@ On NEEDS_WORK: fix code, commit, re-run (receipt enables session continuity).
 ### RepoPrompt Backend
 
 ```bash
-# Step 1: Identify changes
+# Step 1: Identify changes (use BASE_COMMIT if provided, else main/master)
 git branch --show-current
-git log main..HEAD --oneline 2>/dev/null || git log master..HEAD --oneline
-git diff main..HEAD --name-only 2>/dev/null || git diff master..HEAD --name-only
+if [[ -n "$BASE_COMMIT" ]]; then
+  DIFF_BASE="$BASE_COMMIT"
+else
+  DIFF_BASE="main"
+  git rev-parse main >/dev/null 2>&1 || DIFF_BASE="master"
+fi
+git log ${DIFF_BASE}..HEAD --oneline
+git diff ${DIFF_BASE}..HEAD --name-only
 
 # Step 2: Atomic setup
 eval "$($FLOWCTL rp setup-review --repo-root "$REPO_ROOT" --summary "Review implementation: <summary>")"
 # Outputs W=<window> T=<tab>. If fails → <promise>RETRY</promise>
 
-# Step 3: Augment selection
+# Step 3: Augment selection (add changed files)
 $FLOWCTL rp select-add --window "$W" --tab "$T" path/to/changed/files...
 
 # Step 4: Build and send review prompt (see workflow.md)

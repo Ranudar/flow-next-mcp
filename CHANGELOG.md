@@ -2,6 +2,16 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.11.9] - 2026-01-16
+
+### Fixed
+- **Task-scoped impl-review** - Reviews now only cover current task's changes, not entire branch
+  - Worker captures `BASE_COMMIT` before implementing
+  - Passes `--base $BASE_COMMIT` to `/flow-next:impl-review`
+  - Diff is `BASE_COMMIT..HEAD` instead of `main..HEAD`
+  - Prevents re-reviewing already-shipped code from previous tasks
+  - Critical for Ralph mode where all tasks share one branch
+
 ## [flow-next 0.11.8] - 2026-01-16
 
 ### Added

@@ -47,15 +47,21 @@ echo "Review backend: $BACKEND"
 
 Use when `BACKEND="codex"`.
 
-### Step 1: Identify Task and Base Branch
+### Step 1: Identify Task and Diff Base
 
 ```bash
 BRANCH="$(git branch --show-current)"
-BASE_BRANCH="main"
-git log ${BASE_BRANCH}..HEAD --oneline 2>/dev/null || BASE_BRANCH="master"
 
-# Parse task ID from arguments if provided
-TASK_ID="${1:-}"
+# Use BASE_COMMIT from arguments if provided (task-scoped review)
+# Otherwise fall back to main/master (full branch review)
+if [[ -z "$BASE_COMMIT" ]]; then
+  DIFF_BASE="main"
+  git rev-parse main >/dev/null 2>&1 || DIFF_BASE="master"
+else
+  DIFF_BASE="$BASE_COMMIT"
+fi
+
+git log ${DIFF_BASE}..HEAD --oneline
 ```
 
 ### Step 2: Execute Review
@@ -63,7 +69,7 @@ TASK_ID="${1:-}"
 ```bash
 RECEIPT_PATH="${REVIEW_RECEIPT_PATH:-/tmp/impl-review-receipt.json}"
 
-$FLOWCTL codex impl-review "$TASK_ID" --base "$BASE_BRANCH" --receipt "$RECEIPT_PATH"
+$FLOWCTL codex impl-review "$TASK_ID" --base "$DIFF_BASE" --receipt "$RECEIPT_PATH"
 ```
 
 **Output includes `VERDICT=SHIP|NEEDS_WORK|MAJOR_RETHINK`.**
@@ -111,15 +117,26 @@ If this block fails, output `<promise>RETRY</promise>` and stop. Do not improvis
 
 ```bash
 BRANCH="$(git branch --show-current)"
-git log main..HEAD --oneline 2>/dev/null || git log master..HEAD --oneline
-CHANGED_FILES="$(git diff main..HEAD --name-only 2>/dev/null || git diff master..HEAD --name-only)"
-git diff main..HEAD --stat 2>/dev/null || git diff master..HEAD --stat
+
+# Use BASE_COMMIT from arguments if provided (task-scoped review)
+# Otherwise fall back to main/master (full branch review)
+if [[ -z "$BASE_COMMIT" ]]; then
+  DIFF_BASE="main"
+  git rev-parse main >/dev/null 2>&1 || DIFF_BASE="master"
+else
+  DIFF_BASE="$BASE_COMMIT"
+fi
+
+git log ${DIFF_BASE}..HEAD --oneline
+CHANGED_FILES="$(git diff ${DIFF_BASE}..HEAD --name-only)"
+git diff ${DIFF_BASE}..HEAD --stat
 ```
 
 Save:
 - Branch name
 - Changed files list
 - Commit summary
+- DIFF_BASE (for reference in review prompt)
 
 Compose a 1-2 sentence summary for the setup-review command.
 
