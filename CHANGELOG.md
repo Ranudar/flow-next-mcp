@@ -2,6 +2,27 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.12.5] - 2026-01-17
+
+### Added
+- **github-scout agent** - Cross-repo code search via `gh` CLI
+  - Search public + private GitHub repos
+  - Quality tiers: Authoritative (★5k+) → Established (★1k+) → Reference (★100+) → Examples
+  - Signals: stars, recency, official repos, fork status
+- **Enhanced docs-scout** - Source diving when docs fall short
+  - Fetch library source via `gh api`
+  - Search GitHub issues for known problems
+- **Enhanced practice-scout** - Real-world examples from GitHub
+  - Quality heuristics table (stars, recency, official = High weight)
+  - Cross-reference pattern (2-3 repos = higher confidence)
+
+### Changed
+- Research phase now runs `github-scout` in parallel with other scouts
+- Subagent count: 7 → 10
+
+### Docs
+- Force update tip in README (issue #54)
+
 ## [flow-next 0.12.1] - 2026-01-16
 
 ### Fixed
