@@ -252,7 +252,7 @@ If no verdict tag in response, output `<promise>RETRY</promise>` and stop.
 
 **CRITICAL: You MUST fix the code BEFORE re-reviewing. Never re-review without making changes.**
 
-**MAX ITERATIONS**: Limit fix+re-review cycles to **5 iterations**. If still NEEDS_WORK after 5 rounds, output `<promise>RETRY</promise>` and stop — let the next Ralph iteration start fresh.
+**MAX ITERATIONS**: Limit fix+re-review cycles to **${MAX_REVIEW_ITERATIONS:-5}** iterations (default 5, configurable in Ralph's config.env). If still NEEDS_WORK after max rounds, output `<promise>RETRY</promise>` and stop — let the next Ralph iteration start fresh.
 
 If verdict is NEEDS_WORK:
 
