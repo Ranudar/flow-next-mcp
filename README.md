@@ -6,7 +6,7 @@
 [![Claude Code](https://img.shields.io/badge/Claude_Code-Plugin_Marketplace-blueviolet)](https://claude.ai/code)
 
 [![Flow-next](https://img.shields.io/badge/Flow--next-v0.12.7-green)](plugins/flow-next/)
-[![Flow-next Docs](https://img.shields.io/badge/Docs-📖_Guide-informational)](plugins/flow-next/README.md)
+[![Flow-next Docs](https://img.shields.io/badge/Docs-📖-informational)](plugins/flow-next/README.md)
 
 [![Author](https://img.shields.io/badge/Author-Gordon_Mickel-orange)](https://mickel.tech)
 [![Twitter](https://img.shields.io/badge/@gmickel-black?logo=x)](https://twitter.com/gmickel)
