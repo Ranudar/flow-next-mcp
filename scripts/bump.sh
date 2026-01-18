@@ -77,6 +77,12 @@ if [[ "$TARGET" == "flow-next" || "$TARGET" == "all" ]]; then
 
   echo "flow-next: $OLD -> $NEW"
   echo "marketplace: -> $NEW (synced)"
+  echo ""
+  echo "Next steps:"
+  echo "  1. Update CHANGELOG.md"
+  echo "  2. git add -A && git commit -m 'chore(flow-next): bump version to $NEW'"
+  echo "  3. git push"
+  echo "  4. git tag flow-next-v$NEW && git push origin flow-next-v$NEW  # triggers release + Discord"
 fi
 
 echo "done"

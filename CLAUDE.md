@@ -140,18 +140,17 @@ Logs:
 
 ## Release checklist (flow-next)
 
-1. Update versions manually (no bump script yet):
-   - `plugins/flow-next/.claude-plugin/plugin.json` → version
-   - `.claude-plugin/marketplace.json` → flow-next version in plugins array
-   - `plugins/flow-next/README.md` → Version badge
-   - `README.md` → Flow-next badge
+1. Run `./scripts/bump.sh <patch|minor|major> flow-next`
 2. Update `CHANGELOG.md` with `[flow-next X.Y.Z]` entry
-3. Validate JSON:
+3. Commit and push:
    ```bash
-   jq . .claude-plugin/marketplace.json
-   jq . plugins/flow-next/.claude-plugin/plugin.json
+   git add -A && git commit -m "chore(flow-next): bump version to X.Y.Z"
+   git push
    ```
-4. Commit, push, verify
+4. Tag to trigger release + Discord notification:
+   ```bash
+   git tag flow-next-vX.Y.Z && git push origin flow-next-vX.Y.Z
+   ```
 
 ## Release checklist (flow)
 
