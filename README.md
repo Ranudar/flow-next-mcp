@@ -17,6 +17,8 @@
 
 </div>
 
+> 💬 **[Join the Discord](https://discord.gg/ST5Y39hQ)** — discussions, updates, feature requests, bug reports
+>
 > 🔄 **Update issues?** Run: `claude plugin update flow-next@gmickel-claude-marketplace`
 >
 > 💡 **Force update (most reliable):** `/plugin` → Marketplaces → gmickel-claude-marketplace → Update marketplace
