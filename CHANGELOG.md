@@ -2,6 +2,15 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.12.8] - 2026-01-18
+
+### Added
+- **MAX_REVIEW_ITERATIONS env var** - Cap fix+re-review cycles within impl-review (default 5) (#57)
+- **WORKER_TIMEOUT documentation** - Now documented in config.env template and ralph.md
+
+### Fixed
+- **plan command description** - Removed "clear" to avoid collision with /clear command (#56)
+
 ## [flow-next 0.12.7] - 2026-01-18
 
 ### Fixed
