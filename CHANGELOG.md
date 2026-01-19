@@ -52,6 +52,15 @@ Real examples from production plans showed 28KB epic specs with complete TypeScr
 - **"Current year is 2026" note** — Added to docs-scout, practice-scout, github-scout
   - Ensures web searches target recent documentation
 
+- **Stakeholder analysis step** — New Step 2 asks who's affected (end users, developers, operations)
+  - Shapes what the plan needs to cover
+  - Pure backend refactor needs different detail than user-facing feature
+
+- **Mermaid diagram guidance** — For data model and architecture changes
+  - ERD for new tables/schema changes
+  - Flowchart for service architecture
+  - Examples in examples.md
+
 ### Changed
 
 - **Subagent output rules** — All research scouts now have explicit guidance:

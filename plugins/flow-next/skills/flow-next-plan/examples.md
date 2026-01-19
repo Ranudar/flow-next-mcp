@@ -278,6 +278,49 @@ export function validateX(input: T): Result<T, ValidationError>
 
 ---
 
+## Mermaid Diagrams
+
+Include a mermaid diagram when the change involves:
+- New database tables or schema changes
+- New services or significant architecture changes
+- Complex data flow between components
+
+### ERD for data model changes
+
+```markdown
+## Data Model
+
+\`\`\`mermaid
+erDiagram
+    User ||--o{ Session : has
+    User ||--o{ OAuthToken : has
+    OAuthToken {
+        string provider
+        string access_token
+        string refresh_token
+        datetime expires_at
+    }
+\`\`\`
+```
+
+### Flowchart for architecture/data flow
+
+```markdown
+## Architecture
+
+\`\`\`mermaid
+flowchart LR
+    Client --> API
+    API --> AuthService
+    AuthService --> Google[Google OAuth]
+    AuthService --> DB[(Database)]
+\`\`\`
+```
+
+**Keep diagrams simple** — 5-10 nodes max. If it needs more, the feature may need splitting.
+
+---
+
 ## Summary
 
 | Include in specs | Don't include |

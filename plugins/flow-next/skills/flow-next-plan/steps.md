@@ -90,16 +90,25 @@ Must capture:
 - Project conventions (CLAUDE.md, CONTRIBUTING, etc)
 - Architecture patterns and data flow (especially with context-scout)
 
-## Step 2: Flow gap check
+## Step 2: Stakeholder & scope check
+
+Before diving into gaps, identify who's affected:
+- **End users** — What changes for them? New UI, changed behavior?
+- **Developers** — New APIs, changed interfaces, migration needed?
+- **Operations** — New config, monitoring, deployment changes?
+
+This shapes what the plan needs to cover. A pure backend refactor needs different detail than a user-facing feature.
+
+## Step 3: Flow gap check
 
 Run the gap analyst subagent:
 - Task flow-next:flow-gap-analyst(<request>, research_findings)
 
 Fold gaps + questions into the plan.
 
-## Step 3: Pick depth
+## Step 4: Pick depth
 
-Default to short unless complexity demands more.
+Default to standard unless complexity demands more or less.
 
 **SHORT** (bugs, small changes)
 - Problem or goal
@@ -113,16 +122,18 @@ Default to short unless complexity demands more.
 - Acceptance checks
 - Test notes
 - References
+- Mermaid diagram if data model changes
 
 **DEEP** (large/critical)
 - Detailed phases
 - Alternatives considered
 - Non-functional targets
+- Architecture/data flow diagram (mermaid)
 - Rollout/rollback
 - Docs + metrics
 - Risks + mitigations
 
-## Step 4: Write to .flow
+## Step 5: Write to .flow
 
 **Efficiency note**: Use stdin (`--file -`) with heredocs to avoid temp files. Use `task set-spec` to set description + acceptance in one call.
 
@@ -162,6 +173,7 @@ Default to short unless complexity demands more.
 3. Write epic spec (use stdin heredoc):
    ```bash
    # Include: Overview, Scope, Approach, Quick commands (REQUIRED), Acceptance, References
+   # Add mermaid diagram if data model or architecture changes
    $FLOWCTL epic set-plan <epic-id> --file - --json <<'EOF'
    # Epic Title
 
@@ -223,7 +235,7 @@ Default to short unless complexity demands more.
    $FLOWCTL cat <epic-id>
    ```
 
-## Step 5: Validate
+## Step 6: Validate
 
 ```bash
 $FLOWCTL validate --epic <epic-id> --json
@@ -231,7 +243,7 @@ $FLOWCTL validate --epic <epic-id> --json
 
 Fix any errors before proceeding.
 
-## Step 6: Review (if chosen at start)
+## Step 7: Review (if chosen at start)
 
 If user chose "Yes" to review in SKILL.md setup question:
 1. Invoke `/flow-next:plan-review` with the epic ID
@@ -249,7 +261,7 @@ If user chose "Yes" to review in SKILL.md setup question:
 
 **Why re-anchor every iteration?** Per Anthropic's long-running agent guidance: context compresses, you forget details. Re-read before each fix pass.
 
-## Step 7: Offer next steps
+## Step 8: Offer next steps
 
 Show epic summary with size breakdown and offer options:
 
