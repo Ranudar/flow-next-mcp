@@ -23,15 +23,19 @@ Real examples from production plans showed 28KB epic specs with complete TypeScr
   - ✅ Allowed: Signatures, file:line refs, recent/surprising APIs, non-obvious gotchas
   - ❌ Forbidden: Complete implementations, full class bodies, copy-paste snippets (>10 lines)
 
-- **Task sizing guidance** — Each task must be completable in ~100k tokens
-  - Signs a task is too large: >5 files, >5 acceptance criteria, complexity >7
-  - Good/bad breakdown examples (e.g., "Implement OAuth" → 4 smaller tasks)
+- **Task sizing with T-shirt sizes** — Observable metrics instead of token estimates
 
-- **Complexity scoring (1-10)** — Tasks now include complexity estimates
-  - 1-3: Trivial | 4-6: Moderate | 7-10: Complex (split these)
+  | Size | Files | Acceptance | Pattern | Action |
+  |------|-------|------------|---------|--------|
+  | S | 1-2 | 1-3 | Follows existing | ✅ Good |
+  | M | 3-5 | 3-5 | Adapts existing | ✅ Good |
+  | L | 5+ | 5+ | New/novel | ⚠️ Split |
+
+  - Anchor examples for calibration (S = fix bug, M = new endpoint with tests, L = split it)
+  - Good/bad breakdown examples (e.g., "Implement OAuth" → 4 S/M tasks)
 
 - **Plan depth selection** — Users can now choose detail level upfront
-  - `--depth=short` (default) | `--depth=standard` | `--depth=deep`
+  - `--depth=short` | `--depth=standard` (default) | `--depth=deep`
   - Or answer "1a/1b/1c" in setup questions
 
 - **Follow-up options in Step 7** — After plan creation:
@@ -64,7 +68,7 @@ Real examples from production plans showed 28KB epic specs with complete TypeScr
 
   This "surprised you" heuristic works because models CAN notice "this is different from what I'd expect" even if they can't reliably say "this is beyond my training data."
 
-- **Default depth is SHORT** — Simpler is better; complexity on request
+- **Default depth is STANDARD** — Balanced detail; short/deep on request
 
 ### Technical Notes
 

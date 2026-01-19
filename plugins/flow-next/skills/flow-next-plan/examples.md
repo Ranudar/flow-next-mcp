@@ -153,8 +153,8 @@ registerBackend(claudeBackend);
 ## Description
 Create claude backend following WorkerBackend interface.
 
-**Complexity:** 4/10
-**Files:** 2 (backend file + registration)
+**Size:** S
+**Files:** `src/lib/backends/claude.ts`, `src/lib/backend.ts` (registration)
 
 ## Approach
 - Follow codex backend pattern at `src/lib/backends/codex.ts:15-40`
@@ -199,7 +199,7 @@ Add Google OAuth authentication to the application.
 
 ```markdown
 # fn-1.1: Add Google OAuth environment config
-**Complexity:** 2/10
+**Size:** S | **Files:** `.env.example`, `src/config/env.ts`
 
 Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env.example
 and environment validation.
@@ -207,7 +207,7 @@ and environment validation.
 ---
 
 # fn-1.2: Install and configure passport-google-oauth20
-**Complexity:** 3/10
+**Size:** S | **Files:** `package.json`, `src/auth/strategies/google.ts`
 
 Add package, create passport strategy config following
 pattern at `src/auth/strategies/local.ts`.
@@ -215,7 +215,7 @@ pattern at `src/auth/strategies/local.ts`.
 ---
 
 # fn-1.3: Create OAuth callback routes
-**Complexity:** 4/10
+**Size:** M | **Files:** `src/routes/auth.ts`, `src/routes/auth.test.ts`
 
 Add /auth/google and /auth/google/callback routes
 following pattern at `src/routes/auth.ts:50-80`.
@@ -223,17 +223,17 @@ following pattern at `src/routes/auth.ts:50-80`.
 ---
 
 # fn-1.4: Add Google sign-in button to login UI
-**Complexity:** 3/10
+**Size:** S | **Files:** `src/components/LoginForm.tsx`
 
 Add button component following existing auth buttons
 at `src/components/LoginForm.tsx:25-40`.
 ```
 
 **Why this is better:**
-- Each task is ~20-50k tokens
+- All tasks are S or M (completable in one context)
 - Clear file references
 - Can work on fn-1.1 and fn-1.4 in parallel
-- Complexity scores help prioritize
+- Sizes based on observable metrics (files, pattern)
 
 ---
 

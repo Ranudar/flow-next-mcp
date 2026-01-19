@@ -22,26 +22,26 @@
 
 ## Task Sizing Rule
 
-Each task MUST be completable in **~100k tokens or less** (estimate conservatively).
+Use **T-shirt sizes** based on observable metrics — not token estimates (models can't reliably estimate tokens).
 
-**Signs a task is too large:**
-- Touches >5 files
-- Has >5 acceptance criteria
-- Description exceeds ~200 words
-- Complexity score >7
+| Size | Files | Acceptance Criteria | Pattern | Action |
+|------|-------|---------------------|---------|--------|
+| **S** | 1-2 | 1-3 | Follows existing | ✅ Good task size |
+| **M** | 3-5 | 3-5 | Adapts existing | ✅ Good task size |
+| **L** | 5+ | 5+ | New/novel | ⚠️ **Split this** |
+
+**Anchor examples** (calibrate against these):
+- **S**: Fix a bug, add config, simple UI tweak
+- **M**: New API endpoint with tests, new component with state
+- **L**: New subsystem, architectural change → SPLIT INTO S/M TASKS
 
 **If too large, split it:**
-- ❌ Bad: "Implement Google OAuth"
+- ❌ Bad: "Implement Google OAuth" (L — new subsystem)
 - ✅ Good:
-  - "Add Google OAuth config to environment variables"
-  - "Install and configure passport-google-oauth20 package"
-  - "Create OAuth callback route handler in src/routes/auth.ts"
-  - "Add Google sign-in button to login UI"
-
-**Complexity scoring (1-10):**
-- 1-3: Trivial (config change, simple function, one file)
-- 4-6: Moderate (new feature, few files, clear pattern to follow)
-- 7-10: Complex (architectural, many files, novel approach) → **split these**
+  - "Add Google OAuth env config" (S)
+  - "Configure passport-google-oauth20" (S)
+  - "Create OAuth callback routes" (M)
+  - "Add Google sign-in button" (S)
 
 ## Step 0: Initialize .flow
 
@@ -196,8 +196,8 @@ Default to short unless complexity demands more.
    ## Description
    [What to build, not how to build it]
 
-   **Complexity:** N/10
-   **Files:** ~N files expected
+   **Size:** S/M (L tasks should be split)
+   **Files:** list expected files
 
    ## Approach
    - Follow pattern at `src/example.ts:42`
@@ -251,11 +251,11 @@ If user chose "Yes" to review in SKILL.md setup question:
 
 ## Step 7: Offer next steps
 
-Show epic summary with complexity breakdown and offer options:
+Show epic summary with size breakdown and offer options:
 
 ```
 Epic fn-N created: "<title>"
-Tasks: M total | Complexity: X-Y/10 range
+Tasks: M total | Sizes: Ns S, Nm M
 
 Next steps:
 1) Start work: `/flow-next:work fn-N`

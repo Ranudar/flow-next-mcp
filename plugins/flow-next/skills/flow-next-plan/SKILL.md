@@ -103,8 +103,8 @@ b) No, repo-scout (faster)
 Quick setup before planning:
 
 1. **Plan depth** — How detailed?
-   a) Short (default) — problem, acceptance, key context
-   b) Standard — + approach, risks, test notes
+   a) Short — problem, acceptance, key context only
+   b) Standard (default) — + approach, risks, test notes
    c) Deep — + phases, alternatives, rollout plan
 
 2. **Research** — Use RepoPrompt for deeper context?
@@ -123,7 +123,7 @@ Quick setup before planning:
 Wait for response. Parse naturally — user may reply terse ("1a 2b") or ramble via voice.
 
 **Defaults when empty/ambiguous:**
-- Depth = `short` (simpler is better)
+- Depth = `standard` (balanced detail)
 - Research = `grep` (repo-scout)
 - Review = configured backend if set, else `none`
 
