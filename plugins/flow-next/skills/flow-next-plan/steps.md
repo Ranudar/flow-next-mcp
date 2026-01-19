@@ -17,7 +17,31 @@
 - Reuse points are explicit (centralized code called out)
 - Acceptance checks are testable
 - Tasks are small enough for one `/flow-next:work` iteration (split if not)
+- **No implementation code** — specs describe WHAT, not HOW (see SKILL.md Golden Rule)
 - Open questions are listed
+
+## Task Sizing Rule
+
+Each task MUST be completable in **~100k tokens or less** (estimate conservatively).
+
+**Signs a task is too large:**
+- Touches >5 files
+- Has >5 acceptance criteria
+- Description exceeds ~200 words
+- Complexity score >7
+
+**If too large, split it:**
+- ❌ Bad: "Implement Google OAuth"
+- ✅ Good:
+  - "Add Google OAuth config to environment variables"
+  - "Install and configure passport-google-oauth20 package"
+  - "Create OAuth callback route handler in src/routes/auth.ts"
+  - "Add Google sign-in button to login UI"
+
+**Complexity scoring (1-10):**
+- 1-3: Trivial (config change, simple function, one file)
+- 4-6: Moderate (new feature, few files, clear pattern to follow)
+- 7-10: Complex (architectural, many files, novel approach) → **split these**
 
 ## Step 0: Initialize .flow
 
@@ -166,7 +190,26 @@ Default to short unless complexity demands more.
    # Write description and acceptance to temp files, then:
    $FLOWCTL task set-spec <task-id> --description /tmp/desc.md --acceptance /tmp/acc.md --json
    ```
-   This reduces 4 atomic writes per task to 2.
+
+   **Task spec content** (remember: NO implementation code):
+   ```markdown
+   ## Description
+   [What to build, not how to build it]
+
+   **Complexity:** N/10
+   **Files:** ~N files expected
+
+   ## Approach
+   - Follow pattern at `src/example.ts:42`
+   - Reuse `existingHelper()` from `lib/utils.ts`
+
+   ## Key context
+   [Only for recent API changes, surprising patterns, or non-obvious gotchas]
+
+   ## Acceptance
+   - [ ] Criterion 1
+   - [ ] Criterion 2
+   ```
 
 6. Add dependencies:
    ```bash
@@ -206,15 +249,24 @@ If user chose "Yes" to review in SKILL.md setup question:
 
 **Why re-anchor every iteration?** Per Anthropic's long-running agent guidance: context compresses, you forget details. Re-read before each fix pass.
 
-## Step 7: Offer next step
+## Step 7: Offer next steps
 
-Show the epic summary and suggest next actions:
+Show epic summary with complexity breakdown and offer options:
 
 ```
-Epic created: fn-N with M tasks.
+Epic fn-N created: "<title>"
+Tasks: M total | Complexity: X-Y/10 range
 
-Next:
+Next steps:
 1) Start work: `/flow-next:work fn-N`
 2) Refine via interview: `/flow-next:interview fn-N`
 3) Review the plan: `/flow-next:plan-review fn-N`
+4) Go deeper on specific tasks (tell me which)
+5) Simplify (reduce detail level)
 ```
+
+If user selects 4 or 5:
+- **Go deeper**: Ask which task(s), then add more context/research to those specific tasks
+- **Simplify**: Remove non-essential sections, tighten acceptance criteria, merge small tasks
+
+Loop back to options after changes until user selects 1, 2, or 3.

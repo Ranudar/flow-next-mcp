@@ -2,6 +2,90 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.13.0] - 2026-01-19
+
+### ⚠️ Significant Planning Workflow Changes
+
+**The Problem:** Plans were doing implementation work. Epic and task specs contained complete function bodies, full interface definitions, and copy-paste ready code blocks. This caused:
+
+1. **Wasted tokens in planning** — Writing code that won't ship
+2. **Wasted tokens in review** — Reviewing code that won't ship
+3. **Wasted tokens in implementation** — Re-writing essentially the same code
+4. **Plan-sync drift** — Implementer does it slightly differently, specs and reality diverge
+
+Real examples from production plans showed 28KB epic specs with complete TypeScript implementations, and task specs that were literally the code to write — nothing left for `/flow-next:work` to do.
+
+**The Solution:** Plans describe WHAT to build and WHERE to look — not HOW to implement.
+
+### Added
+
+- **"The Golden Rule" in SKILL.md** — Explicit guidance on what code belongs in plans vs. what doesn't
+  - ✅ Allowed: Signatures, file:line refs, recent/surprising APIs, non-obvious gotchas
+  - ❌ Forbidden: Complete implementations, full class bodies, copy-paste snippets (>10 lines)
+
+- **Task sizing guidance** — Each task must be completable in ~100k tokens
+  - Signs a task is too large: >5 files, >5 acceptance criteria, complexity >7
+  - Good/bad breakdown examples (e.g., "Implement OAuth" → 4 smaller tasks)
+
+- **Complexity scoring (1-10)** — Tasks now include complexity estimates
+  - 1-3: Trivial | 4-6: Moderate | 7-10: Complex (split these)
+
+- **Plan depth selection** — Users can now choose detail level upfront
+  - `--depth=short` (default) | `--depth=standard` | `--depth=deep`
+  - Or answer "1a/1b/1c" in setup questions
+
+- **Follow-up options in Step 7** — After plan creation:
+  - Go deeper on specific tasks
+  - Simplify (reduce detail)
+  - Loop until user chooses work/interview/review
+
+- **Expanded examples.md** — Complete rewrite with:
+  - Good vs. bad epic spec examples (side by side)
+  - Good vs. bad task spec examples
+  - Task breakdown examples
+  - When code IS appropriate (with specific triggers)
+
+- **"Current year is 2026" note** — Added to docs-scout, practice-scout, github-scout
+  - Ensures web searches target recent documentation
+
+### Changed
+
+- **Subagent output rules** — All research scouts now have explicit guidance:
+  - Show signatures, not full implementations
+  - Keep snippets to <10 lines illustrating the pattern shape
+  - Focus on "where to look" not "what to write"
+
+- **"When to include code" heuristic** — Instead of asking models to know their knowledge cutoff (they can't), we use observable signals:
+  - Docs say "new in version X" or "changed in version Y"
+  - API differs from common/expected patterns
+  - Recent releases (2025+) with breaking changes
+  - Deprecation warnings or migration guides
+  - **Anything that surprised you or contradicted expectations**
+
+  This "surprised you" heuristic works because models CAN notice "this is different from what I'd expect" even if they can't reliably say "this is beyond my training data."
+
+- **Default depth is SHORT** — Simpler is better; complexity on request
+
+### Technical Notes
+
+This is a behavior change in planning output. Existing `.flow/` data is fully compatible — only new plans will follow the tighter guidelines.
+
+The changes affect:
+- `skills/flow-next-plan/SKILL.md` — Golden Rule, depth selection
+- `skills/flow-next-plan/steps.md` — Task sizing, complexity, Step 7 options
+- `skills/flow-next-plan/examples.md` — Complete rewrite
+- `agents/repo-scout.md` — Output rules
+- `agents/context-scout.md` — Output rules
+- `agents/practice-scout.md` — Output rules, year note
+- `agents/docs-scout.md` — Output rules, year note
+- `agents/github-scout.md` — Year note
+
+### Feedback Welcome
+
+This is a significant change to the planning philosophy. If you find plans are now too sparse, or the "surprised you" heuristic isn't working well, please open an issue at https://github.com/gmickel/gmickel-claude-marketplace/issues
+
+We'd rather iterate based on real usage than guess at the right balance.
+
 ## [flow-next 0.12.10] - 2026-01-19
 
 ### Changed
