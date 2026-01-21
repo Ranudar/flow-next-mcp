@@ -362,12 +362,6 @@ When `PLAN_REVIEW=mcp` or `WORK_REVIEW=mcp`, Claude calls RepoPrompt MCP tools d
 - `mcp__RepoPrompt__chat_send` — Send review request
 - `mcp__RepoPrompt__prompt` — Get/set prompts
 
-**Advantages over rp:**
-- Cross-platform (Windows, Linux, macOS)
-- No rp-cli installation required
-- No GUI required (uses MCP connection)
-- Direct integration without subprocess overhead
-
 **Session continuity:** MCP reviews store `chat_id` in receipts. Subsequent reviews in the same run continue the conversation.
 
 ---
