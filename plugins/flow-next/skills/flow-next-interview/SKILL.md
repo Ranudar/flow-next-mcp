@@ -15,6 +15,18 @@ FLOWCTL="${CLAUDE_PLUGIN_ROOT}/scripts/flowctl"
 $FLOWCTL <command>
 ```
 
+## Pre-check: Local setup version
+
+If `.flow/meta.json` exists and has `setup_version`, compare to plugin version:
+```bash
+SETUP_VER=$(jq -r '.setup_version // empty' .flow/meta.json 2>/dev/null)
+PLUGIN_VER=$(jq -r '.version' "${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json")
+if [[ -n "$SETUP_VER" && "$SETUP_VER" != "$PLUGIN_VER" ]]; then
+  echo "Plugin updated to v${PLUGIN_VER}. Run /flow-next:setup to refresh local scripts (current: v${SETUP_VER})."
+fi
+```
+Continue regardless (non-blocking).
+
 **Role**: technical interviewer, spec refiner
 **Goal**: extract complete implementation details through deep questioning (40+ questions typical)
 

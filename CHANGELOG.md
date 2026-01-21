@@ -2,6 +2,12 @@
 
 All notable changes to the gmickel-claude-marketplace.
 
+## [flow-next 0.14.4] - 2026-01-21
+
+### Added
+
+- **Version mismatch warning** — `/flow-next:plan` and `/flow-next:interview` now check if local setup is outdated. If `.flow/meta.json` has older `setup_version` than plugin, prints: "Plugin updated to vX.Y.Z. Run /flow-next:setup to refresh local scripts." Non-blocking, continues normally.
+
 ## [flow-next 0.14.3] - 2026-01-21
 
 ### Changed
