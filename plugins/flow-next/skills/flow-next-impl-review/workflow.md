@@ -22,11 +22,11 @@ BACKEND=$($FLOWCTL review-backend)
 
 if [[ "$BACKEND" == "ASK" ]]; then
   echo "Error: No review backend configured."
-  echo "Run /flow-next:setup to configure, or pass --review=rp|codex|none"
+  echo "Run /flow-next:setup to configure, or pass --review=rp|codex|mcp|none"
   exit 1
 fi
 
-echo "Review backend: $BACKEND (override: --review=rp|codex|none)"
+echo "Review backend: $BACKEND (override: --review=rp|codex|mcp|none)"
 ```
 
 **If backend is "none"**: Skip review, inform user, and exit cleanly (no error).
@@ -207,6 +207,144 @@ If no verdict tag in response, output `<promise>RETRY</promise>` and stop.
 
 ---
 
+## MCP Backend Workflow
+
+Use when `BACKEND="mcp"`.
+
+**Prerequisite**: RepoPrompt MCP server must be connected to Claude Code.
+
+### Key Difference from RP Backend
+- **RP backend**: Claude calls `flowctl rp *` → flowctl calls `rp-cli` subprocess
+- **MCP backend**: Claude calls MCP tools directly (no subprocess, no rp-cli needed)
+
+### MCP Tool Mapping
+
+| flowctl rp command | MCP Tool |
+|-------------------|----------|
+| `rp setup-review` | `mcp__RepoPrompt__manage_workspaces` (list_tabs, select_tab) |
+| `rp select-add` | `mcp__RepoPrompt__manage_selection` (op: "add") |
+| `rp select-get` | `mcp__RepoPrompt__manage_selection` (op: "get") |
+| `rp chat-send` | `mcp__RepoPrompt__chat_send` |
+| `rp prompt-get` | `mcp__RepoPrompt__prompt` (op: "get") |
+
+### Phase 0: Verify MCP Connection
+
+Before proceeding, verify RepoPrompt MCP is available:
+```
+mcp__RepoPrompt__manage_workspaces with action="list"
+```
+
+If this fails, output error and suggest using `--review=codex` or `--review=none`.
+
+### Phase 1: Identify Changes
+
+Same as RP backend - identify branch, commits, and changed files:
+```bash
+BRANCH="$(git branch --show-current)"
+
+if [[ -z "$BASE_COMMIT" ]]; then
+  DIFF_BASE="main"
+  git rev-parse main >/dev/null 2>&1 || DIFF_BASE="master"
+else
+  DIFF_BASE="$BASE_COMMIT"
+fi
+
+COMMITS="$(git log ${DIFF_BASE}..HEAD --oneline)"
+CHANGED_FILES="$(git diff ${DIFF_BASE}..HEAD --name-only)"
+```
+
+### Phase 2: Setup Review Context
+
+```
+# Step 1: List available tabs
+mcp__RepoPrompt__manage_workspaces
+  action: "list_tabs"
+
+# Step 2: Select/bind to a tab
+mcp__RepoPrompt__manage_workspaces
+  action: "select_tab"
+  tab: "<tab_id or name>"
+```
+
+### Phase 3: Add Changed Files to Selection
+
+```
+mcp__RepoPrompt__manage_selection
+  op: "add"
+  paths: [<changed files from Phase 1>]
+```
+
+### Phase 4: Send Review Request
+
+Build review instructions (same content as RP backend Phase 2), then:
+
+```
+# First review (new chat)
+mcp__RepoPrompt__chat_send
+  new_chat: true
+  mode: "review"
+  chat_name: "Impl Review: [BRANCH]"
+  message: "<review instructions with criteria>"
+  git_scope: "selected"  # Include git diffs
+```
+
+The response includes review findings. Request verdict:
+
+```
+mcp__RepoPrompt__chat_send
+  new_chat: false
+  chat_id: "<chat_id from first message>"
+  mode: "review"
+  message: "Based on your review findings, provide your final verdict.
+
+**REQUIRED**: End with exactly one verdict tag:
+`<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`"
+```
+
+### Phase 5: Parse Response
+
+Parse for verdict:
+- `<verdict>SHIP</verdict>`
+- `<verdict>NEEDS_WORK</verdict>`
+- `<verdict>MAJOR_RETHINK</verdict>`
+
+### Phase 6: Receipt + Status
+
+Write receipt (if REVIEW_RECEIPT_PATH set):
+```bash
+if [[ -n "${REVIEW_RECEIPT_PATH:-}" ]]; then
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  mkdir -p "$(dirname "$REVIEW_RECEIPT_PATH")"
+  cat > "$REVIEW_RECEIPT_PATH" <<EOF
+{"type":"impl_review","id":"$TASK_ID","mode":"mcp","timestamp":"$ts","chat_id":"<CHAT_ID>"}
+EOF
+  echo "REVIEW_RECEIPT_WRITTEN: $REVIEW_RECEIPT_PATH"
+fi
+```
+
+### Fix Loop (MCP)
+
+Same as RP backend:
+1. Parse issues from reviewer feedback (Critical → Major → Minor)
+2. Fix the code
+3. Run tests/lints
+4. Commit fixes (MANDATORY before re-review)
+5. Re-review using same chat_id (new_chat: false):
+   ```
+   mcp__RepoPrompt__chat_send
+     new_chat: false
+     chat_id: "<chat_id>"
+     mode: "review"
+     message: "Issues addressed. Please re-review.
+
+   **REQUIRED**: End with `<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`"
+   ```
+6. Repeat until SHIP
+
+**CRITICAL**: Re-reviews MUST use the same chat_id so reviewer has context.
+
+---
+
 ## Fix Loop (RP)
 
 **CRITICAL: Do NOT ask user for confirmation. Automatically fix ALL valid issues and re-review — our goal is production-grade world-class software and architecture. Never use AskUserQuestion in this loop.**
@@ -267,3 +405,8 @@ If verdict is NEEDS_WORK:
 **Codex backend only:**
 - **Using `--last` flag** - Conflicts with parallel usage; use `--receipt` instead
 - **Direct codex calls** - Must use `flowctl codex` wrappers
+
+**MCP backend only:**
+- **Calling flowctl rp commands** - MCP backend uses MCP tools directly, not flowctl
+- **Using new_chat on re-reviews** - Must use same chat_id for reviewer context
+- **Skipping MCP connection check** - Always verify MCP is connected first

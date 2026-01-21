@@ -22,11 +22,11 @@ BACKEND=$($FLOWCTL review-backend)
 
 if [[ "$BACKEND" == "ASK" ]]; then
   echo "Error: No review backend configured."
-  echo "Run /flow-next:setup to configure, or pass --review=rp|codex|none"
+  echo "Run /flow-next:setup to configure, or pass --review=rp|codex|mcp|none"
   exit 1
 fi
 
-echo "Review backend: $BACKEND (override: --review=rp|codex|none)"
+echo "Review backend: $BACKEND (override: --review=rp|codex|mcp|none)"
 ```
 
 **If backend is "none"**: Skip review, inform user, and exit cleanly (no error).
@@ -238,6 +238,117 @@ If no verdict tag, output `<promise>RETRY</promise>` and stop.
 
 ---
 
+## MCP Backend Workflow
+
+Use when `BACKEND="mcp"`.
+
+**Prerequisite**: RepoPrompt MCP server must be connected to Claude Code.
+
+### Key Difference from RP Backend
+- **RP backend**: Claude calls `flowctl rp *` → flowctl calls `rp-cli` subprocess
+- **MCP backend**: Claude calls MCP tools directly (no subprocess, no rp-cli needed)
+
+### MCP Tool Mapping
+
+| flowctl rp command | MCP Tool |
+|-------------------|----------|
+| `rp setup-review` | `mcp__RepoPrompt__manage_workspaces` (list_tabs, select_tab) |
+| `rp select-add` | `mcp__RepoPrompt__manage_selection` (op: "add") |
+| `rp select-get` | `mcp__RepoPrompt__manage_selection` (op: "get") |
+| `rp chat-send` | `mcp__RepoPrompt__chat_send` |
+| `rp prompt-get` | `mcp__RepoPrompt__prompt` (op: "get") |
+| `rp builder` | `mcp__RepoPrompt__context_builder` |
+
+### Phase 0: Verify MCP Connection
+
+Before proceeding, verify RepoPrompt MCP is available:
+```
+mcp__RepoPrompt__manage_workspaces with action="list"
+```
+
+If this fails, output error and suggest using `--review=codex` or `--review=none`.
+
+### Phase 1: Setup Review Context
+
+```
+# Step 1: List available tabs
+mcp__RepoPrompt__manage_workspaces
+  action: "list_tabs"
+
+# Step 2: Select/bind to a tab (or create new)
+mcp__RepoPrompt__manage_workspaces
+  action: "select_tab"
+  tab: "<tab_id or name>"
+```
+
+### Phase 2: Add Files to Selection
+
+```
+# Add the epic spec file
+mcp__RepoPrompt__manage_selection
+  op: "add"
+  paths: [".flow/epics/<epic-id>.md", ".flow/specs/<epic-id>.md"]
+
+# Optionally add related files
+mcp__RepoPrompt__manage_selection
+  op: "add"
+  paths: ["<additional files>"]
+```
+
+### Phase 3: Send Review Request
+
+Build the same review prompt as the RP backend (see Phase 3 above), then:
+
+```
+# First review (new chat)
+mcp__RepoPrompt__chat_send
+  new_chat: true
+  mode: "plan"
+  chat_name: "Plan Review: <EPIC_ID>"
+  message: "<review prompt with criteria>"
+
+# Re-reviews (same chat)
+mcp__RepoPrompt__chat_send
+  new_chat: false
+  chat_id: "<chat_id from first review>"
+  message: "Issues addressed. Please re-review..."
+```
+
+### Phase 4: Parse Response
+
+The response from `chat_send` includes the review. Parse for verdict:
+- `<verdict>SHIP</verdict>`
+- `<verdict>NEEDS_WORK</verdict>`
+- `<verdict>MAJOR_RETHINK</verdict>`
+
+### Phase 5: Receipt + Status
+
+Write receipt (if REVIEW_RECEIPT_PATH set):
+```bash
+if [[ -n "${REVIEW_RECEIPT_PATH:-}" ]]; then
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  mkdir -p "$(dirname "$REVIEW_RECEIPT_PATH")"
+  cat > "$REVIEW_RECEIPT_PATH" <<EOF
+{"type":"plan_review","id":"<EPIC_ID>","mode":"mcp","timestamp":"$ts","chat_id":"<CHAT_ID>"}
+EOF
+  echo "REVIEW_RECEIPT_WRITTEN: $REVIEW_RECEIPT_PATH"
+fi
+```
+
+Update status via flowctl as with other backends.
+
+### Fix Loop (MCP)
+
+Same as RP backend:
+1. Parse issues from reviewer feedback
+2. Fix plan via `$FLOWCTL epic set-plan`
+3. Re-review using same chat_id (new_chat: false)
+4. Repeat until SHIP
+
+**CRITICAL**: Re-reviews MUST use the same chat_id so reviewer has context.
+
+---
+
 ## Fix Loop (RP)
 
 **CRITICAL: Do NOT ask user for confirmation. Automatically fix ALL valid issues and re-review — our goal is production-grade world-class software and architecture. Never use AskUserQuestion in this loop.**
@@ -313,3 +424,8 @@ If verdict is NEEDS_WORK:
 **Codex backend only:**
 - **Using `--last` flag** - Conflicts with parallel usage; use `--receipt` instead
 - **Direct codex calls** - Must use `flowctl codex` wrappers
+
+**MCP backend only:**
+- **Calling flowctl rp commands** - MCP backend uses MCP tools directly, not flowctl
+- **Using new_chat on re-reviews** - Must use same chat_id for reviewer context
+- **Skipping MCP connection check** - Always verify MCP is connected first
