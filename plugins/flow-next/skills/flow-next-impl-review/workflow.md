@@ -226,6 +226,7 @@ Use when `BACKEND="mcp"`.
 | `rp select-get` | `mcp__RepoPrompt__manage_selection` (op: "get") |
 | `rp chat-send` | `mcp__RepoPrompt__chat_send` |
 | `rp prompt-get` | `mcp__RepoPrompt__prompt` (op: "get") |
+| `rp builder` | `mcp__RepoPrompt__context_builder` |
 
 ### Phase 0: Verify MCP Connection
 
