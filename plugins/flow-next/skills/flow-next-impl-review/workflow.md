@@ -275,39 +275,44 @@ mcp__RepoPrompt__manage_selection
   paths: [<changed files from Phase 1>]
 ```
 
-### Phase 4: Send Review Request
+### Phase 4: Send Review Request (Single Call with Verdict)
 
-Build review instructions (same content as RP backend Phase 2), then:
+Build review instructions that include the verdict requirement upfront, so both review AND verdict come back in one response:
 
 ```
-# First review (new chat)
+# First review (new chat) - includes verdict requirement
 mcp__RepoPrompt__chat_send
   new_chat: true
   mode: "review"
   chat_name: "Impl Review: [BRANCH]"
-  message: "<review instructions with criteria>"
   git_scope: "selected"  # Include git diffs
-```
+  message: |
+    Review the changes for correctness, simplicity, and potential issues.
 
-The response includes review findings. Request verdict:
+    Focus on:
+    - Correctness - Logic errors, spec compliance
+    - Simplicity - Over-engineering, unnecessary complexity
+    - Edge cases - Failure modes, boundary conditions
+    - Security - Injection, auth gaps
 
-```
-mcp__RepoPrompt__chat_send
-  new_chat: false
-  chat_id: "<chat_id from first message>"
-  mode: "review"
-  message: "Based on your review findings, provide your final verdict.
+    Only flag issues in the changed code - not pre-existing patterns.
 
-**REQUIRED**: End with exactly one verdict tag:
-`<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`"
+    After your review, you MUST conclude with exactly one verdict tag:
+    - `<verdict>SHIP</verdict>` - Code is ready to merge
+    - `<verdict>NEEDS_WORK</verdict>` - Issues found that must be fixed
+    - `<verdict>MAJOR_RETHINK</verdict>` - Fundamental problems require redesign
+
+    The verdict tag is REQUIRED. Do not end your response without it.
 ```
 
 ### Phase 5: Parse Response
 
-Parse for verdict:
+Parse for verdict in the response:
 - `<verdict>SHIP</verdict>`
 - `<verdict>NEEDS_WORK</verdict>`
 - `<verdict>MAJOR_RETHINK</verdict>`
+
+If no verdict tag found, the review is incomplete - request clarification in the same chat.
 
 ### Phase 6: Receipt + Status
 

@@ -295,31 +295,49 @@ mcp__RepoPrompt__manage_selection
   paths: ["<additional files>"]
 ```
 
-### Phase 3: Send Review Request
+### Phase 3: Send Review Request (Single Call with Verdict)
 
-Build the same review prompt as the RP backend (see Phase 3 above), then:
+Build review instructions that include the verdict requirement upfront, so both review AND verdict come back in one response:
 
 ```
-# First review (new chat)
+# First review (new chat) - includes verdict requirement
 mcp__RepoPrompt__chat_send
   new_chat: true
   mode: "plan"
   chat_name: "Plan Review: <EPIC_ID>"
-  message: "<review prompt with criteria>"
+  message: |
+    Conduct a John Carmack-level review of this plan:
 
-# Re-reviews (same chat)
-mcp__RepoPrompt__chat_send
-  new_chat: false
-  chat_id: "<chat_id from first review>"
-  message: "Issues addressed. Please re-review..."
+    1. **Completeness** - All requirements covered? Missing edge cases?
+    2. **Feasibility** - Technically sound? Dependencies clear?
+    3. **Clarity** - Specs unambiguous? Acceptance criteria testable?
+    4. **Architecture** - Right abstractions? Clean boundaries?
+    5. **Risks** - Blockers identified? Security gaps? Mitigation?
+    6. **Scope** - Right-sized? Over/under-engineering?
+    7. **Testability** - How will we verify this works?
+
+    For each issue found:
+    - **Severity**: Critical / Major / Minor / Nitpick
+    - **Location**: Which task or section
+    - **Problem**: What's wrong
+    - **Suggestion**: How to fix
+
+    After your review, you MUST conclude with exactly one verdict tag:
+    - `<verdict>SHIP</verdict>` - Plan is ready to execute
+    - `<verdict>NEEDS_WORK</verdict>` - Issues found that must be fixed
+    - `<verdict>MAJOR_RETHINK</verdict>` - Fundamental problems require redesign
+
+    The verdict tag is REQUIRED. Do not end your response without it.
 ```
 
 ### Phase 4: Parse Response
 
-The response from `chat_send` includes the review. Parse for verdict:
+Parse for verdict in the response:
 - `<verdict>SHIP</verdict>`
 - `<verdict>NEEDS_WORK</verdict>`
 - `<verdict>MAJOR_RETHINK</verdict>`
+
+If no verdict tag found, the review is incomplete - request clarification in the same chat.
 
 ### Phase 5: Receipt + Status
 
@@ -340,9 +358,18 @@ Update status via flowctl as with other backends.
 ### Fix Loop (MCP)
 
 Same as RP backend:
-1. Parse issues from reviewer feedback
+1. Parse issues from reviewer feedback (Critical → Major → Minor)
 2. Fix plan via `$FLOWCTL epic set-plan`
-3. Re-review using same chat_id (new_chat: false)
+3. Re-review using same chat_id (new_chat: false):
+   ```
+   mcp__RepoPrompt__chat_send
+     new_chat: false
+     chat_id: "<chat_id>"
+     mode: "plan"
+     message: "Issues addressed. Please re-review.
+
+   **REQUIRED**: End with `<verdict>SHIP</verdict>` or `<verdict>NEEDS_WORK</verdict>` or `<verdict>MAJOR_RETHINK</verdict>`"
+   ```
 4. Repeat until SHIP
 
 **CRITICAL**: Re-reviews MUST use the same chat_id so reviewer has context.

@@ -177,13 +177,7 @@ def handle_mcp_post_tool_use(data: dict) -> None:
 
     # Track mcp__RepoPrompt__chat_send calls
     if tool_name == "mcp__RepoPrompt__chat_send":
-        # Check for successful chat (has content in response)
-        if response_text and "error" not in response_text.lower():
-            state["chats_sent"] = state.get("chats_sent", 0) + 1
-            state["chat_send_succeeded"] = True
-            save_state(session_id, state)
-
-        # Check for verdict in response
+        # Check for verdict in response FIRST - only set success flags if verdict found
         # Note: This uses the same regex as RP/Codex verdict parsing for consistency.
         # The verdict tag format is explicitly required in review prompts, so we expect
         # it to appear unambiguously in the response (not in code blocks or quoted text
@@ -192,9 +186,13 @@ def handle_mcp_post_tool_use(data: dict) -> None:
             r"<verdict>(SHIP|NEEDS_WORK|MAJOR_RETHINK)</verdict>", response_text
         )
         if verdict_match:
+            state["chats_sent"] = state.get("chats_sent", 0) + 1
+            state["chat_send_succeeded"] = True
             state["last_verdict"] = verdict_match.group(1)
             state["mcp_review_succeeded"] = True
             save_state(session_id, state)
+            with Path("/tmp/ralph-guard-debug.log").open("a") as f:
+                f.write(f"  -> MCP review succeeded with verdict: {verdict_match.group(1)}\n")
 
             # If SHIP, remind about receipt
             if verdict_match.group(1) == "SHIP":
@@ -238,6 +236,12 @@ def handle_mcp_post_tool_use(data: dict) -> None:
                             }
                         }
                     )
+
+        elif response_text and len(response_text) > 100:
+            # Log response without verdict for debugging (do NOT set chat_send_succeeded)
+            with Path("/tmp/ralph-guard-debug.log").open("a") as f:
+                f.write(f"  -> MCP response received ({len(response_text)} chars) but no verdict tag found\n")
+                f.write(f"  -> Response preview: {response_text[:300]}...\n")
 
     sys.exit(0)
 
