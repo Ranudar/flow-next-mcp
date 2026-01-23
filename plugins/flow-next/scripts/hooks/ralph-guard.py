@@ -187,12 +187,14 @@ def handle_mcp_post_tool_use(data: dict) -> None:
         )
         if verdict_match:
             state["chats_sent"] = state.get("chats_sent", 0) + 1
-            state["chat_send_succeeded"] = True
             state["last_verdict"] = verdict_match.group(1)
-            state["mcp_review_succeeded"] = True
+            # Only set success flags for SHIP - NEEDS_WORK/MAJOR_RETHINK should block receipt
+            if verdict_match.group(1) == "SHIP":
+                state["chat_send_succeeded"] = True
+                state["mcp_review_succeeded"] = True
             save_state(session_id, state)
             with Path("/tmp/ralph-guard-debug.log").open("a") as f:
-                f.write(f"  -> MCP review succeeded with verdict: {verdict_match.group(1)}\n")
+                f.write(f"  -> MCP review verdict: {verdict_match.group(1)}, success={verdict_match.group(1) == 'SHIP'}\n")
 
             # If SHIP, remind about receipt
             if verdict_match.group(1) == "SHIP":
@@ -453,8 +455,10 @@ def handle_post_tool_use(data: dict) -> None:
             r"<verdict>(SHIP|NEEDS_WORK|MAJOR_RETHINK)</verdict>", response_text
         )
         if verdict_in_output:
-            state["codex_review_succeeded"] = True
             state["last_verdict"] = verdict_in_output.group(1)
+            # Only set success flag for SHIP - NEEDS_WORK/MAJOR_RETHINK should block receipt
+            if verdict_in_output.group(1) == "SHIP":
+                state["codex_review_succeeded"] = True
             save_state(session_id, state)
 
     # Track flowctl done calls - match various invocation patterns:
